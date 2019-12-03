@@ -1,6 +1,12 @@
 
 #pragma once
-#include <vector>
+#include <list>
+
+//Temporary
+typedef void* OnClientOnlineListener;
+
+
+
 
 class BleClient{
     const int handlerPeriod = 5000;
@@ -19,11 +25,19 @@ class BleClient{
     void* on_connection_listener;
     void* scan_callback;
 
+    std::list<void*> listeners;
 
     //The singleton pattern istance.
+    static BleClient* istance;
+
+    BleClient();
     
+
+
     
     public:
+        BleClient* getIstance();
+        ~BleClient();
         void* getBluethoothAdapter(){return adapter;}
         void* getBluethoothManager(){return manager;}
         void* getConnectBleTask(){return connect_task;}
@@ -37,6 +51,9 @@ class BleClient{
         void setScanning(bool scann){this->scanning = scann;}
         void setServiceStarted(bool service){this->serviceStarted = service;}
         char[2] getLastServerIdFound(){return lastServerIdFound; }
+        void addListener(OnClientOnlineListener list);
+        void removeListener(OnClientOnlineListener list);
+        std::list<OnClientOnlineListener> getListeners();
 
         
         
