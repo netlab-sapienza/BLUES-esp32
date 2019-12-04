@@ -85,6 +85,9 @@ std::string BleServer::getTAG(){
 
 
 
+//Complete stuffs: once AcceptBleTask is completed.
+
+
 
 
 
