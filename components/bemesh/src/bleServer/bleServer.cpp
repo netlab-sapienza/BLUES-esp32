@@ -1,9 +1,14 @@
 #include "../include/bleServer.hpp"
+#include <iostream>
 
 
 
 
-BleServer::BleServer(std::string T = "", int attempts):TAG(T),attempsUntilServer(attempts){
+BleServer* BleServer::istance = NULL;
+
+
+
+BleServer::BleServer(){
     this->serviceStarted = false;
     this->scanning = false;
 
@@ -22,20 +27,28 @@ BleServer::BleServer(std::string T = "", int attempts):TAG(T),attempsUntilServer
 
 //dtor!!!
 BleServer::~BleServer(){
-    delete this->istance;
-
+    std::cout<<"dtor!"<<std::endl;
 }
 
 
 
 BleServer* BleServer::getIstance(){
-    if(this->istance == NULL)
-        this->istance = new BleServer();
+    if(istance == NULL){
+        std::cout<<"First istantiation"<<std::endl;
+        istance = new BleServer();
+    }
     else
     {
-        return this->instance;
+        std::cout<<"The istance is simply returned"<<std::endl;
+        return istance;
     }
     
+}
+
+void BleServer::close(){
+    if(istance != NULL){
+        delete istance;
+    }
 }
 
 
@@ -56,7 +69,7 @@ void BleServer::setScanning(bool scanning){
 
 
 void BleServer::setServiceStarted(bool started){
-    this->started = started;
+    this->serviceStarted = started;
 }
 
 
