@@ -20,6 +20,7 @@ namespace bemesh{
     BufferFullError=-1,
     // Only warnings or succesful status below-------
     Success=0,
+    ParsingComplete=1,
     //TODO
   };
 }
