@@ -16,8 +16,10 @@ namespace bemesh{
   // positive.
   enum ErrStatus{
     //TODO
-    NoCallbackError=-2,
-    BufferFullError=-1,
+    UserInTableError=-4,
+    NoCallbackError=-3,
+    BufferFullError=-2,
+    GenericError=-1,
     // Only warnings or succesful status below-------
     Success=0,
     ParsingComplete=1,
