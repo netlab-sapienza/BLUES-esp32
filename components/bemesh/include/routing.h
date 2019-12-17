@@ -24,22 +24,61 @@
 #include <cstdint>
 
 namespace bemesh {
+  // Network node address (used to address nodes
+  // inside the network)
   typedef uint8_t node_addr_t;
 
   const uint8_t BROADCAST_ID = 0xFF;
+  const uint8_t SERVER_MASK_OFFSET = 0x03;
+  const uint8_t CLIENT_MASK_OFFSET = 0x00;
   const uint8_t SERVER_MASK = 0xF8;
   const uint8_t CLIENT_MASK = 0x03;
+
+  struct Router {
+    RoutingTable m_rtable;
+
+    // Last server address in the piconet
+    // If a new server connects to this router,
+    // he shall assign himself this address
+    node_addr_t m_last_server_addr;
+    dev_addr_t m_router_addr;
+    Router(dev_addr_t t_router_addr);
+    Router(dev_addr_t t_router_addr, node_addr_t t_last_server_addr);
+    // Return Success if t_node_addr node is a client
+    // of this router. GenericError otherwise
+    ErrStatus checkLoc(node_addr_t t_node_addr);
+    // Get the device address needed to reach t_node_addr
+    // Notice that checkLoc(t_node_addr) should be called
+    // first in order to understand if t_node_addr
+    // is directly reachable.
+    dev_addr_t nextHop(node_addr_t t_node_addr);
+    // Insert a new RoutingConnection in the routing table
+    // Returns the added t_node_addr key
+    node_addr_t add(node_addr_t t_node_addr,
+		  dev_addr_t t_dev_hop,
+		  NodeStatus t_is_client,
+		  uint8_t internet_conn);
+    // Overloaded method for local client insertion.
+    // Automatically generates the node address.
+    // Returns the added t_node_addr key.
+    node_addr_t add(dev_addr_t t_dev_addr,
+		  uint8_t internet_conn);
+  }
+
   
+
+  /*
   struct Router {
     // Routing table 
     RoutingTable rtable;
     node_addr_t m_server_addr;
-    
+
+    uint8_t m_last_node_idx;
     uint8_t m_client_num;
     uint8_t m_server_num;
     
     // Object constructor
-    Router(node_addr_t t_server_id);
+    Router(node_addr_t t_server_addr);
     // Returns Success if t_client_id node is directly
     // accessible to the server
     // Returns GenericError if more hops must be executed.
@@ -51,6 +90,8 @@ namespace bemesh {
 
     // Add a new connection to the router, that links
     // t_addr node address as t_status status (Server or Client)
+    // Notice that t_addr is not related to routing addresses
+    // but represent the hardware related static address.
     ErrStatus add(node_addr_t t_addr, NodeStatus t_status);
 
     // Returns the number of directly attached client nodes
@@ -60,5 +101,6 @@ namespace bemesh {
     // Returns the number of diectly attached server nodes
     // on this server
     uint8_t servers(void);
-  }
+  };
+  */
 }

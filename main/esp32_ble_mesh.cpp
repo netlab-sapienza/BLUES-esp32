@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "__message_parser.h"
+#include "routing.h"
 
 #include "esp_log.h" // for logging
 #include "nvs_flash.h" // Non volatile interface
@@ -19,12 +20,45 @@
 
 static const char* LOG_TAG = "main";
 
-static void gatts_event_handler();
-
-static void gap_event_handler();
-
 int main(void) {
-  esp_err_t ret;
+  esp_err_t ret;  
+  /*
+  bemesh::Router r1(0x06);
+  bemesh::Router r2(0x1C);
+  // Insert two clients with their static addresses
+  // in the routing table of r1
+  // We expect the following output
+  // Network address / static address
+  // server addr : 0x06 (becomes 0x30 as network id)
+  // 0x30 -> 0xAA
+  // 0x31 -> 0xCF  
+  r1.add(0xAA, bemesh::Client);
+  r1.add(0xCF, bemesh::Client);
+  
+  // server addr : 0x1C (becomes 0xE0 as network id)
+  // 0xE0 -> 0x04
+  // 0xE1 -> 0xAB  
+  r2.add(0x04, bemesh::Client);
+  r2.add(0xAB, bemesh::Client);
+
+  ESP_LOGI(LOG_TAG, "Router 1 summary:");
+  ESP_LOGI(LOG_TAG, "own_addr: %X\tnum_clients: %d\tnum_servers: %d",
+	   r1.m_server_addr, r1.m_client_num, r1.m_server_num);
+  for(auto& row:r1.rtable.getTable()) {
+    ESP_LOGI(LOG_TAG, "%X -> %X", row.first, row.second);
+  }
+
+  ESP_LOGI(LOG_TAG, "Router 2 summary:");
+  ESP_LOGI(LOG_TAG, "own_addr: %d\tnum_clients: %d\tnum_servers: %d",
+	   r2.m_server_addr, r2.m_client_num, r2.m_server_num);
+  for(auto& row:r2.rtable.getTable()) {
+    ESP_LOGI(LOG_TAG, "%X  -> %X", row.first, row.second);
+  }
+  */
+  
+
+  
+  /*
   // Initalize non volatile storage lib
   ret = nvs_flash_init();
 
@@ -47,6 +81,7 @@ int main(void) {
   //esp_ble_gatts_register_callback(gatts_event_handler);
   //esp_ble_gap_register_callback(gap_event_handler);
 
+  */
   
   return 0;
 }

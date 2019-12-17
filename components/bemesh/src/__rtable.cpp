@@ -6,33 +6,39 @@
 #include "__rtable.h"
 
 namespace bemesh {
-  RoutingTable::RoutingTable(void) : m_rtable() {}
-  
-  std::map<uint8_t, uint8_t> RoutingTable::getTable(void) {
+
+  RoutingTable::RoutingTable(void) : m_rtable(), m_rtable_updates() {}
+  const routing_map_t& RoutingTable::getTable(void) {
     return m_rtable;
   }
+
+  const routing_map_t& RoutingTable::getUpdateTable(void) {
+    return m_rtable_updates;
+  }
   
-  ErrStatus RoutingTable::contains(uint8_t t_client_id) {
-    std::map<uint8_t, uint8_t>::iterator it;
-    it=m_rtable.find(t_client_id);
-    if (it == m_rtable.end()) {
+  const RoutingConnection& RoutingTable::getConnParams(uint8_t t_node_id) {
+    routing_map_t::iterator it;
+    it=m_rtable.find(t_node_id);
+    return it->second;
+  }
+  
+  ErrStatus RoutingTable::contains(uint8_t t_node_id) {
+    routing_map_t::iterator it;
+    it=m_rtable.find(t_node_id);
+    if(it==m_rtable.end()) {
       return GenericError;
     }
     return Success;
   }
   
-  uint8_t RoutingTable::getNextHop(uint8_t t_client_id) {
-    std::map<uint8_t, uint8_t>::iterator it;
-    it=m_rtable.find(t_client_id);
-    return it->second;
-  }
-  
-  ErrStatus RoutingTable::insert(uint8_t t_client_id, uint8_t t_next_hop) {
-    m_rtable.insert({t_client_id, t_next_hop});
+  ErrStatus RoutingTable::insert(uint8_t t_node_id, RoutingConnection t_conn_params) {
+    m_rtable.insert({t_node_id, t_conn_params});
+    m_rtable_updates.insert({t_node_id, t_conn_params});
     return Success;
   }
-
-  std::map<uint8_t, uint8_t> update(void) {
-    return 
+  
+  ErrStatus RoutingTable::cleanUpdates(void) {
+    m_rtable_updates.clear();
+    return Success;
   }
 }

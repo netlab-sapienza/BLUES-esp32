@@ -10,33 +10,48 @@
 
 
 namespace bemesh {
-  typedef std::map<uint8_t, uint8_t> routing_map_t;
+
+  struct RoutingConnection;
+  //typedef std::map<uint8_t, uint8_t> routing_map_t;
+  typedef std::map<uint8_t, RoutingConnection> routing_map_t;
+
+  const uint8_t BT_DEV_ADDR_LEN = 6;
+
+  // Device address used to address devices in the network
+  typedef uint8_t dev_addr_t[BT_DEV_ADDR_LEN];
   
-  struct RoutingTable{
-    // Routing table as a map<uint8_t, uint8_t>
-    routing_map_t m_rtable;
-    // Routing table recent updates
-    routing_map_t m_rtable_updates;
-    
-    // Object constructor
-    RoutingTable(void);
-    // Returns a read only reference to the internal
-    // routing table
-    const routing_map_t & getTable(void);
-    // Check if t_client_id key is present in m_rtable
-    ErrStatus contains(uint8_t t_client_id);
-    // Returns the value related to t_client_id key
-    uint8_t getNextHop(uint8_t t_client_id);
-    // Insert a new <key, value> addition to m_rtable
-    // If t_client_id key is already found in the map,
-    // the value will not be updated
-    ErrStatus insert(uint8_t t_client_id, uint8_t t_next_hop);
-    // Returns the m_rtable_updates map containing recent
-    // additions to the table. Used to reduce the payload of
-    // update routing table messages.
-    const routing_map_t& update_table(void);
-    // Placeholder for cleaning m_rtable_updates map
-    ErrStatus update(void);
+  struct RoutingConnection {
+    // Each BLE device is addressed through a 48 bit (6 byte)
+    // device address
+    dev_addr_t device_addr;
+    // If we reached a client (or End Point) then notification should
+    // happen, otherwise go for message passing
+    uint8_t is_client;
+    // Flag for internet connection
+    uint8_t internet_conn;
   };
+
+  struct RoutingTable{
+    // Routing table (map<uint8_t, RoutingConnection>)
+    routing_map_t m_rtable;
+    // Temporary buffer containing recent updates on the rtable
+    // Useful for update notifications
+    routing_map_t m_rtable_updates;
+
+    // Object Constructor
+    RoutingTable(void);
+    // Returns the reference to the current routing table
+    const routing_map_t& getTable(void);
+    // Returns the reference to the current routing table updates
+    const routing_map_t& getUpdateTable(void);
+    // Get the Routing Connection params, given the target node id
+    const RoutingConnection& getConnParams(uint8_t t_node_id);
+    // Return Success if the RoutingTable contains the t_node_id node connection
+    ErrStatus contains(uint8_t t_node_id);
+    // Insert in the RoutingTable the connection with t_node_id with t_conn_params params
+    ErrStatus insert(uint8_t t_node_id, RoutingConnection t_conn_params);
+    // Cleans the rtable_updates map. Used after notifying updates
+    ErrStatus cleanUpdates(void);  
+  };  
 }
 
