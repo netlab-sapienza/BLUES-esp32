@@ -1,4 +1,3 @@
-set(COMPONENT_SRCS "src/bemesh.cpp")
-set(COMPONENT_ADD_INCLUDEDIRS "include")
-register_component()
-
+idf_component_register(SRCS "src/server.cpp" "src/bemesh"
+                        INCLUDE_DIRS "include"
+                        REQUIRES nvs_flash bt  )

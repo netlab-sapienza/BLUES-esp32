@@ -25,6 +25,9 @@ class BleClient{
     void* on_connection_listener;
     void* scan_callback;
 
+
+    void close();
+
     std::list<void*> listeners;
 
     //The singleton pattern istance.
