@@ -41,7 +41,8 @@ namespace bemesh{
         bool is_characteristic;                                                     
         esp_gatt_perm_t perms;                                           
         std::string name;  
-        Attribute(bool is_char, std::string na, esp_gatt_perm_t per);                                                                  
+        Attribute(bool is_char, std::string na, esp_gatt_perm_t per); 
+        Attribute();                                                               
     }; 
 
 
@@ -51,10 +52,14 @@ namespace bemesh{
         uint16_t app_id;
         uint16_t conn_id;
         uint16_t service_handle;
+        esp_gatt_srvc_id_t service_id;
+        uint16_t char_handle;
+        esp_bt_uuid_t char_uuid;
         esp_gatt_perm_t perm;
         esp_gatt_char_prop_t property;
-        Attribute* charachteristics;  
-    };
+        uint16_t descr_handle;
+        esp_bt_uuid_t descr_uuid;
+};
 
 
 
@@ -63,6 +68,7 @@ namespace bemesh{
         unsigned int clientNextIdDescriptor;                                                   
         CommunicationCharacteristic communicationCharacteristic;
         CommunicationService(bool, std::string, esp_gatt_perm_t);
+        CommunicationService();
     };
 
 
@@ -71,12 +77,14 @@ namespace bemesh{
         //to be added.
         void * routingTable;
         RoutingTableService(bool, std::string, esp_gatt_perm_t);
+        RoutingTableService();
     };
 
 
     struct NextIdService: public Attribute{
         unsigned int nextId;
         NextIdService(bool, std::string, esp_gatt_perm_t);
+        NextIdService();
     };
 
     struct ClientOnlineService: public Attribute{
@@ -87,6 +95,7 @@ namespace bemesh{
         unsigned int notificationDescriptor[MAX_CLIENT_PER_SERVER];
         ClientOnlineCharacteristic clientOnlineCharacteristic;
         ClientOnlineService(bool,std::string,esp_gatt_perm_t);
+        ClientOnlineService();
     };
 
 }

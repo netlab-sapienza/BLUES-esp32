@@ -36,6 +36,7 @@ BleServer* BleServer::getIstance(){
     if(istance == NULL){
         std::cout<<"First istantiation"<<std::endl;
         istance = new BleServer();
+        return istance;
     }
     else
     {

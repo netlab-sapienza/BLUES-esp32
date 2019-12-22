@@ -1,22 +1,33 @@
 #pragma once
-
+#include <string>
+#include "server.hpp"
 
 
 
 
 class BleServer{
 
-    static BleServer* istance = NULL;
+    static BleServer* istance;
     bool serviceStarted;
     bool scanning;
-    const int attempsUntilServer;
+    const int attempsUntilServer=400;
     int randomValueScanPeriod;
-    char[2] lastServerIdFound;
+    
     std::string TAG;
 
 
 
+    //Callback for services (integer mapping may be required).
+    /*
+    void nextServerIdCallback(Server* server,esp_gatts_cb_event_t event, 
+                                esp_gatt_if_t gatts_if, 
+                                esp_ble_gatts_cb_param_t *param);
 
+    void communicationCallback(Server* server,esp_gatts_cb_event_t event, 
+                                esp_gatt_if_t gatts_if, 
+                                esp_ble_gatts_cb_param_t *param);
+
+    */
 
     // map NearDeviceMap (to be implemented)
 
@@ -46,7 +57,7 @@ class BleServer{
         void setRandomValueScanPeriod(int randomValueScanPeriod);
         int getRandomValueScanPeriod();
         std::string getTAG();
-
+        void close();
 
 
         //Listener handling function (AcceptBLETask stuff).
