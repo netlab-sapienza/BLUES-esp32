@@ -25,6 +25,7 @@
 
 #include "sdkconfig.h"
 #include "server.hpp"
+#include "serverUtils.hpp"
 
 #define GATTS_TAG "server_demo"
 
@@ -34,6 +35,8 @@ static const char* LOG_TAG = "main";
 
 int main(void) {
   std::cout<<"Pippo"<<std::endl;
+  //bemesh::ServerUtils sUtils;
+
   esp_err_t ret;
   // Initialize NVS.
   ret = nvs_flash_init();
@@ -69,9 +72,18 @@ int main(void) {
   }
 
   //Initialize Server object
-  Server server(1,"esp1");
+  bemesh::Server server(1,"esp1");
   std::cout<<"Initializing server object"<<std::endl;
- 
+  ret = esp_ble_gatts_register_callback(bemesh::ServerUtils::gatts_event_handler);
+  if (ret){
+      ESP_LOGE(GATTS_TAG, "gatts register error, error code = %x", ret);
+      return 1;
+  }
+  ret = esp_ble_gap_register_callback(bemesh::ServerUtils::gap_event_handler);
+  if (ret){
+      ESP_LOGE(GATTS_TAG, "gap register error, error code = %x", ret);
+      return 1;
+  }
   return 0;
 }
 
