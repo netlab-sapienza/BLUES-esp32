@@ -15,17 +15,7 @@ namespace bemesh{
     }
 
     Server::Server(uint8_t id):serverId(id){
-        esp_gatt_perm_t next_service_id_permissions = 0;
-        next_service_id_permissions |= ESP_GATT_PERM_READ;
-        next_service_id_permissions |= ESP_GATT_PERM_WRITE;
-        std::string nextIdName = "Next id service";
-        bool is_next_id_characteristic = true;
-
-        nextIdService.perms = next_service_id_permissions;
-        nextIdService.name = nextIdName;
-        nextIdService.is_characteristic = is_next_id_characteristic;
-        
-
+       
     }
 
 
@@ -42,9 +32,7 @@ namespace bemesh{
                                 esp_ble_gatts_cb_param_t *param){
             
         esp_gatt_rsp_t rsp;
-        std::cout<<"Next id service: "<<nextIdService.nextId<<std::endl;
-        nextIdService.nextId++;
-        std::cout<<"Next id service: "<<nextIdService.nextId<<std::endl;
+        
         if(table == NULL)
             exit(1);
         int i;

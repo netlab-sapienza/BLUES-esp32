@@ -43,7 +43,7 @@ namespace  bemesh{
             std::string TAG;
             const int MAX_NUM_CLIENTS = 7;
             gatts_profile_inst gl_profile_tab[PROFILE_NUM];
-            NextIdService nextIdService;
+            //NextIdService nextIdService;
 
             
             
@@ -56,11 +56,11 @@ namespace  bemesh{
                 std::string getTAG();
                 uint8_t getId();
                 void init();
-                
+                /*
                 NextIdService getNextIdService(){return nextIdService;}
 
                 void setNextIdService(unsigned int next_id){nextIdService.nextId = next_id;}
-                
+                */
 
                 //Read the value of a characteristic stored on a specific service stored in the
                 //service table of the esp.

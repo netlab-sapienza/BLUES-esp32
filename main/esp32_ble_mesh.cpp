@@ -140,37 +140,23 @@ static esp_ble_adv_params_t adv_params = {
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
-#define PROFILE_NUM 2
+#define PROFILE_NUM 1
 #define PROFILE_A_APP_ID 0
 #define PROFILE_B_APP_ID 1
 
-struct gatts_profile_inst {
-    esp_gatts_cb_t gatts_cb;
-    uint16_t gatts_if;
-    uint16_t app_id;
-    uint16_t conn_id;
-    uint16_t service_handle;
-    esp_gatt_srvc_id_t service_id;
-    uint16_t char_handle;
-    esp_bt_uuid_t char_uuid;
-    esp_gatt_perm_t perm;
-    esp_gatt_char_prop_t property;
-    uint16_t descr_handle;
-    esp_bt_uuid_t descr_uuid;
-};
+#define A_INDEX 0
+
+static bemesh::Service service_table[PROFILE_NUM];
 
 
-/* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
+
 static bemesh::gatts_profile_inst gl_profile_tab[PROFILE_NUM] = {
     [PROFILE_A_APP_ID] = {
         .gatts_cb = gatts_profile_a_event_handler,
-        .gatts_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
-    },
-    [PROFILE_B_APP_ID] = {
-        .gatts_cb = gatts_profile_b_event_handler,                   /* This demo does not implement, similar as profile A */
-        .gatts_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
-    },
+        .gatts_if = ESP_GATT_IF_NONE,     
+    }
 };
+
 
 typedef struct {
     uint8_t                 *prepare_buf;
@@ -194,7 +180,7 @@ static void ble_indicate(uint8_t value, uint16_t id) {
     uint8_t value_len = 1;
     uint8_t value_arr[] = {value};
     
-    esp_err_t ret = esp_ble_gatts_send_indicate(gl_profile_tab[0].gatts_if, id, attr_handle, value_len, value_arr, false);
+    esp_err_t ret = esp_ble_gatts_send_indicate(service_table[0].gatts_if, id, attr_handle, value_len, value_arr, false);
     if (ret != ESP_OK) ESP_LOGE(GATTS_TAG, "Failure when notifying the client");
     
 }
@@ -658,15 +644,13 @@ static void gatts_profile_b_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
 
 static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
 {
-    std::cout<<"Eccomi"<<std::endl;
-    std::cout<<"next_server id"<<server.getNextIdService().nextId<<std::endl;
-    server.setNextIdService(server.getNextIdService().nextId + 1 );
-    std::cout<<"next_server id"<<server.getNextIdService().nextId<<std::endl;
-
-   /*
+    
+   
     if (event == ESP_GATTS_REG_EVT) {
         if (param->reg.status == ESP_GATT_OK) {
             gl_profile_tab[param->reg.app_id].gatts_if = gatts_if;
+            if(param->reg.app_id == 0)
+                service_table[param->reg.app_id].gatts_if = gatts_if;
         } else {
             ESP_LOGI(GATTS_TAG, "Reg app failed, app_id %04x, status %d\n",
                     param->reg.app_id,
@@ -679,14 +663,14 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
         int idx;
         for (idx = 0; idx < PROFILE_NUM; idx++) {
             if (gatts_if == ESP_GATT_IF_NONE || 
-                    gatts_if == gl_profile_tab[idx].gatts_if) {
-                if (gl_profile_tab[idx].gatts_cb) {
-                    gl_profile_tab[idx].gatts_cb(event, gatts_if, param);
+                    gatts_if == service_table[idx].gatts_if) {
+                if (service_table[idx].cbks[idx]) {
+                    service_table[idx].cbks[idx](event, gatts_if, param);
                 }
             }
         }
     } while (0);
-    */
+    
 }
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
@@ -758,6 +742,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 static const char* LOG_TAG = "main";
 
 int main(void) {
+    service_table[A_INDEX].cbks[A_INDEX] = gatts_profile_a_event_handler;
     esp_err_t ret;
 
     // Initialize NVS.

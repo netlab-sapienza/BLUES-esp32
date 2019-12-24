@@ -19,31 +19,40 @@
 #include "sdkconfig.h"
 
 #define MAX_CLIENT_PER_SERVER 7
-
+#define NUM_CHARACTERISTICS 4
 
 
 namespace bemesh{
-    struct CommunicationCharacteristic{
+    struct CommunicationCharValue{
         unsigned int from;
         unsigned int to;
-        char * messageContent;
-        CommunicationCharacteristic();
+        char * message_content;
+        CommunicationCharValue();
     };
 
 
-    struct ClientOnlineCharacteristic{
+    struct ClientOnlineCharValue{
         //to be implemented
         void * value;
-        ClientOnlineCharacteristic();
+        ClientOnlineCharValue();
     };
 
-    struct Attribute{                                                                                                                     
-        bool is_characteristic;                                                     
-        esp_gatt_perm_t perms;                                           
-        std::string name;  
-        Attribute(bool is_char, std::string na, esp_gatt_perm_t per); 
-        Attribute();                                                               
-    }; 
+
+    class Attribute{
+        bool is_characteristic;
+        esp_gatt_perm_t perms;
+        std::string name;
+        public:
+            void set_name(std::string name);
+            std::string get_name();
+            void set_perms(esp_gatt_perm_t perms);
+            esp_gatt_perm_t get_perms();
+            bool characteristic();
+            void set_characteristic_status(bool characteristic_status);
+            Attribute();
+            Attribute(bool is_char,std::string na, esp_gatt_perm_t per);
+    };
+
 
 
     struct gatts_profile_inst {
@@ -59,43 +68,79 @@ namespace bemesh{
         esp_gatt_char_prop_t property;
         uint16_t descr_handle;
         esp_bt_uuid_t descr_uuid;
-};
+    };
 
-
-
-    struct CommunicationService: public Attribute{
-        unsigned int notificationDescriptor[MAX_CLIENT_PER_SERVER];
-        unsigned int clientNextIdDescriptor;                                                   
-        CommunicationCharacteristic communicationCharacteristic;
-        CommunicationService(bool, std::string, esp_gatt_perm_t);
-        CommunicationService();
+   
+    class CommunicationCharacteristic: public Attribute{
+        unsigned int notification_descriptor[MAX_CLIENT_PER_SERVER];
+        unsigned int client_next_id_descriptor;
+        CommunicationCharValue char_data;
+        public:
+            CommunicationCharValue get_char_data();
+            void set_char_data(unsigned int from, unsigned int to, char* message_value);
+            CommunicationCharacteristic();
+            CommunicationCharacteristic(bool is_characteristic, std::string name,
+                                        esp_gatt_perm_t perm);
+        
     };
 
 
-    struct RoutingTableService: public Attribute{
-        unsigned int updatingDescriptor;
-        //to be added.
-        void * routingTable;
-        RoutingTableService(bool, std::string, esp_gatt_perm_t);
-        RoutingTableService();
+    class RoutingTableCharacteristic: public Attribute{
+        unsigned int updating_descriptor;
+        void* routing_table;
+        public:
+            void* get_routing_table();
+            //void modify_routing_table;
+            RoutingTableCharacteristic(bool is_characteristic, std::string name,
+                                        esp_gatt_perm_t perm);
+            RoutingTableCharacteristic();
     };
 
-
-    struct NextIdService: public Attribute{
-        unsigned int nextId;
-        NextIdService(bool, std::string, esp_gatt_perm_t);
-        NextIdService();
+    class NextIdCharacteristic: public Attribute{
+        unsigned int next_id;
+        public:
+            unsigned int get_next_id();
+            void increment_id();
+            void set_next_id(unsigned int id);
+            NextIdCharacteristic(bool is_characteristic, std::string name,
+               esp_gatt_perm_t perms);
+            NextIdCharacteristic();
     };
 
-    struct ClientOnlineService: public Attribute{
-        unsigned int newClientOnlineDescriptor;
+    class ClientOnlineCharacteristic: public Attribute{
+        unsigned int new_client_online_descriptor;
+        unsigned int notification_descriptor[MAX_CLIENT_PER_SERVER];
+        ClientOnlineCharValue char_data;
+        public:
+            ClientOnlineCharValue get_char_data();
+            void set_char_data(void* data);
+            ClientOnlineCharacteristic(bool is_characteristic, std::string name,
+                                        esp_gatt_perm_t perms);
+            ClientOnlineCharacteristic();
 
-        //This service is used by servers. We may want that more servers are notified that
-        //a client is online.
-        unsigned int notificationDescriptor[MAX_CLIENT_PER_SERVER];
-        ClientOnlineCharacteristic clientOnlineCharacteristic;
-        ClientOnlineService(bool,std::string,esp_gatt_perm_t);
-        ClientOnlineService();
+
     };
+
+     class Service{
+        public:
+            esp_gatts_cb_t cbks[NUM_CHARACTERISTICS];
+            uint16_t gatts_if;
+            uint16_t app_id;
+            uint16_t conn_id;
+            esp_gatt_srvc_id_t service_id;
+            //characteristics;
+            CommunicationCharacteristic comm_char;
+            RoutingTableCharacteristic routing_char;
+            ClientOnlineCharacteristic client_online_char;
+            NextIdCharacteristic next_id_char;
+
+            //Default ctor.
+            Service();
+
+
+        
+    };
+
+    
 
 }
