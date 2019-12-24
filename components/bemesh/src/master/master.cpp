@@ -1,4 +1,4 @@
-#include "server.hpp"
+#include "master.hpp"
 #include <iostream>
 
 
@@ -7,26 +7,26 @@ namespace bemesh{
     void gap_event_handler_trampoline(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param){}
 
     /*
-    void Server::sayHello(){
-        std::cout<<"Hello server"<<std::endl;
+    void Master::sayHello(){
+        std::cout<<"Hello Master"<<std::endl;
     }*/
 
-    Server::Server(uint8_t id, std::string ta):serverId(id),TAG(ta){ 
+    Master::Master(uint8_t id, std::string ta):masterId(id),TAG(ta){ 
     }
 
-    Server::Server(uint8_t id):serverId(id){
+    Master::Master(uint8_t id):masterId(id){
        
     }
 
 
-    std::string Server::getTAG(){return TAG;}
+    std::string Master::getTAG(){return TAG;}
 
-    uint8_t Server::getId(){return serverId;}
-
-
+    uint8_t Master::getId(){return masterId;}
 
 
-    esp_gatt_rsp_t Server::read_characteristic(gatts_profile_inst* table, 
+
+
+    esp_gatt_rsp_t Master::read_characteristic(gatts_profile_inst* table, 
                                 unsigned int table_size,
                                 uint16_t service_handle, uint16_t char_handle,
                                 esp_ble_gatts_cb_param_t *param){

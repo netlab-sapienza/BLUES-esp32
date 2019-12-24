@@ -32,7 +32,7 @@
 #include "esp_gatt_common_api.h"
 
 #include "sdkconfig.h"
-#include "server.hpp"
+#include "master.hpp"
 //#include "serverUtils.hpp"
 
 #define GATTS_TAG "GATTS_DEMO"
@@ -185,7 +185,7 @@ static void ble_indicate(uint8_t value, uint16_t id) {
     
 }
 
-bemesh::Server server(10);
+bemesh::Master server(10);
 
 
 void example_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param, uint16_t id_client){

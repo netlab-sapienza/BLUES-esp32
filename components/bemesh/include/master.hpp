@@ -37,9 +37,9 @@ namespace  bemesh{
      
 
 
-    class Server{
+    class Master{
 
-            uint8_t serverId;
+            uint8_t masterId;
             std::string TAG;
             const int MAX_NUM_CLIENTS = 7;
             gatts_profile_inst gl_profile_tab[PROFILE_NUM];
@@ -51,8 +51,8 @@ namespace  bemesh{
             uint8_t adv_config_done = 0;
 
             public:
-                Server(uint8_t id, std::string TAG);
-                Server(uint8_t id);
+                Master(uint8_t id, std::string TAG);
+                Master(uint8_t id);
                 std::string getTAG();
                 uint8_t getId();
                 void init();
