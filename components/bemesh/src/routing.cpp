@@ -1,151 +1,133 @@
 /*
  * routing.cpp
- * Library that handles routing operations between nodes of the network.
- * Router is an object class which handles routing for the BE-MESH node
- * It's purpose is to handle the routing table, and handle node identifications,
- * redirect messages and so on.
- *
- * The addressing problem is discussed on our paper
- * however a brief introduction is given here:
- * Each address (node_id_t) is composed of two subsections:
- * -server_address (5 bits) : represent the server on which the node is
- *  directly connected
- * -client_address (3 bits) : represent the unique address inside the
- *  server node network
- * It is possible to address 32 servers, each with 7(+1 reserved addr)
- * client nodes.
- * When a client connects to a server, it recives a unique network ID
- * and it may be addressed in the network by using that same ID
  */
 
 #include "routing.h"
+#include <memory>
+#include <cstring>
 
 namespace bemesh {
-  Router::Router(dev_addr_t t_router_addr):m_rtable() {
-    m_router_addr=t_router_addr;
-    m_last_server_addr=0x00;
+  Router::Router(dev_addr_t t_node_addr):m_rtable() {
+    m_node_addr=t_node_addr;
   }
 
-  Router(dev_addr_t t_router_addr, node_addr_t t_last_server_addr):m_rtable() {
-    m_router_addr=t_router_addr;
-    m_last_server_addr=t_last_server_addr;
-  }
-  // Return Success if t_node_addr node is a client
-  // of this router. GenericError otherwise
-  ErrStatus Router::checkLoc(node_addr_t t_node_addr) {
-    // Check if t_node_addr is in the routing table
-    if(m_rtable.contains(t_node_addr)) {
-      dev_addr_t hop_dev_addr=m_rtable.getConnParams(t_node_addr).device_addr;
-      if(m_router_addr==hop_dev_addr){
-	return Success;
+  static bool RoutingParamsCompareFn(routing_params_t& rp1,
+				        routing_params_t& rp2) {
+
+    bool rp1_reachable = (rp1.flags&RoutingFlags::Reachable);
+    bool rp2_reachable = (rp2.flags&RoutingFlags::Reachable);
+
+    // Reachability: ---------------------------------------------/
+    if(rp2_reachable==0) {
+      // if new path is not reachable, do not change
+      return 0;
+    }
+    if(rp1_reachable == 0) {
+      if(rp2_reachable == 1) {
+	// if new path is feasible and previous isnt, change
+	return true;
+      } else {
+	// if both paths are unfeasible, do not change
+	return false;
       }
     }
-    return GenericError;
-  }
-  // Get the device address needed to reach t_node_addr
-  // Notice that checkLoc(t_node_addr) should be called
-  // first in order to understand if t_node_addr
-  // is directly reachable.
-  dev_addr_t Router::nextHop(node_addr_t t_node_addr) {
-    if(m_rtable.contains(t_node_addr)) {
-      return m_rtable.getConnParams(t_node_addr).device_addr;
+    // Optimality: ---------------------------------------------/
+    if(rp1.num_hops > rp2.num_hops) {
+      // if old path is longer, change
+      return true;
+    } else {
+      return false;
     }
-    // if not contained... what to do ?
-  }
-  // Insert a new RoutingConnection in the routing table
-  // Returns the added t_node_addr key
-  node_addr_t Router::add(node_addr_t t_node_addr,
-			  dev_addr_t t_dev_hop,
-			  NodeStatus t_is_client,
-			  uint8_t t_internet_conn) {
-    RoutingConnection conn_params;
-    conn_params.device_addr=t_dev_hop;
-    conn_params.is_client=t_is_client;
-    conn_params.internet_conn=t_internet_conn;
-    m_rtable.insert(t_node_addr, conn_params);
-    return t_node_addr;    
-  }
-  // Overloaded method for local client insertion.
-  // Automatically generates the node address.
-  // Returns the added t_node_addr key.
-  node_addr_t Router::add(dev_addr_t t_dev_addr,
-			  uint8_t internet_conn) {
-    // We need to generate the network address for this new client
-    // TODO
-  }
-  
-
-  /*
-  // Object constructor
-  Router::Router(node_addr_t t_server_addr):rtable() {
-    m_server_addr = t_server_addr;
-    m_last_node_idx=0;
-    m_client_num=0;
-    m_server_num=0;
   }
 
-  // Returns Success if t_client_id node is directly
-  // accessible to the server
-  // Returns GenericError if more hops must be executed.
-  ErrStatus Router::isLocal(node_addr_t t_client_id) {
-    // check if t_client_id is in the routing table
-    if(rtable.contains(t_client_id)) {
-      node_addr_t server_addr = rtable.getNextHop(t_client_id);
-      if(server_addr == m_server_addr) {
-	return Success;
-      }
-    }
-    return GenericError;
-  }
-  // Returns the next hop needed to reach t_client_id node
-  // In case the Router does not know where to hop,
-  // address BROADCAST_ID is returned
-  node_addr_t Router::findHop(node_addr_t t_client_id) {
-    if(rtable.contains(t_client_id)) {
-      node_addr_t server_addr = rtable.getNextHop(t_client_id);
-      return server_addr;
-    }
-    return BROADCAST_ID;
-  }
-
-  // Static function needed to add a new node to the Router's table.
-  // It outputs the correct network ID for a given server (Router) id and client id
-  static node_addr_t _encodeNode(node_addr_t t_server_addr, uint8_t t_last_client) {
-    node_addr_t output_addr = 0x00;
-    output_addr |= (t_server_addr<<SERVER_MASK_OFFSET)&SERVER_MASK;
-    output_addr |= (t_last_client<<CLIENT_MASK_OFFSET)&CLIENT_MASK;
-    return output_addr;
-  }
-
-  // Add a new connection to the router, that links
-  // t_addr node address as t_status status (Server or Client)
-  // Notice that t_addr is not related to routing addresses
-  // but represent the hardware related static address.
-  ErrStatus Router::add(node_addr_t t_addr, NodeStatus t_status) {
-    // The network ID is needed for the new device
-    // Generate it through _encodeNode function
-    node_addr_t node_addr = _encodeNode(m_server_addr, m_last_node_idx++);
-    // Include the new pair <node_addr, t_addr> to the routing table.
-    rtable.insert(node_addr, t_addr);
+  ErrStatus Router::add(dev_addr_t t_target_addr, dev_addr_t t_hop_addr,
+		       uint8_t t_num_hops, uint8_t t_flags) {
+    routing_params_t new_params;
+    new_params.target_addr=t_target_addr;
+    new_params.hop_addr=t_hop_addr;
+    new_params.num_hops=t_num_hops;
+    new_params.flags=t_flags;
     
-    if(t_status == Client) {
-      m_client_num += 1;
-    } else if(t_status == Server) {
-      m_server_num += 1;
+    if(m_rtable.contains(t_target_addr)==Success) {
+      // Do we need to update ?
+      routing_params_t& old_params=m_rtable.getRoutingParams(t_target_addr);
+      if(RoutingParamsCompareFn(old_params, new_params)>0) {
+	// new_params is better than old_params, and should be changed
+	// replace the params in the routing table
+	routing_params_t* old_params_ptr=std::addressof(old_params);
+	memcpy(old_params_ptr, &new_params, sizeof(new_params));
+
+	// push the new update in the history update vector
+	m_update_vect.push_back(routing_update_t(new_params, UpdateState::Changed));
+	return Success;
+      } else {
+	return UpdateDiscarted;
+      }
+    } else {
+      // t_target_addr is not present, needed to be added
+      m_rtable.insert(new_params);
+      // push the new update in the history update vector
+      m_update_vect.push_back(routing_update_t(new_params, UpdateState::Added));
+      return Success;
     }
     return Success;
   }
 
-  // Returns the number of directly attached client nodes
-  // on this server
-  uint8_t Router::clients(void) {
-    return m_client_num;
+  ErrStatus Router::add(routing_params_t& t_target_params) {
+    return this->add(t_target_params.target_addr,
+	      t_target_params.hop_addr,
+	      t_target_params.num_hops,
+	      t_target_params.flags);
+  }
+
+  ErrStatus Router::remove(dev_addr_t t_target_addr) {
+    if(m_rtable.contains(t_target_addr)==Success) {
+      // generate a stub for the update vector
+      routing_params_t old_params=m_rtable.getRoutingParams(t_target_addr);
+      routing_params_t stub_params;
+      stub_params.target_addr=t_target_addr;
+      stub_params.hop_addr=old_params.hop_addr;
+      stub_params.num_hops=old_params.num_hops;
+      stub_params.flags=old_params.flags;
+      // remove the entry from the routing table
+      m_rtable.remove(t_target_addr);
+      // push the new update in the history update vector
+      m_update_vect.push_back(routing_update_t(stub_params, UpdateState::Removed));
+      return Success;
+    }
+    return UpdateDiscarted;
+  }
+
+  dev_addr_t& Router::nextHop(dev_addr_t t_target_addr) {
+    return m_rtable.getRoutingParams(t_target_addr).hop_addr;
+  }
+
+  uint8_t Router::targetFlags(dev_addr_t t_target_addr) {
+    return m_rtable.getRoutingParams(t_target_addr).flags;
+  }
+
+  std::size_t Router::mergeUpdates(std::vector<routing_update_t>& t_update_vect) {
+    std::size_t updated_rows=0;
+    for(auto const &it : t_update_vect) {
+      routing_params_t update_params=std::get<0>(it);
+      UpdateState update_state=std::get<1>(it);
+
+      if(update_state==UpdateState::Removed) {
+	// use the remove method to decide what to do
+	if(this->remove(update_params.target_addr)!=UpdateDiscarted) {
+	  updated_rows++;
+	}
+      }
+      if(update_state==UpdateState::Added || update_state==UpdateState::Changed) {
+	// use the add method to decide what to do
+	if(this->add(update_params)!=UpdateDiscarted) {
+	  updated_rows++;
+	}
+      }
+    }
+    return updated_rows;
   }
   
-  // Returns the number of diectly attached server nodes
-  // on this server
-  uint8_t Router::servers(void) {
-    return m_server_num;
-  }
-  */
+  
 }
+
