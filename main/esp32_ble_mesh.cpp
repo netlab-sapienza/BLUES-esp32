@@ -193,7 +193,6 @@ static void ble_indicate(uint8_t value, uint16_t id) {
 
 bemesh::Master server(10);
 
-
 void example_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param, uint16_t id_client){
     esp_gatt_status_t status = ESP_GATT_OK;
     if (param->write.need_rsp){
@@ -212,7 +211,6 @@ void example_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare
                     status = ESP_GATT_INVALID_ATTR_LEN;
                 }
             }
-
             esp_gatt_rsp_t *gatt_rsp = (esp_gatt_rsp_t *)malloc(sizeof(esp_gatt_rsp_t));
             gatt_rsp->attr_value.len = param->write.len;
             gatt_rsp->attr_value.handle = param->write.handle;
@@ -827,11 +825,7 @@ int main(void) {
     return 0;
   
   
-  }
-
-
-
-
+}
 
 
 extern "C" {
