@@ -16,6 +16,7 @@ namespace bemesh{
   // positive.
   enum ErrStatus{
     //TODO
+    UpdateDiscarted=-5,
     UserInTableError=-4,
     NoCallbackError=-3,
     BufferFullError=-2,
@@ -24,12 +25,5 @@ namespace bemesh{
     Success=0,
     ParsingComplete=1,
     //TODO
-  };
-
-  // Possible 
-  enum NodeStatus{
-    Server,
-    Client,
-    Idle,
   };
 }
