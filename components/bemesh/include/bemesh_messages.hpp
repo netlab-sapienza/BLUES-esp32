@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "rtable.h"
-#include "routing.h"
+#include "rtable.hpp"
+#include "routing.hpp"
 
 namespace bemesh {
   // Number of possible different messages

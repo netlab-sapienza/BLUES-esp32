@@ -16,6 +16,7 @@ namespace bemesh{
   // positive.
   enum ErrStatus{
     //TODO
+    WrongPayloadSize=-6,
     UpdateDiscarted=-5,
     UserInTableError=-4,
     NoCallbackError=-3,
