@@ -26,12 +26,12 @@
 
 
 #include <string>
-#define PROFILE_NUM 5
 
 
 
 
 
+#define NUM 2
 
 namespace  bemesh{
      
@@ -42,7 +42,7 @@ namespace  bemesh{
             uint8_t masterId;
             std::string TAG;
             const int MAX_NUM_CLIENTS = 7;
-            gatts_profile_inst gl_profile_tab[PROFILE_NUM];
+            gatts_profile_inst gl_profile_tab[NUM];
             //NextIdService nextIdService;
 
             
