@@ -185,6 +185,7 @@ static void ble_indicate(uint8_t value, uint16_t id) {
     
 }
 
+
 bemesh::Master server(10);
 
 
@@ -290,6 +291,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
     case ESP_GATTS_READ_EVT: {
         ESP_LOGI(GATTS_TAG, "GATT_READ_EVT, conn_id %d, trans_id %d, handle %d\n", param->read.conn_id, param->read.trans_id, param->read.handle);
         esp_gatt_rsp_t rsp;
+        ESP_LOGI(GATTS_TAG, "Communication_char: %d\n",service_table[A_INDEX].comm_char.get_client_next_id_descriptor());
         memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
         rsp.attr_value.handle = param->read.handle;
         rsp.attr_value.len = 4;
@@ -495,6 +497,11 @@ static void gatts_profile_b_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
     case ESP_GATTS_READ_EVT: {
         ESP_LOGI(GATTS_TAG, "GATT_READ_EVT, conn_id %d, trans_id %d, handle %d\n", param->read.conn_id, param->read.trans_id, param->read.handle);
         esp_gatt_rsp_t rsp;
+        
+        //std::cout<<"Communication char\n"<<service_table[A_INDEX].comm_char.get_client_next_id_descriptor()<<std::endl;
+
+
+
         memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
         rsp.attr_value.handle = param->read.handle;
         rsp.attr_value.len = 4;

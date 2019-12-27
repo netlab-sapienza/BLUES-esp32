@@ -76,6 +76,7 @@ namespace bemesh{
         unsigned int client_next_id_descriptor;
         CommunicationCharValue char_data;
         public:
+            unsigned int get_client_next_id_descriptor();
             CommunicationCharValue get_char_data();
             void set_char_data(unsigned int from, unsigned int to, char* message_value);
             CommunicationCharacteristic();

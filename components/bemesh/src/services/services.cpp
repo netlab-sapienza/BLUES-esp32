@@ -126,6 +126,9 @@ namespace bemesh{
         char_data.message_content = NULL;
     }
 
+    unsigned int CommunicationCharacteristic::get_client_next_id_descriptor(){
+        return client_next_id_descriptor;
+    }
 
 
     Service::Service(){
