@@ -33,6 +33,11 @@
 
 #include "sdkconfig.h"
 #include "master.hpp"
+#include "routing.h"
+#include "__status.h"
+#include "bemesh_messages.h"
+#include "message_handler.h"
+
 //#include "serverUtils.hpp"
 
 #define GATTS_TAG "GATTS_DEMO"
