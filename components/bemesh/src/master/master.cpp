@@ -29,10 +29,5 @@ namespace bemesh{
 
 
 
-    /*
-    int write_characteristic(struct gatts_profile_inst* table,
-                                unsigned int table_size, uint16_t service_handle, 
-                                uint16_t char_handle, void* value);
-    */          
-
+    
 }
