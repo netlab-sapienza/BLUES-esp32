@@ -45,4 +45,5 @@ namespace bemesh {
     
     std::size_t mergeUpdates(std::vector<routing_update_t>& t_update_vect);    
   };
+
 }
