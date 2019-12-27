@@ -2,7 +2,7 @@
  * message_handler.cpp
  */
 
-#include "message_handler.h"
+#include "message_handler.hpp"
 
 namespace bemesh {
 

@@ -4,8 +4,16 @@
 
 #pragma once
 
-#include "rtable.h"
-#include "routing.h"
+#include "rtable.hpp"
+#include "routing.hpp"
+
+#include "message_constant.hpp"
+
+
+
+
+
+
 
 namespace bemesh {
   // Number of possible different messages
@@ -34,6 +42,20 @@ namespace bemesh {
     MessageHeader header; // 16 bytes
     uint8_t num_entries; // 1 byte = 17 bytes
   };
+
+
+  struct CommunicationMessage{
+    //header part
+    NumeratedMessageHeader header; //17 bytes
+    uint8_t operation; //18 bytes
+
+    //payload part (check it is less than 255 bytes)
+    char* payload;
+  };
+
+
+  
+
 
   struct RoutingDiscoveryRequest {
     MessageHeader header; // 16 bytes

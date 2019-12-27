@@ -3,7 +3,7 @@
  * Handles message parsing
  */
 
-#include "__message_parser.h"
+#include "__message_parser.hpp"
 
 namespace bemesh {  
   MessageParser::MessageParser(){

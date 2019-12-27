@@ -3,8 +3,8 @@
  */
 
 #pragma once
-#include "bemesh_messages.h"
-#include "__status.h"
+#include "bemesh_messages.hpp"
+#include "__status.hpp"
 
 #include <array>
 

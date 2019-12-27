@@ -33,10 +33,10 @@
 
 #include "sdkconfig.h"
 #include "master.hpp"
-#include "routing.h"
-#include "__status.h"
-#include "bemesh_messages.h"
-#include "message_handler.h"
+#include "routing.hpp"
+#include "__status.hpp"
+#include "bemesh_messages.hpp"
+#include "message_handler.hpp"
 
 //#include "serverUtils.hpp"
 
@@ -191,7 +191,7 @@ static void ble_indicate(uint8_t value, uint16_t id) {
 }
 
 
-bemesh::Master server(10);
+//bemesh::Master server(10);
 
 
 void example_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param, uint16_t id_client){

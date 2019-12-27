@@ -3,7 +3,7 @@
  * 
  */
 
-#include "rtable.h"
+#include "rtable.hpp"
 #include <cassert>
 #include <cstring>
 

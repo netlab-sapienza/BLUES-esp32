@@ -9,8 +9,8 @@
 #pragma once
 
 #include <vector>
-#include "__status.h"
-#include "rtable.h"
+#include "__status.hpp"
+#include "rtable.hpp"
 
 namespace bemesh {
   enum UpdateState {

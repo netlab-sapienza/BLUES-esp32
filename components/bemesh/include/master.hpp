@@ -23,6 +23,8 @@
 #include "sdkconfig.h"
 
 #include "services.hpp"
+#include "rtable.hpp"
+
 
 
 #include <string>
@@ -65,11 +67,6 @@ namespace  bemesh{
                 //Read the value of a characteristic stored on a specific service stored in the
                 //service table of the esp.
 
-                esp_gatt_rsp_t read_characteristic(struct gatts_profile_inst* table, 
-                                        unsigned int table_size,
-                                        uint16_t service_handle, uint16_t char_handle,
-                                        esp_ble_gatts_cb_param_t *param);
-
                 int write_characteristic(struct gatts_profile_inst* table,
                                         unsigned int table_size, uint16_t service_handle, 
                                         uint16_t char_handle, void* value);
@@ -87,6 +84,9 @@ namespace  bemesh{
                 
                 void ble_indicate(uint8_t value, uint16_t id);
                 
+                uint16_t read_characterstic(uint16_t characteristic, dev_addr_t dev_addr);
+
+
                 
         };
 }

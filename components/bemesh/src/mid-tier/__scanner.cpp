@@ -3,7 +3,7 @@
  * Handler for scanning
  */
 
-#include "__scanner.h"
+#include "__scanner.hpp"
 
 namespace bemesh {
   Scanner::Scanner(void) : m_scan_vect(){
