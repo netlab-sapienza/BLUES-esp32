@@ -20,7 +20,7 @@ namespace bemesh {
 
     
 
-  MessageHandler::MessageHandler(void) ops_vect() {
+  MessageHandler::MessageHandler(void): ops_vect() {
     // empty the buffer
     tx_size=0;
     // initiate the parser FSM
@@ -65,16 +65,18 @@ namespace bemesh {
       // if something goes wrong, reset the fsm
       t_mh->tx_size=0;
       t_mh->pars_cb=pars_addr_cb;
+      return GenericError;
     }    
   }
   // message_id 
   static ErrStatus pars_id_cb(MessageHandler* t_mh, uint8_t c) {
     // If invalid byte arrives, stop the fsm
-    if(c > MESSAGE_TYPE_MAX) {
+    if(c > MESSAGE_TYPES_MAX) {
       t_mh->tx_size=0;
       t_mh->pars_cb=0;
       t_mh->pars_cb=pars_addr_cb;
     }
+    return Success;
   }
   // hops, seq
   static ErrStatus pars_hinfo_cb(MessageHandler* t_mh, uint8_t c);
