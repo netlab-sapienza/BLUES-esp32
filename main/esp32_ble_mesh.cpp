@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <vector>
 
-#include "__message_parser.h"
 #include "routing.h"
+#include "__status.h"
 
 #include "esp_log.h" // for logging
 #include "nvs_flash.h" // Non volatile interface
@@ -19,69 +19,43 @@
 
 
 static const char* LOG_TAG = "main";
+static bemesh::dev_addr_t c0 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static bemesh::dev_addr_t c1 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+static bemesh::dev_addr_t c2 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x02};
+static bemesh::dev_addr_t c3 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+static bemesh::dev_addr_t c4 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
+static bemesh::dev_addr_t c5 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x05};
+static bemesh::dev_addr_t c6 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x06};
+
 
 int main(void) {
-  esp_err_t ret;  
-  /*
-  bemesh::Router r1(0x06);
-  bemesh::Router r2(0x1C);
-  // Insert two clients with their static addresses
-  // in the routing table of r1
-  // We expect the following output
-  // Network address / static address
-  // server addr : 0x06 (becomes 0x30 as network id)
-  // 0x30 -> 0xAA
-  // 0x31 -> 0xCF  
-  r1.add(0xAA, bemesh::Client);
-  r1.add(0xCF, bemesh::Client);
+  uint8_t table_buf[512];
+  char buf[256];
+  esp_err_t ret;
+  bemesh::Router r1(c0);
+  r1.add(c1, c1, 0, bemesh::RoutingFlags::Client);
+  r1.add(c2, c2, 0, bemesh::RoutingFlags::Client);
+  r1.add(c3, c3, 0, bemesh::RoutingFlags::Client);
+  r1.add(c4, c4, 0, 0);
+  r1.add(c5, c4, 1, bemesh::RoutingFlags::Client);
+  r1.add(c6, c4, 1, bemesh::RoutingFlags::Client|bemesh::RoutingFlags::Internet);
   
-  // server addr : 0x1C (becomes 0xE0 as network id)
-  // 0xE0 -> 0x04
-  // 0xE1 -> 0xAB  
-  r2.add(0x04, bemesh::Client);
-  r2.add(0xAB, bemesh::Client);
+  printf("routing table size : %d\n",
+	 r1.m_rtable.size());
+  printf("wish to reach c3, next hop is : ");
+  bemesh::printDevAddr(buf, r1.nextHop(c3));
+  printf("%s\n", buf);
 
-  ESP_LOGI(LOG_TAG, "Router 1 summary:");
-  ESP_LOGI(LOG_TAG, "own_addr: %X\tnum_clients: %d\tnum_servers: %d",
-	   r1.m_server_addr, r1.m_client_num, r1.m_server_num);
-  for(auto& row:r1.rtable.getTable()) {
-    ESP_LOGI(LOG_TAG, "%X -> %X", row.first, row.second);
+  std::vector<bemesh::routing_params_t>rtable_vect=r1.m_rtable.exportTable();
+  for(auto const& it:rtable_vect) {
+    printRoutingParams(it);
   }
-
-  ESP_LOGI(LOG_TAG, "Router 2 summary:");
-  ESP_LOGI(LOG_TAG, "own_addr: %d\tnum_clients: %d\tnum_servers: %d",
-	   r2.m_server_addr, r2.m_client_num, r2.m_server_num);
-  for(auto& row:r2.rtable.getTable()) {
-    ESP_LOGI(LOG_TAG, "%X  -> %X", row.first, row.second);
+  printf("\nPrinting table as array of bytes:\n");
+  std::size_t table_size=bemesh::encodeTable(rtable_vect, table_buf, 512);
+  for(int i=0;i<table_size;++i) {
+    printf("%X", table_buf[i]);
   }
-  */
-  
-
-  
-  /*
-  // Initalize non volatile storage lib
-  ret = nvs_flash_init();
-
-  // BT controller configuration structure
-  // Implements HCI controller interface, LL and PHY layers
-  esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-  ret = esp_bt_controller_init(&bt_cfg);
-  if (ret) {
-    ESP_LOGE(LOG_TAG, "%s, initialize controller failed\n", __func__);
-  }
-
-  // Set BLE Mode
-  ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
-
-  // Enable Bluedroid
-  ret = esp_bluedroid_init();
-  ret = esp_bluedroid_enable();
-
-  // Pass the handlers callback functions to bluedroid
-  //esp_ble_gatts_register_callback(gatts_event_handler);
-  //esp_ble_gap_register_callback(gap_event_handler);
-
-  */
+  printf("...done\n");
   
   return 0;
 }
