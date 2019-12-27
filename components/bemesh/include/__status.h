@@ -26,11 +26,4 @@ namespace bemesh{
     ParsingComplete=1,
     //TODO
   };
-
-  // Possible 
-  enum NodeStatus{
-    Server,
-    Client,
-    Idle,
-  };
 }

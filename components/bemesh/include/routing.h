@@ -18,8 +18,13 @@ namespace bemesh {
     Changed=1,
     Removed=2
   };
-  
-  typedef std::tuple<routing_params_t, UpdateState> routing_update_t;
+
+  struct routing_update_t {
+    routing_params_t params;
+    UpdateState update_state;
+
+    routing_update_t(routing_params_t t_params, UpdateState t_state);
+  };
   
   struct Router {
     RoutingTable m_rtable;

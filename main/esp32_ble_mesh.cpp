@@ -29,6 +29,7 @@ static bemesh::dev_addr_t c6 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x06};
 
 
 int main(void) {
+  uint8_t table_buf[512];
   char buf[256];
   esp_err_t ret;
   bemesh::Router r1(c0);
@@ -49,6 +50,12 @@ int main(void) {
   for(auto const& it:rtable_vect) {
     printRoutingParams(it);
   }
+  printf("\nPrinting table as array of bytes:\n");
+  std::size_t table_size=bemesh::encodeTable(rtable_vect, table_buf, 512);
+  for(int i=0;i<table_size;++i) {
+    printf("%X", table_buf[i]);
+  }
+  printf("...done\n");
   
   return 0;
 }

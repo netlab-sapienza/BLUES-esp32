@@ -52,5 +52,7 @@ namespace bemesh {
 
     uint16_t size(void);
   };
+
+  std::size_t encodeTable(std::vector<routing_params_t>& t_src_vect, uint8_t* t_dest, std::size_t dest_len);
 }
 

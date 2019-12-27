@@ -5,6 +5,7 @@
 
 #include "rtable.h"
 #include <cassert>
+#include <cstring>
 
 namespace bemesh {
 
@@ -83,5 +84,13 @@ namespace bemesh {
       rtable_vect.push_back(x.second);
     }
     return rtable_vect;
+  }
+
+  std::size_t encodeTable(std::vector<routing_params_t>& t_src_vect, uint8_t* t_dest, std::size_t dest_len) {
+    std::size_t exp_byte_size=t_src_vect.size()*sizeof(routing_params_t);
+    assert(dest_len >= exp_byte_size);
+    
+    memcpy((void*)t_dest, (const void*)t_src_vect.data(), exp_byte_size);
+    return exp_byte_size;
   }
 }

@@ -7,6 +7,12 @@
 #include <cstring>
 
 namespace bemesh {
+
+  routing_update_t::routing_update_t(routing_params_t t_params, UpdateState t_state) {
+    params=t_params;
+    update_state=t_state;
+  }
+  
   Router::Router(dev_addr_t t_node_addr):m_rtable() {
     m_node_addr=t_node_addr;
   }
@@ -109,8 +115,8 @@ namespace bemesh {
   std::size_t Router::mergeUpdates(std::vector<routing_update_t>& t_update_vect) {
     std::size_t updated_rows=0;
     for(auto const &it : t_update_vect) {
-      routing_params_t update_params=std::get<0>(it);
-      UpdateState update_state=std::get<1>(it);
+      routing_params_t update_params=it.params;
+      UpdateState update_state=it.update_state;
 
       if(update_state==UpdateState::Removed) {
 	// use the remove method to decide what to do
