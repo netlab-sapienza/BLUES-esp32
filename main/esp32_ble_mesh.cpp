@@ -33,11 +33,11 @@
 
 #include "sdkconfig.h"
 #include "master.hpp"
-#include "routing.h"
-#include "__status.h"
-#include "bemesh_messages.h"
-#include "message_handler.h"
-
+#include "routing.hpp"
+#include "__status.hpp"
+#include "bemesh_messages.hpp"
+#include "message_handler.hpp"
+#include "slave.hpp"
 //#include "serverUtils.hpp"
 
 #define GATTS_TAG "GATTS_DEMO"
@@ -757,7 +757,35 @@ static bemesh::dev_addr_t c5 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x05};
 static bemesh::dev_addr_t c6 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x06};
 */
 
+
+bemesh::MessageHandler handler;
+
+static void communication_message_callback(void * args){
+    int a  = 0;
+    return;
+}
+
+static void* communication_message_callback_args;
+
+
+
+
 int main(void) {
+
+
+
+
+    bemesh::message_ops_t communication_message_ops{
+        .message_id = COMMUNICATION_MESSAGE_ID,
+        .recv_cb=communication_message_callback,
+        .recv_cb_args = communication_message_callback_args,
+    };
+    //bemesh::ErrStatus err = handler.installOps(communication_message_ops);
+
+    std::cout<<"Communication message installato correttamente"<<std::endl;
+
+
+
     service_table[A_INDEX].cbks[A_INDEX] = gatts_profile_a_event_handler;
     esp_err_t ret;
 
