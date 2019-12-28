@@ -66,7 +66,7 @@ namespace bemesh {
   }
 
   void CommHandler::handle(void) {
-    
+    // Handle should parse 
     return;
   }
 
@@ -89,6 +89,10 @@ namespace bemesh {
     // place the vector pointer to the circular buffer
     buf_ptr->put((MessageHeader*)_entry);
     // TODO: Add operations
+    if(args->event_cb!=nullptr) {
+      // if possible, execute the callback
+      (*args->event_cb)(args->event_cb_args);
+    }
     return;
   }
   

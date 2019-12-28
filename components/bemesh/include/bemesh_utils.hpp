@@ -5,6 +5,7 @@
 #pragma once
 
 #include <memory>
+#include "bemesh_messages.hpp"
 
 
 namespace bemesh {
@@ -25,6 +26,8 @@ namespace bemesh {
     std::size_t size() const;
     void reset(void);
   };
+
+  void delete_message(MessageHeader* t_h);
 }
     
 
