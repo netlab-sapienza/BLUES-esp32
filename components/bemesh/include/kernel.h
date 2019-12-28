@@ -412,6 +412,7 @@ uint16_t length;           !< Current length of the element
 uint8_t  *value;           !< Element value array
 */
 
+///
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 {
     // Service Declaration
