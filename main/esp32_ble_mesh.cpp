@@ -39,10 +39,10 @@
 #include "message_handler.hpp"
 #include "slave.hpp"
 
-#include "kernel.h"
+
 
 extern "C" {
-  
+  #include "kernel.h"
   void app_main();
  
 }

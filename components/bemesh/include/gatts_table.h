@@ -6,7 +6,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
-
+#pragma once
 /* Attributes State Machine */
 enum {
     IDX_SVC,
