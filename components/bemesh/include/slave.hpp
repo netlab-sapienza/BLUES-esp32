@@ -3,6 +3,8 @@
 #include <string>
 
 namespace bemesh{
+    static std::string comm_char = "Hello everyone";
+
     class Slave{
         dev_addr_t address;
         bool esp;

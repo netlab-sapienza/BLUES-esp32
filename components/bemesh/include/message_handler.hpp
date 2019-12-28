@@ -28,6 +28,7 @@ namespace bemesh {
     uint8_t tx_buffer[MH_TX_BUF_SIZE];
     uint16_t tx_size;
     MsgParsCb pars_cb;
+    
     message_ops_t* tx_op;
 
     std::array<message_ops_t*, MESSAGE_TYPES_MAX> ops_vect;

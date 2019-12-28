@@ -44,14 +44,6 @@ namespace bemesh {
   };
 
 
-  struct CommunicationMessage{
-    //header part
-    NumeratedMessageHeader header; //17 bytes
-    uint8_t operation; //18 bytes
-
-    //payload part (check it is less than 255 bytes)
-    char* payload;
-  };
 
 
   
@@ -77,4 +69,19 @@ namespace bemesh {
     routing_update_t r_updates[MAX_ROUTING_UPDATE_ENTRIES];
   };
 #define ROUTING_UPDATE_ID 0x03
+
+
+  struct CommunicationMessage{
+    //header part
+    NumeratedMessageHeader header; //17 bytes
+    uint8_t operation; //18 bytes
+
+    //payload part (check it is less than 255 bytes)
+    char* payload;
+  };
+#define COMMUNICATION_MESSAGE_ID 0x04
+
+
+
+
 }

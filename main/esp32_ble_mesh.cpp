@@ -37,7 +37,7 @@
 #include "__status.hpp"
 #include "bemesh_messages.hpp"
 #include "message_handler.hpp"
-
+#include "slave.hpp"
 //#include "serverUtils.hpp"
 
 #define GATTS_TAG "GATTS_DEMO"
@@ -191,7 +191,7 @@ static void ble_indicate(uint8_t value, uint16_t id) {
 }
 
 
-//bemesh::Master server(10);
+bemesh::Master server(10);
 
 void example_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param, uint16_t id_client){
     esp_gatt_status_t status = ESP_GATT_OK;
@@ -757,7 +757,33 @@ static bemesh::dev_addr_t c5 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x05};
 static bemesh::dev_addr_t c6 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x06};
 */
 
+
+bemesh::MessageHandler handler;
+
+static void communication_message_callback(void * args){
+    int a  = 0;
+    return;
+}
+
+static void* communication_message_callback_args;
+
+
 int main(void) {
+
+
+
+
+    bemesh::message_ops_t communication_message_ops{
+        .message_id = COMMUNICATION_MESSAGE_ID,
+        .recv_cb=communication_message_callback,
+        .recv_cb_args = communication_message_callback_args,
+    };
+    //bemesh::ErrStatus err = handler.installOps(communication_message_ops);
+
+    std::cout<<"Communication message installato correttamente"<<std::endl;
+
+
+
     service_table[A_INDEX].cbks[A_INDEX] = gatts_profile_a_event_handler;
     esp_err_t ret;
 

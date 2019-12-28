@@ -63,11 +63,18 @@ namespace bemesh{
     void Master::set_dev_addr(dev_addr_t dev_addr){
         if(esp)
             address = dev_addr;
+        return;
     }
 
 
-
-    
+    uint16_t Master::read_characterstic(uint16_t characteristic, dev_addr_t addr){
+        if(addr == address){
+            //Default prototype behaviour. Only 0 characteristic is implemented.
+            if(characteristic == 0)
+                return 0;
+        }
+        return 0;
+    }    
 
 
 
