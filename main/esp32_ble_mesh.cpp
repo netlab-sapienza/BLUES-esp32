@@ -34,7 +34,7 @@
 #include "sdkconfig.h"
 #include "master.hpp"
 #include "routing.hpp"
-#include "__status.hpp"
+
 #include "bemesh_messages.hpp"
 #include "message_handler.hpp"
 #include "slave.hpp"
@@ -760,7 +760,8 @@ static bemesh::dev_addr_t c6 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x06};
 
 bemesh::MessageHandler handler;
 
-static void communication_message_callback(void * args){
+
+static void communication_message_callback(bemesh::MessageHeader* header,void * args){
     int a  = 0;
     return;
 }
