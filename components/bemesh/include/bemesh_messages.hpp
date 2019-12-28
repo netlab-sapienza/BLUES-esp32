@@ -10,6 +10,7 @@
 namespace bemesh {
   // Number of possible different messages
   #define MESSAGE_TYPES_MAX 16
+  #define MESSAGE_SIZE_MAX 255
   /*
    * Header structure:
    * - destination [dev_addr] 6
@@ -29,6 +30,8 @@ namespace bemesh {
     uint8_t seq;
     uint8_t payload_size;
   };
+
+  inline std::size_t MESSAGE_SIZE(MessageHeader* h) {return (sizeof(MessageHeader)+h->payload_size);}
 
   struct NumeratedMessageHeader {
     MessageHeader header; // 16 bytes
@@ -55,4 +58,6 @@ namespace bemesh {
     routing_update_t r_updates[MAX_ROUTING_UPDATE_ENTRIES];
   };
 #define ROUTING_UPDATE_ID 0x03
+
+  
 }

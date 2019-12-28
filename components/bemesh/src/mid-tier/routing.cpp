@@ -112,6 +112,10 @@ namespace bemesh {
     return m_rtable.getRoutingParams(t_target_addr).flags;
   }
 
+  dev_addr_t& Router::addr(void) {
+    return m_node_addr;
+  }
+
   std::vector<routing_params_t> Router::getRoutingTable(void) {
     std::vector<routing_params_t> vectorized_rtable=m_rtable.exportTable();
     return vectorized_rtable;
