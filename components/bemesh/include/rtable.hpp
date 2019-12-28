@@ -8,7 +8,7 @@
 #include <map>
 #include <vector>
 
-#include "__status.hpp"
+#include "bemesh_status.hpp"
 
 namespace bemesh {
   #define DEV_ADDR_LEN 6

@@ -6,14 +6,7 @@
 
 #include "rtable.hpp"
 #include "routing.hpp"
-
 #include "message_constant.hpp"
-
-
-
-
-
-
 
 namespace bemesh {
   // Number of possible different messages
@@ -43,12 +36,6 @@ namespace bemesh {
     uint8_t num_entries; // 1 byte = 17 bytes
   };
 
-
-
-
-  
-
-
   struct RoutingDiscoveryRequest {
     MessageHeader header; // 16 bytes
   };
@@ -69,8 +56,7 @@ namespace bemesh {
     routing_update_t r_updates[MAX_ROUTING_UPDATE_ENTRIES];
   };
 #define ROUTING_UPDATE_ID 0x03
-
-
+  
   struct CommunicationMessage{
     //header part
     NumeratedMessageHeader header; //17 bytes
@@ -80,8 +66,4 @@ namespace bemesh {
     char* payload;
   };
 #define COMMUNICATION_MESSAGE_ID 0x04
-
-
-
-
 }

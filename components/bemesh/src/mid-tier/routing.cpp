@@ -26,7 +26,7 @@ namespace bemesh {
     // Reachability: ---------------------------------------------/
     if(rp2_reachable==0) {
       // if new path is not reachable, do not change
-      return 0;
+      return false;
     }
     if(rp1_reachable == 0) {
       if(rp2_reachable == 1) {
@@ -112,7 +112,13 @@ namespace bemesh {
     return m_rtable.getRoutingParams(t_target_addr).flags;
   }
 
-  std::size_t Router::mergeUpdates(std::vector<routing_update_t>& t_update_vect) {
+  std::vector<routing_params_t> Router::getRoutingTable(void) {
+    std::vector<routing_params_t> vectorized_rtable=m_rtable.exportTable();
+    return vectorized_rtable;
+  }
+  
+  std::size_t Router::mergeUpdates(std::vector<routing_update_t>& t_update_vect,
+				   dev_addr_t t_sender) {
     std::size_t updated_rows=0;
     for(auto const &it : t_update_vect) {
       routing_params_t update_params=it.params;
@@ -125,6 +131,10 @@ namespace bemesh {
 	}
       }
       if(update_state==UpdateState::Added || update_state==UpdateState::Changed) {
+	// increase the hop distance by 1
+	// and change the hop address to the sender neighbour
+	update_params.num_hops+=1;
+	update_params.hop_addr=t_sender;
 	// use the add method to decide what to do
 	if(this->add(update_params)!=UpdateDiscarted) {
 	  updated_rows++;
@@ -133,7 +143,36 @@ namespace bemesh {
     }
     return updated_rows;
   }
+
+  std::size_t Router::mergeUpdates(std::vector<routing_params_t>& t_params_vect,
+			   dev_addr_t t_sender) {
+    std::size_t updated_rows=0;
+    for(auto &it:t_params_vect) {
+      it.num_hops+=1;
+      it.hop_addr=t_sender;
+      if(this->add(it)!=UpdateDiscarted) {
+	updated_rows++;
+      }
+    }
+    return updated_rows;
+  }
   
+  // return true if there are updates that must be notified to other nodes.
+  // False otherwhise.
+  uint8_t Router::hasUpdates(void) {
+    return m_update_vect.size()>0;
+  }
+  
+  // Returns a copy of update_vect update vector. This will clear the internal
+  // update_vect in order not to store previously committed updates.
+  std::vector<routing_update_t> Router::getRoutingUpdates(void) {
+    // Clone the current update_vect in a new vector
+    std::vector<routing_update_t> update_vect_copy(m_update_vect);
+    // clear the update_vect in order to cancel previous updates
+    m_update_vect.clear();
+    return update_vect_copy;
+  }
+
   
 }
 
