@@ -1,3 +1,3 @@
 idf_component_register(SRCS "slave.cpp"
                         INCLUDE_DIRS "../../include"
-                        REQUIRES mid-tier)
+                        REQUIRES mid-tier kernel)
