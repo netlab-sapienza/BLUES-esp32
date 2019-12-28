@@ -43,7 +43,7 @@
 #define SERVERS_NUMBER_LIMIT 3 // Outgoing or incoming connections with servers
 
 // Macros for the ID_TABLE
-#define NOID -1
+
 #define CLIENT 0
 #define SERVER 1
 
@@ -52,6 +52,7 @@
  */
 
 // Established connections
+const uint8_t NOID = -1;
 static uint8_t BDAS[TOTAL_NUMBER_LIMIT][6] = { 0 };
 static uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
 static uint8_t n_connections = 0;
@@ -88,24 +89,24 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
 static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
 // Main functions
-static void ble_esp_startup(); // Use this to start the entire project
-static void register_internal_client(uint8_t client_num); // Registration of an internal client for a server
-static void unregister_internal_client(uint8_t client_num);
-static void gatt_client_main(); // Registration of an ESP client
-static void gatt_server_main(); // Registration of an ESP server
-static void unregister_client();
-static void unregister_server();
-static void start_internal_client(uint8_t client); // internal clients are SERVER_S1, SERVER_S2, SERVER_S3. This includes the registration
-static void change_name(uint8_t flag, uint8_t idx); // Flag: 1 -> +, 0 -> -
+void ble_esp_startup(); // Use this to start the entire project
+void register_internal_client(uint8_t client_num); // Registration of an internal client for a server
+void unregister_internal_client(uint8_t client_num);
+void gatt_client_main(); // Registration of an ESP client
+void gatt_server_main(); // Registration of an ESP server
+void unregister_client();
+void unregister_server();
+void start_internal_client(uint8_t client); // internal clients are SERVER_S1, SERVER_S2, SERVER_S3. This includes the registration
+void change_name(uint8_t flag, uint8_t idx); // Flag: 1 -> +, 0 -> -
 
-static uint8_t find_CHR(uint16_t handle); // Given an handle find the characteristic it refers to
-static void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array, uint8_t len);
-static uint8_t* read_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr);
-static uint8_t get_CHR_value_len(uint8_t chr); // Get the lenght of the last read value of a characteristic
+uint8_t find_CHR(uint16_t handle); // Given an handle find the characteristic it refers to
+void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array, uint8_t len);
+uint8_t* read_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr);
+uint8_t get_CHR_value_len(uint8_t chr); // Get the lenght of the last read value of a characteristic
 
-static uint8_t get_num_connections(); // Number of connected devices
-static uint8_t** get_connected_BDAS(); // List of all connected devices, either clients or servers
-static uint8_t get_type_connection(uint8_t conn_id); // Returns CLIENT or SERVER depending on the link with conn_id
+uint8_t get_num_connections(); // Number of connected devices
+uint8_t** get_connected_BDAS(); // List of all connected devices, either clients or servers
+uint8_t get_type_connection(uint8_t conn_id); // Returns CLIENT or SERVER depending on the link with conn_id
 
 
 /*
@@ -121,22 +122,22 @@ static uint8_t get_type_connection(uint8_t conn_id); // Returns CLIENT or SERVER
 
 
 
-static esp_bt_uuid_t remote_filter_service_uuid = {
+esp_bt_uuid_t remote_filter_service_uuid = {
     .len = ESP_UUID_LEN_16,
     .uuid = {.uuid16 = REMOTE_SERVICE_UUID,},
 };
 
-static esp_bt_uuid_t remote_filter_char_uuid = {
+esp_bt_uuid_t remote_filter_char_uuid = {
     .len = ESP_UUID_LEN_16,
     .uuid = {.uuid16 = REMOTE_NOTIFY_CHAR_UUID,},
 };
 
-static esp_bt_uuid_t notify_descr_uuid = {
+esp_bt_uuid_t notify_descr_uuid = {
     .len = ESP_UUID_LEN_16,
     .uuid = {.uuid16 = ESP_GATT_UUID_CHAR_CLIENT_CONFIG,},
 };
 
-static esp_ble_scan_params_t ble_scan_params = {
+esp_ble_scan_params_t ble_scan_params = {
     .scan_type              = BLE_SCAN_TYPE_ACTIVE,
     .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
     .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
@@ -165,7 +166,7 @@ static esp_gattc_descr_elem_t *descr_elem_result = NULL;
 
 
 /* One gatt-based profile one app_id and one gattc_if, this array will store the gattc_if returned by ESP_GATTS_REG_EVT */
-static struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM] = {
+struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM] = {
     [PROFILE_A_APP_ID] = {
         .gattc_cb = gattc_profile_event_handler,
         .gattc_if = ESP_GATT_IF_NONE,       // Not get the gatt_if, so initial is ESP_GATT_IF_NONE 
@@ -183,30 +184,30 @@ static struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM] = {
 #define SERVER_S3 2
 #define INVALID_HANDLE   0
 
-static bool conn_device_S1   = false;
-static bool conn_device_S2   = false;
-static bool conn_device_S3   = false;
+bool conn_device_S1   = false;
+bool conn_device_S2   = false;
+bool conn_device_S3   = false;
 
-static bool get_service_S1   = false;
-static bool get_service_S2   = false;
-static bool get_service_S3   = false;
+bool get_service_S1   = false;
+bool get_service_S2   = false;
+bool get_service_S3   = false;
 
-static bool Isconnecting    = false;
-static bool stop_scan_done  = false;
+bool Isconnecting    = false;
+bool stop_scan_done  = false;
 
-static esp_gattc_char_elem_t  *char_elem_result_S1   = NULL;
-static esp_gattc_descr_elem_t *descr_elem_result_S1  = NULL;
+esp_gattc_char_elem_t  *char_elem_result_S1   = NULL;
+esp_gattc_descr_elem_t *descr_elem_result_S1  = NULL;
 
-static esp_gattc_char_elem_t  *char_elem_result_S2   = NULL;
-static esp_gattc_descr_elem_t *descr_elem_result_S2  = NULL;
+esp_gattc_char_elem_t  *char_elem_result_S2   = NULL;
+esp_gattc_descr_elem_t *descr_elem_result_S2  = NULL;
 
-static esp_gattc_char_elem_t  *char_elem_result_S3   = NULL;
-static esp_gattc_descr_elem_t *descr_elem_result_S3  = NULL;
+esp_gattc_char_elem_t  *char_elem_result_S3   = NULL;
+esp_gattc_descr_elem_t *descr_elem_result_S3  = NULL;
 
 
 
 /* One gatt-based profile one app_id and one gattc_if, this array will store the gattc_if returned by ESP_GATTS_REG_EVT */
-static struct gattc_profile_inst gl_internal_clients_tab[SERVERS_NUM] = {
+struct gattc_profile_inst gl_internal_clients_tab[SERVERS_NUM] = {
     [SERVER_S1] = {
         .gattc_cb = gattc_profile_S1_event_handler,
         .gattc_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
@@ -226,7 +227,7 @@ static struct gattc_profile_inst gl_internal_clients_tab[SERVERS_NUM] = {
  *  	SERVER + BASIC STRUCTS
  */
  
-static bool server_is_busy = false;
+bool server_is_busy = false;
 
 #define GATTS_TAG "GATT_SERVER"
 #define GATTS_SERVICE_UUID_TEST_A   0x00FF
@@ -242,7 +243,7 @@ static bool server_is_busy = false;
 */
 
 
-static char device_name[13] = "SERVER-C0-S0";
+char device_name[13] = "SERVER-C0-S0";
 #define CLIENTS_IDX 8
 #define SERVERS_IDX 11
 #define TEST_MANUFACTURER_DATA_LEN  17
@@ -263,7 +264,7 @@ static esp_attr_value_t gatts_demo_char1_val =
     .attr_value   = char1_str,
 };
 */
-static uint8_t adv_config_done = 0;
+uint8_t adv_config_done = 0;
 #define adv_config_flag      (1 << 0)
 #define scan_rsp_config_flag (1 << 1)
 
@@ -273,17 +274,17 @@ uint16_t heart_rate_handle_table[HRS_IDX_NB];
 
 
 #ifdef CONFIG_SET_RAW_ADV_DATA
-static uint8_t raw_adv_data[] = {
+uint8_t raw_adv_data[] = {
         0x02, 0x01, 0x06,
         0x02, 0x0a, 0xeb, 0x03, 0x03, 0xab, 0xcd
 };
-static uint8_t raw_scan_rsp_data[] = {
+uint8_t raw_scan_rsp_data[] = {
         0x0f, 0x09, 0x45, 0x53, 0x50, 0x5f, 0x47, 0x41, 0x54, 0x54, 0x53, 0x5f, 0x44,
         0x45, 0x4d, 0x4f
 };
 #else
 
-static uint8_t adv_service_uuid128[32] = {
+uint8_t adv_service_uuid128[32] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
     //first uuid, 16bit, [12],[13] is the value
     0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xEE, 0x00, 0x00, 0x00,
@@ -294,7 +295,7 @@ static uint8_t adv_service_uuid128[32] = {
 // The length of adv data must be less than 31 bytes
 //static uint8_t test_manufacturer[TEST_MANUFACTURER_DATA_LEN] =  {0x12, 0x23, 0x45, 0x56};
 //adv data
-static esp_ble_adv_data_t adv_data = {
+esp_ble_adv_data_t adv_data = {
     .set_scan_rsp = false,
     .include_name = true,
     .include_txpower = true,
@@ -310,7 +311,7 @@ static esp_ble_adv_data_t adv_data = {
     .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
 };
 // scan response data
-static esp_ble_adv_data_t scan_rsp_data = {
+esp_ble_adv_data_t scan_rsp_data = {
     .set_scan_rsp = true,
     .include_name = true,
     .include_txpower = true,
@@ -328,7 +329,7 @@ static esp_ble_adv_data_t scan_rsp_data = {
 
 #endif /* CONFIG_SET_RAW_ADV_DATA */
 
-static esp_ble_adv_params_t adv_params = {
+esp_ble_adv_params_t adv_params = {
     .adv_int_min        = 0x20,
     .adv_int_max        = 0x40,
     .adv_type           = ADV_TYPE_IND,
@@ -359,7 +360,7 @@ struct gatts_profile_inst {
 
 
 /* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
-static struct gatts_profile_inst gl_profile_tab[PROFILE_NUM] = {
+struct gatts_profile_inst gl_profile_tab[PROFILE_NUM] = {
     [PROFILE_A_APP_ID] = {
         .gatts_cb = gatts_profile_a_event_handler,
         .gatts_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
@@ -383,19 +384,19 @@ void example_exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble
 
 
 /* Service */
-static const uint16_t GATTS_SERVICE_UUID_TEST      = 0x00FF;
-static const uint16_t GATTS_CHAR_UUID_TEST_A       = 0xFF01;
-static const uint16_t GATTS_CHAR_UUID_TEST_B       = 0xFF02;
-static const uint16_t GATTS_CHAR_UUID_TEST_C       = 0xFF03;
+const uint16_t GATTS_SERVICE_UUID_TEST      = 0x00FF;
+const uint16_t GATTS_CHAR_UUID_TEST_A       = 0xFF01;
+const uint16_t GATTS_CHAR_UUID_TEST_B       = 0xFF02;
+const uint16_t GATTS_CHAR_UUID_TEST_C       = 0xFF03;
 
-static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
-static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
-static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
-static const uint8_t char_prop_read                =  ESP_GATT_CHAR_PROP_BIT_READ;
-static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
-static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-static const uint8_t heart_measurement_ccc[2]      = {0x00, 0x00};
-static const uint8_t char_value[4]                 = {0x11, 0x22, 0x33, 0x44};
+const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
+const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
+const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
+const uint8_t char_prop_read                =  ESP_GATT_CHAR_PROP_BIT_READ;
+const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
+const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
+const uint8_t heart_measurement_ccc[2]      = {0x00, 0x00};
+const uint8_t char_value[4]                 = {0x11, 0x22, 0x33, 0x44};
 
 
 
@@ -413,7 +414,7 @@ uint8_t  *value;           !< Element value array
 */
 
 ///
-static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
+const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 {
     // Service Declaration
     [IDX_SVC]        =

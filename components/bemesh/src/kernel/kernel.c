@@ -67,7 +67,7 @@ void my_task2(void *pvParameters) {
 }
 
 
-static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
+void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
 {
     esp_ble_gattc_cb_param_t *p_data = (esp_ble_gattc_cb_param_t *)param;
 
@@ -340,7 +340,7 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
     }
 }
 
-static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {	
     uint8_t *adv_name = NULL;
     uint8_t adv_name_len = 0;
@@ -463,7 +463,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
     }
 }
 
-static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
+void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
 {
     /* If event is register event, store the gattc_if for each profile */
     if (event == ESP_GATTC_REG_EVT) {
@@ -510,7 +510,7 @@ void server_task(void *pvParameters) {
     vTaskDelete(NULL);
 }
 
-static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {	
+void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {	
     switch (event) {
 #ifdef CONFIG_SET_RAW_ADV_DATA
     case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
@@ -627,7 +627,7 @@ void example_exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble
     prepare_write_env->prepare_len = 0;
 }
 
-static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param) {
+void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param) {
     switch (event) {
     case ESP_GATTS_REG_EVT:
 		
@@ -875,7 +875,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
 }
 
 
-static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
+void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
 {
 
     /* If event is register event, store the gatts_if for each profile */
@@ -906,14 +906,14 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
 //---------------------- INTERNAL CLIENTS FUNCTIONS ----------------------//
 
-static void start_scan(void) {
+void start_scan(void) {
     stop_scan_done = false;
     Isconnecting = false;
     uint32_t duration = 15;
     esp_ble_gap_start_scanning(duration);
 }
 
-static void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
+void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
 {
 
     esp_ble_gattc_cb_param_t *p_data = (esp_ble_gattc_cb_param_t *)param;
@@ -1187,7 +1187,7 @@ static void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_
     }
 }
 
-static void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
+void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
 {
     esp_ble_gattc_cb_param_t *p_data = (esp_ble_gattc_cb_param_t *)param;
 
@@ -1439,7 +1439,7 @@ static void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_
     }
 }
 
-static void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
+void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
 {
     esp_ble_gattc_cb_param_t *p_data = (esp_ble_gattc_cb_param_t *)param;
 
@@ -1691,7 +1691,7 @@ static void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_
 }
 
 
-static void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     uint8_t *adv_name = NULL;
     uint8_t adv_name_len = 0;
@@ -1816,7 +1816,7 @@ static void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *
     }
 }
 
-static void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     uint8_t *adv_name = NULL;
     uint8_t adv_name_len = 0;
@@ -1940,7 +1940,7 @@ static void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *
     }
 }
 
-static void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     uint8_t *adv_name = NULL;
     uint8_t adv_name_len = 0;
@@ -2064,7 +2064,7 @@ static void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *
     }
 }
 
-static void esp_gattc_internal_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
+void esp_gattc_internal_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
 {
     //ESP_LOGI(GATTC_TAG, "EVT %d, gattc if %d, app_id %d", event, gattc_if, param->reg.app_id);
 
@@ -2098,15 +2098,15 @@ static void esp_gattc_internal_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gatt
 //------------------------------------------------------------------------//
 
 
-static uint8_t get_num_connections() {
+uint8_t get_num_connections() {
 	return n_connections;
 }
 
-static uint8_t** get_connected_BDAS() {
+uint8_t** get_connected_BDAS() {
 	return BDAS;
 }
 
-static uint8_t get_type_connection(uint8_t conn_id) {
+uint8_t get_type_connection(uint8_t conn_id) {
 	switch(ID_TABLE[conn_id]) {
 	case SERVER:
 		return SERVER;
@@ -2117,7 +2117,7 @@ static uint8_t get_type_connection(uint8_t conn_id) {
 	}
 }
 
-static void start_internal_client(uint8_t client) {
+void start_internal_client(uint8_t client) {
 	esp_ble_gap_stop_advertising();
 	server_is_busy = true;
 	switch(client) {
@@ -2141,7 +2141,7 @@ static void start_internal_client(uint8_t client) {
 	}
 }
 
-static void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array, uint8_t len) {
+void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array, uint8_t len) {
 		
 		if(!array) return;
 		esp_err_t ret = esp_ble_gattc_write_char(gattc_if, conn_id, CHR_HANDLES[chr], len, array, ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
@@ -2152,7 +2152,7 @@ static void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t*
 		vTaskDelay(200);
 }
 
-static uint8_t* read_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr) {
+uint8_t* read_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr) {
 	
 	esp_err_t ret = esp_ble_gattc_read_char(gattc_if, conn_id, CHR_HANDLES[chr], ESP_GATT_AUTH_REQ_NONE);
 	if(ret) {
@@ -2164,11 +2164,11 @@ static uint8_t* read_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr) {
 	return CHR_VALUES[chr];
 }
 
-static uint8_t get_CHR_value_len(uint8_t chr) {
+uint8_t get_CHR_value_len(uint8_t chr) {
 	return CHR_ACT_LEN[chr];
 }
 
-static uint8_t find_CHR(uint16_t handle) {
+uint8_t find_CHR(uint16_t handle) {
 	int i;
 	for(i=0; i<HRS_IDX_NB; ++i) {
 		if(CHR_HANDLES[i] == handle) return i;
@@ -2176,7 +2176,7 @@ static uint8_t find_CHR(uint16_t handle) {
 	return NOID;
 }
 
-static void change_name(uint8_t flag, uint8_t idx) {
+void change_name(uint8_t flag, uint8_t idx) {
 	int i = device_name[idx] - '0';
 	if(flag) {
         i++;
@@ -2205,7 +2205,7 @@ static void change_name(uint8_t flag, uint8_t idx) {
 	adv_config_done |= scan_rsp_config_flag;
 }
 
-static void register_internal_client(uint8_t client_num) {
+void register_internal_client(uint8_t client_num) {
 	esp_err_t ret;
 	
     //register the  callback function to the gap module
@@ -2243,7 +2243,7 @@ static void register_internal_client(uint8_t client_num) {
     }
 }
 
-static void unregister_internal_client(uint8_t client_num) {
+void unregister_internal_client(uint8_t client_num) {
 	ESP_LOGE(GATTC_TAG, "CLOSING CLIENT %d", client_num);
 	esp_err_t ret;
 	
@@ -2255,7 +2255,7 @@ static void unregister_internal_client(uint8_t client_num) {
 	
 }
 
-static void gatt_client_main() {
+void gatt_client_main() {
 	ESP_LOGE(GATTC_TAG, "I'M A CLIENT!!!");
 	
 	esp_err_t ret;
@@ -2286,7 +2286,7 @@ static void gatt_client_main() {
 	}
 }
 
-static void gatt_server_main() {
+void gatt_server_main() {
 	ESP_LOGE(GATTC_TAG, "I'M A SERVER!!!");
     esp_err_t ret;
     ret = esp_ble_gatts_register_callback(gatts_event_handler);
@@ -2321,7 +2321,7 @@ static void gatt_server_main() {
 	
 }
 
-static void unregister_client() {
+void unregister_client() {
 	ESP_LOGE(GATTC_TAG, "REMOVING CLIENT!");
 	esp_err_t ret;
 	
@@ -2333,7 +2333,7 @@ static void unregister_client() {
 	
 }
 
-static void unregister_server() {
+void unregister_server() {
 	ESP_LOGE(GATTC_TAG, "REMOVING SERVER!");
 	
 	esp_err_t ret;
@@ -2352,7 +2352,7 @@ static void unregister_server() {
 	*/
 }
 
-static void ble_esp_startup() {
+void ble_esp_startup() {
 	esp_err_t ret;
 
     // Initialize NVS.
