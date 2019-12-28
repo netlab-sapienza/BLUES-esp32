@@ -74,4 +74,17 @@ namespace bemesh{
     }
 
 
+    uint16_t Slave::read_characteristic(uint16_t characteristic, dev_addr_t address,
+                                void* buffer, uint16_t buffer_size)
+    {
+
+        if(buffer == NULL)
+            return 0;
+        if(characteristic == 0)
+            return 1;     
+
+
+
+    }
+
 }
