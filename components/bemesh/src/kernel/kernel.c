@@ -1,6 +1,9 @@
 #include "kernel.h"
 
 
+extern bool client_device;
+extern bool scan_stop;
+
 /*
  *  	MACROS
  */
@@ -36,6 +39,9 @@ static uint32_t base_scan = 2;
 static uint32_t scan_dividend = 10;
 
 
+
+
+
 /*
  *  	CLIENT
  */
@@ -46,7 +52,6 @@ static uint32_t scan_dividend = 10;
 #define PROFILE_NUM      1
 #define PROFILE_A_APP_ID 0
 #define INVALID_HANDLE   0
-
 
 
 esp_bt_uuid_t remote_filter_service_uuid = {
@@ -754,6 +759,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
     }
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
         //scan start complete event to indicate scan start successfully or failed
+        scan_stop = false;
         if (param->scan_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(GATTC_TAG, "scan start failed, error status = %x", param->scan_start_cmpl.status);
             break;
@@ -826,6 +832,10 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         }
         ESP_LOGI(GATTC_TAG, "stop scan successfully");
+        
+        scan_stop = true;
+
+
         break;
 
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
@@ -2670,6 +2680,9 @@ void gatt_client_main() {
 	if (local_mtu_ret){
 		ESP_LOGE(GATTC_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
 	}
+    client_device = true;
+
+
 }
 
 void gatt_server_main() {
