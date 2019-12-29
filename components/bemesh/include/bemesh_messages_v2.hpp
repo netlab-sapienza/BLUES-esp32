@@ -28,6 +28,7 @@ namespace bemesh {
     uint8_t seq(void);
     uint8_t psize(void);
     void setHops(uint8_t t_hops);
+    std::size_t size(void);
   };
 
   class IndexedMessage : public MessageHeader {

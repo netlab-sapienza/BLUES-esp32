@@ -22,7 +22,7 @@ namespace bemesh {
   struct routing_update_t {
     routing_params_t params;
     UpdateState update_state;
-
+    routing_update_t(void);
     routing_update_t(routing_params_t t_params, UpdateState t_state);
   };
   

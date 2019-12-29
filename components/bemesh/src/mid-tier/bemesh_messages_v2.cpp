@@ -39,6 +39,10 @@ namespace bemesh {
   void MessageHeader::setHops(uint8_t t_hops) {
     m_hops=t_hops;
   }
+
+  std::size_t MessageHeader::size(void) {
+    return sizeof(MessageHeader)+m_psize;
+  }
   // Notice the t_psize+1 payload size for indexedMessages (+1 accounts for m_entries val in the payload)
   IndexedMessage::IndexedMessage(std::size_t t_entries, dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_id,
 				 uint8_t t_hops, uint8_t t_seq, uint8_t t_psize):

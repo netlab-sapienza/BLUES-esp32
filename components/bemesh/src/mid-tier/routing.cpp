@@ -7,7 +7,7 @@
 #include <cstring>
 
 namespace bemesh {
-
+  routing_update_t::routing_update_t(void):params(), update_state() {}
   routing_update_t::routing_update_t(routing_params_t t_params, UpdateState t_state) {
     params=t_params;
     update_state=t_state;
