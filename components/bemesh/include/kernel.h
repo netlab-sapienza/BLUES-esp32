@@ -74,4 +74,19 @@ uint8_t get_CHR_value_len(uint8_t chr); // Get the lenght of the last read value
 uint8_t get_num_connections(); // Number of connected devices
 uint8_t** get_connected_BDAS(); // List of all connected devices, either clients or servers
 uint8_t get_type_connection(uint8_t conn_id); // Returns CLIENT or SERVER depending on the link with conn_id
+uint8_t* get_connid_BDA(uint8_t conn_id); // Returns the BDA of a connected device conn_id
+// aggiungere client
+
+
+uint8_t get_node_type(); // Returns CLIENT/SERVER
+bool is_advertising(); // If the device is a server, returns true if it is advertising, false otherwise
+bool is_scanning();	// If the device is a client, returns true if it is scanning. If the device is a server it may be scanning, looking for other servers to connect with.
+
+uint8_t get_gatt_if(uint8_t node); // node can be SERVER/CLIENT, returns the interface
+uint8_t get_client_connid(); // Returns the conn_id that is assigned to a server (if exists)
+
+// Returns an array of 1 and 0. Position i has value 1 if i is an assigned conn_id, 0 otherwise.
+// The array has length TOTAL_NUMBER_LIMIT. Use get_type_connection to know if a conn_id refers to a server or a client
+uint8_t* get_server_connids(); 
+
 

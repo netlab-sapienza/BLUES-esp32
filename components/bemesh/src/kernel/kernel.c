@@ -1,9 +1,6 @@
 #include "kernel.h"
 
 
-extern bool client_device;
-extern bool scan_stop;
-
 /*
  *  	MACROS
  */
@@ -38,6 +35,11 @@ static uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characterist
 static uint32_t base_scan = 2;
 static uint32_t scan_dividend = 10;
 
+// Other
+static uint8_t server = 0;
+static uint8_t scanning = 0; // Client is scanning?
+static uint8_t advertising = 0; // Server is advertising?
+static uint8_t server_scanning = 0; // Server is scanning?
 
 
 
@@ -469,6 +471,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         if (scan_ret){
             ESP_LOGE(GATTC_TAG, "set scan params error, error code = %x", scan_ret);
         }
+        server = 0;
         break;
     case ESP_GATTC_CONNECT_EVT:{
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_CONNECT_EVT conn_id %d, if %d", p_data->connect.conn_id, gattc_if);
@@ -755,17 +758,17 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         ESP_LOGE(GATTC_TAG, "SCAN DURATION IS %d, MAC IS: %d:%d:%d:%d:%d:%d", SCAN_DURATION,
                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         esp_ble_gap_start_scanning(SCAN_DURATION);
+		scanning = 1;
         break;
     }
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
         //scan start complete event to indicate scan start successfully or failed
-        scan_stop = false;
         if (param->scan_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(GATTC_TAG, "scan start failed, error status = %x", param->scan_start_cmpl.status);
             break;
         }
         ESP_LOGI(GATTC_TAG, "scan start success");
-
+		scanning = 1;
         break;
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
         esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
@@ -833,8 +836,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         }
         ESP_LOGI(GATTC_TAG, "stop scan successfully");
         
-        scan_stop = true;
-
+		scanning = 0;
 
         break;
 
@@ -939,15 +941,18 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         //advertising start complete event to indicate advertising start successfully or failed
         if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(GATTS_TAG, "Advertising start failed\n");
+            advertising = 0;
         }
-        // REMOVE
-        //esp_ble_gap_start_advertising(&adv_params);
+        advertising = 1;
+
         break;
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
         if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(GATTS_TAG, "Advertising stop failed\n");
+            advertising = 1;
         } else {
             ESP_LOGI(GATTS_TAG, "Stop adv successfully\n");
+            advertising = 0;
         }
         break;
     case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
@@ -1072,7 +1077,9 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             }
         
         /* ---------------------------- */
-        xTaskCreate(server_task, "ServerTask", 2048, NULL, 2, NULL); //https://www.freertos.org/a00125.html  
+        //xTaskCreate(server_task, "ServerTask", 2048, NULL, 2, NULL); //https://www.freertos.org/a00125.html 
+        server = 1;
+        
      case ESP_GATTS_READ_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_READ_EVT");
        	    break;
@@ -1108,7 +1115,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 						ESP_LOGE(GATTS_TAG, "A new server is connected");
 
 						ID_TABLE[param->connect.conn_id] = SERVER;
-						
+
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
 						esp_ble_gap_start_advertising(&adv_params);
@@ -1215,7 +1222,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			
 			//Restart the advs to be avaiable --> MULTIPLE CLIENTS
 			esp_ble_gap_start_advertising(&adv_params);
-        
+			advertising = 1;
             break;
         case ESP_GATTS_DISCONNECT_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_DISCONNECT_EVT, reason = 0x%x", param->disconnect.reason);
@@ -1238,9 +1245,10 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			}
 			
 			n_connections--;
+			ID_TABLE[param->disconnect.conn_id] = NOID;
 			
 			esp_ble_gap_start_advertising(&adv_params);
-				
+			advertising = 1;
             break;
         case ESP_GATTS_CREAT_ATTR_TAB_EVT:{
             if (param->add_attr_tab.status != ESP_GATT_OK){
@@ -1264,6 +1272,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
         case ESP_GATTS_LISTEN_EVT:
         case ESP_GATTS_CONGEST_EVT:
         case ESP_GATTS_UNREG_EVT:
+			server = 0;
+			break;
         case ESP_GATTS_DELETE_EVT:
         default:
             break;
@@ -1345,7 +1355,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         change_name(1,SERVERS_IDX);
-        ID_TABLE[param->open.conn_id] = SERVER;
+        //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -1574,6 +1584,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             ESP_LOGI(GATTC_TAG, "device a disconnect");
             conn_device_S1 = false;
             get_service_S1 = false;
+            //ID_TABLE[p_data->disconnect.conn_id] = NOID;
             esp_ble_gap_start_scanning(base_scan*scan_dividend);
             //change_name(0, SERVERS_IDX);
         }
@@ -1612,7 +1623,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         change_name(1,SERVERS_IDX);
-        ID_TABLE[param->open.conn_id] = SERVER;
+        //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -1863,7 +1874,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         change_name(1,SERVERS_IDX);
-        ID_TABLE[param->open.conn_id] = SERVER;
+        //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -2105,14 +2116,17 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         //the unit of the duration is second
         uint32_t duration = 15;
         esp_ble_gap_start_scanning(duration);
+        server_scanning = 1;
         break;
     }
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
         //scan start complete event to indicate scan start successfully or failed
         if (param->scan_start_cmpl.status == ESP_BT_STATUS_SUCCESS) {
             ESP_LOGI(GATTC_TAG, "Scan start success");
+            server_scanning = 1;
         }else{
             ESP_LOGE(GATTC_TAG, "Scan start failed");
+            server_scanning = 0;
         }
         break;
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
@@ -2196,7 +2210,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         }
         ESP_LOGI(GATTC_TAG, "Stop scan successfully");
-
+		server_scanning = 0;
         break;
 
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
@@ -2230,14 +2244,17 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         //the unit of the duration is second
         uint32_t duration = 15;
         esp_ble_gap_start_scanning(duration);
+        server_scanning = 1;
         break;
     }
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
         //scan start complete event to indicate scan start successfully or failed
         if (param->scan_start_cmpl.status == ESP_BT_STATUS_SUCCESS) {
             ESP_LOGI(GATTC_TAG, "Scan start success");
+            server_scanning = 1;
         }else{
             ESP_LOGE(GATTC_TAG, "Scan start failed");
+            server_scanning = 0;
         }
         break;
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
@@ -2320,7 +2337,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         }
         ESP_LOGI(GATTC_TAG, "Stop scan successfully");
-
+		server_scanning = 0;
         break;
 
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
@@ -2354,14 +2371,17 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         //the unit of the duration is second
         uint32_t duration = 15;
         esp_ble_gap_start_scanning(duration);
+        server_scanning = 1;
         break;
     }
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
         //scan start complete event to indicate scan start successfully or failed
         if (param->scan_start_cmpl.status == ESP_BT_STATUS_SUCCESS) {
             ESP_LOGI(GATTC_TAG, "Scan start success");
+            server_scanning = 1;
         }else{
             ESP_LOGE(GATTC_TAG, "Scan start failed");
+            server_scanning = 0;
         }
         break;
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
@@ -2444,6 +2464,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         }
         ESP_LOGI(GATTC_TAG, "Stop scan successfully");
+        server_scanning = 0;
 
         break;
 
@@ -2680,7 +2701,6 @@ void gatt_client_main() {
 	if (local_mtu_ret){
 		ESP_LOGE(GATTC_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
 	}
-    client_device = true;
 
 
 }
@@ -2788,6 +2808,74 @@ void ble_esp_startup() {
     }
     
 }
+
+
+uint8_t get_node_type() {
+	if(server) return SERVER;
+	else return CLIENT;
+}
+
+bool is_advertising() {
+	uint8_t dev = get_node_type();
+	switch(dev) {
+	case SERVER:
+		if(advertising) return true;
+		else return false;
+	case CLIENT:
+		return false;
+	default:
+		return false;
+	}
+	
+	
+} 
+bool is_scanning() {
+	uint8_t dev = get_node_type();
+	switch(dev) {
+	case SERVER:
+		if(server_scanning) return true;
+		else return false;
+	case CLIENT:
+		if(scanning) return true;
+		else return false;
+	default:
+		return false;
+	}
+
+}
+
+uint8_t get_gatt_if(uint8_t node) {
+	switch(node) {
+	case SERVER:
+		return gl_profile_tab[PROFILE_A_APP_ID].gatts_if;
+	case CLIENT:
+		return gl_profile_tab2[PROFILE_A_APP_ID].gattc_if;
+	default:
+		return NOID;
+	}	
+}
+uint8_t get_client_connid() {
+	uint8_t dev = get_node_type();
+	if(dev == CLIENT) return gl_profile_tab2[PROFILE_A_APP_ID].conn_id;
+	else return NOID;
+} 
+
+uint8_t* get_server_connids() {
+	int i;
+	uint8_t arr[TOTAL_NUMBER_LIMIT];
+	for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
+		if(ID_TABLE[i] != NOID) arr[i] = 1;
+		else arr[i] = 0;
+	}
+	return arr;
+}
+
+uint8_t* get_connid_BDA(uint8_t conn_id) {
+	return BDAS[conn_id];
+}
+
+
+
 
 /* 
 // Main, used for debug
