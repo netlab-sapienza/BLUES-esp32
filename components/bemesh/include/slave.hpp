@@ -8,6 +8,11 @@
 #include <stdlib.h>
 #include <iostream>
 
+
+extern "C"{
+    #include "kernel.h"
+}
+
 namespace bemesh{
     static std::string comm_char = "Hello everyone";
 

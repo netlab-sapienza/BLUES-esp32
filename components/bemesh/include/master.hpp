@@ -29,8 +29,11 @@
 #include "bemesh_messages.hpp"
 #include "bemesh_status.hpp"
 #include "gatts_table.h"
-#include "kernel.h"
 
+
+extern "C"{
+    #include "kernel.h"
+}
 
 #include <string>
 

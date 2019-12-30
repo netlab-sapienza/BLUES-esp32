@@ -48,10 +48,6 @@ extern "C" {
 }
 
 
-bool client_device;
-bool scan_stop;
-
-
 bemesh::MessageHandler handler;
 bemesh::Slave slave;
 

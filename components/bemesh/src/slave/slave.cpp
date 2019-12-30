@@ -1,5 +1,5 @@
 #include "slave.hpp"
-#include "kernel.h"
+
 //TO-DO. complete stuff.
 
 

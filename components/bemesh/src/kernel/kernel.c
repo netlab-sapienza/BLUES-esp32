@@ -1,6 +1,18 @@
 #include "kernel.h"
 
 
+
+#define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
+
+#define TOTAL_NUMBER_LIMIT 7 // Total of incoming and outgoing edges is 7
+#define CLIENTS_NUMBER_LIMIT 4 // Incoming links of clients
+#define SERVERS_NUMBER_LIMIT 3 // Outgoing or incoming connections with servers
+
+// Macros for the ID_TABLE
+
+#define CLIENT 0
+#define SERVER 1
+
 /*
  *  	MACROS
  */
@@ -13,24 +25,24 @@
 
 // Established connections
 const uint8_t NOID = -1;
-static uint8_t BDAS[TOTAL_NUMBER_LIMIT][6] = { 0 };
-static uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
-static uint8_t n_connections = 0;
+uint8_t BDAS[TOTAL_NUMBER_LIMIT][6] = { 0 };
+uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
+uint8_t n_connections = 0;
 
 // Characteristics
-static uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
-static uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX] = { 0 }; // Characteristic's values
-static uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characteristic's values in CHR_VALUES
+uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
+uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX] = { 0 }; // Characteristic's values
+uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characteristic's values in CHR_VALUES
 
 // Scan parameters
-static uint32_t base_scan = 2;
-static uint32_t scan_dividend = 10;
+uint32_t base_scan = 2;
+uint32_t scan_dividend = 10;
 
 // Other
-static uint8_t server = 0;
-static uint8_t scanning = 0; // Client is scanning?
-static uint8_t advertising = 0; // Server is advertising?
-static uint8_t server_scanning = 0; // Server is scanning?
+uint8_t server = 0;
+uint8_t scanning = 0; // Client is scanning?
+uint8_t advertising = 0; // Server is advertising?
+uint8_t server_scanning = 0; // Server is scanning?
 
 
 
@@ -83,11 +95,11 @@ struct gattc_profile_inst {
 } ;
 
 #define DEVICE_NAME_LEN 6
-static const char remote_device_name[] = "SERVER";
-static bool connect    = false;
-static bool get_server = false;
-static esp_gattc_char_elem_t *char_elem_result   = NULL;
-static esp_gattc_descr_elem_t *descr_elem_result = NULL;
+const char remote_device_name[] = "SERVER";
+bool connect    = false;
+bool get_server = false;
+esp_gattc_char_elem_t *char_elem_result   = NULL;
+esp_gattc_descr_elem_t *descr_elem_result = NULL;
 
 
 /* One gatt-based profile one app_id and one gattc_if, this array will store the gattc_if returned by ESP_GATTS_REG_EVT */
@@ -301,7 +313,10 @@ typedef struct {
     int                     prepare_len;
 } prepare_type_env_t;
 
-static prepare_type_env_t a_prepare_write_env;
+
+
+
+prepare_type_env_t a_prepare_write_env;
 //static prepare_type_env_t b_prepare_write_env;
 
 void example_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param, uint16_t id_client);
