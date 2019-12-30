@@ -53,6 +53,7 @@ bool scan_stop;
 
 
 bemesh::MessageHandler handler;
+bemesh::Slave slave;
 
 
 static void communication_message_callback(bemesh::MessageHeader* header,void * args){
@@ -94,28 +95,24 @@ int main(void) {
   };
 
   err = handler.installOps(&routing_discovery_message_ops);
-
+  slave.sayHello();
   
   ESP_LOGE(LOG_TAG, "Initializing project");
   ble_esp_startup();
-  gatt_client_main();
+  //gatt_client_main();
   ESP_LOGE(LOG_TAG,"Success initializing client device");
-  uint8_t num_connections = get_num_connections();
- 
-  while(!scan_stop);
-    
-  ESP_LOGE(LOG_TAG,"num_connections: %d\n", num_connections);
-  
-
-
-
-
-
-  
-
-
-
-
+  /*
+  while(is_scanning());
+  if(get_node_type() == SERVER){
+    std::cout<<"I'm a server"<<std::endl;
+  }
+  else if(get_node_type()  == CLIENT){
+    std::cout<<"I'm a client"<<std::endl;
+  }
+  else{
+    std::cout<<"I'm NO ONE something's wrong"<<std::endl;  
+  }
+  */
   return 0;
   
   

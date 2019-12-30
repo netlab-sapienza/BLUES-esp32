@@ -6,12 +6,13 @@
 namespace bemesh{
   
 
-    Master::Master(uint8_t id, std::string name):name(name),master_id(id){ 
+    Master::Master(uint8_t id, std::string name):name(name),connection_id(id){ 
     }
 
-    Master::Master(uint8_t id):master_id(id){
-       
+    Master::Master(uint8_t id):connection_id(id){
     }
+
+    
 
     Master::~Master(){
 
@@ -28,11 +29,11 @@ namespace bemesh{
     }
 
     uint8_t Master::get_id(){
-        return master_id;
+        return connection_id;
     }
 
     void Master::set_id(uint8_t id){
-        master_id = id;
+        connection_id = id;
         return;
     }
 
@@ -67,14 +68,59 @@ namespace bemesh{
     }
 
 
-    uint16_t Master::read_characterstic(uint16_t characteristic, dev_addr_t addr){
-        if(addr == address){
-            //Default prototype behaviour. Only 0 characteristic is implemented.
-            if(characteristic == 0)
-                return 0;
+
+    int16_t Master::read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint16_t conn_id)
+    {
+        if(buffer == NULL)
+            return -1;
+        if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B || 
+            characteristic == IDX_CHAR_C)
+        {
+
+            uint8_t* received_bytes=  read_CHR(gattc_if,conn_id,characteristic);
+            uint8_t char_len_read = get_CHR_value_len(characteristic);
+            if(buffer_size < char_len_read){
+                return -1;
+            }
+            memcpy((void*)received_bytes,buffer,char_len_read);
+            return char_len_read;
+
         }
-        return 0;
-    }    
+        else
+            return -1;    
+
+    }
+
+
+
+
+    ErrStatus Master::write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
+                                        uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id)
+    {
+        if(buffer == NULL)
+            return WrongPayload;
+        if(conn_id != connection_id)
+            return WrongAddress;
+
+        if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B ||
+            characteristic == IDX_CHAR_C )
+        {
+            write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
+            return Success;
+        }        
+        
+        else
+        {
+            return GenericError;
+        }
+
+    }
+
+
+
+
 
 
 

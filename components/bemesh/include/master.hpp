@@ -22,9 +22,14 @@
 
 #include "sdkconfig.h"
 
+
+
 #include "services.hpp"
 #include "rtable.hpp"
-
+#include "bemesh_messages.hpp"
+#include "bemesh_status.hpp"
+#include "gatts_table.h"
+#include "kernel.h"
 
 
 #include <string>
@@ -48,7 +53,7 @@ namespace  bemesh{
             dev_addr_t address;
             
 
-            uint8_t master_id; //for Android compatibility mode.
+            uint16_t connection_id; //for Android compatibility mode.
 
 
 
@@ -118,7 +123,16 @@ namespace  bemesh{
                 
                 void ble_indicate(uint8_t value, uint16_t id);
                 
-                uint16_t read_characterstic(uint16_t characteristic, dev_addr_t dev_addr);
+                int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint16_t conn_id);
+
+            
+                ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
+                                        uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id);
+            
+
+
                                         
 
                 
