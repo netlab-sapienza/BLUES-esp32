@@ -7,10 +7,15 @@
 #include <cstring>
 
 namespace bemesh {
-
+  routing_update_t::routing_update_t(void):params(), update_state() {}
   routing_update_t::routing_update_t(routing_params_t t_params, UpdateState t_state) {
     params=t_params;
     update_state=t_state;
+  }
+
+  std::ostream& operator <<(std::ostream& os, const routing_update_t& up) {
+    os<<up.params<<up.update_state;
+    return os;
   }
   
   Router::Router(dev_addr_t t_node_addr):m_rtable() {
@@ -112,6 +117,9 @@ namespace bemesh {
     return m_rtable.getRoutingParams(t_target_addr).flags;
   }
 
+  dev_addr_t& Router::addr(void) {
+    return m_node_addr;
+  }
   std::vector<routing_params_t> Router::getRoutingTable(void) {
     std::vector<routing_params_t> vectorized_rtable=m_rtable.exportTable();
     return vectorized_rtable;
@@ -122,7 +130,7 @@ namespace bemesh {
     std::size_t updated_rows=0;
     for(auto const &it : t_update_vect) {
       routing_params_t update_params=it.params;
-      UpdateState update_state=it.update_state;
+      UpdateState update_state=(UpdateState)it.update_state;
 
       if(update_state==UpdateState::Removed) {
 	// use the remove method to decide what to do
@@ -162,7 +170,7 @@ namespace bemesh {
   uint8_t Router::hasUpdates(void) {
     return m_update_vect.size()>0;
   }
-  
+
   // Returns a copy of update_vect update vector. This will clear the internal
   // update_vect in order not to store previously committed updates.
   std::vector<routing_update_t> Router::getRoutingUpdates(void) {

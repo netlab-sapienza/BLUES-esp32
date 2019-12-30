@@ -33,6 +33,17 @@ namespace bemesh {
     
   }
 
+  std::ostream& operator <<(std::ostream& os, const routing_params_t& up) {
+    for(auto& it:up.target_addr) {
+      os<<it;
+    }
+    for(auto& it:up.hop_addr) {
+      os<<it;
+    }
+    os<<up.num_hops<<up.flags;
+    return os;
+  }
+
   routing_params_t RoutingTable::insert(routing_params_t t_target_params) {
     dev_addr_t target_addr = t_target_params.target_addr;
     m_routing_table.insert(std::pair<dev_addr_t, routing_params_t>(target_addr, t_target_params));
