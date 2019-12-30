@@ -2923,8 +2923,6 @@ uint8_t install_NotifyCb(NotifyCb cb) {
 	return 0;
 }
 
-
-
 /* 
 // Main, used for debug
 void app_main() {
