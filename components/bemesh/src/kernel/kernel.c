@@ -1,7 +1,9 @@
 #include "kernel.h"
 
-
-
+/*
+ *  	MACROS
+ */
+ 
 #define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
 
 #define TOTAL_NUMBER_LIMIT 7 // Total of incoming and outgoing edges is 7
@@ -14,20 +16,22 @@
 #define SERVER 1
 
 /*
- *  	MACROS
+ *  	CALLBACKS
  */
-
+// Callback when a client receive a notification from a server
+NotifyCb ntf_cb;
 
 
 /*
  *  	SETTINGS
  */
 
-// Established connections
+// Established connections for a server
 const uint8_t NOID = -1;
-uint8_t BDAS[TOTAL_NUMBER_LIMIT][6] = { 0 };
+uint8_t MACS[TOTAL_NUMBER_LIMIT][6] = { 0 };
 uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
 uint8_t n_connections = 0;
+
 
 // Characteristics
 uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
@@ -43,8 +47,6 @@ uint8_t server = 0;
 uint8_t scanning = 0; // Client is scanning?
 uint8_t advertising = 0; // Server is advertising?
 uint8_t server_scanning = 0; // Server is scanning?
-
-
 
 
 /*
@@ -483,7 +485,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_CONNECT_EVT conn_id %d, if %d", p_data->connect.conn_id, gattc_if);
         gl_profile_tab2[PROFILE_A_APP_ID].conn_id = p_data->connect.conn_id;
         memcpy(gl_profile_tab2[PROFILE_A_APP_ID].remote_bda, p_data->connect.remote_bda, sizeof(esp_bd_addr_t));
-        ESP_LOGI(GATTC_TAG, "REMOTE BDA:");
+        ESP_LOGI(GATTC_TAG, "REMOTE MAC:");
         esp_log_buffer_hex(GATTC_TAG, gl_profile_tab2[PROFILE_A_APP_ID].remote_bda, sizeof(esp_bd_addr_t));
         esp_err_t mtu_ret = esp_ble_gattc_send_mtu_req (gattc_if, p_data->connect.conn_id);
         if (mtu_ret){
@@ -657,6 +659,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
 				if(ret) {
 					ESP_LOGE(GATTC_TAG, "Error reading the char: %x", ret);
 				}
+				(*ntf_cb)();
 			}
 			
 			
@@ -1236,12 +1239,12 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             ESP_LOGE(GATTS_TAG, "SI E' DISCONNESSO %d", param->disconnect.conn_id);
 			ESP_LOGI(GATTS_TAG, "DISCONNECTED, conn_id %d, remote %02x:%02x:%02x:%02x:%02x:%02x",
 						param->connect.conn_id,
-							BDAS[param->disconnect.conn_id][0], BDAS[param->disconnect.conn_id][1], BDAS[param->disconnect.conn_id][2],
-								BDAS[param->disconnect.conn_id][3], BDAS[param->disconnect.conn_id][4], BDAS[param->disconnect.conn_id][5]);
+							MACS[param->disconnect.conn_id][0], MACS[param->disconnect.conn_id][1], MACS[param->disconnect.conn_id][2],
+								MACS[param->disconnect.conn_id][3], MACS[param->disconnect.conn_id][4], MACS[param->disconnect.conn_id][5]);
             
             int i;
 			for(i=0; i<6; i++) {
-				BDAS[param->disconnect.conn_id][i] = 0;
+				MACS[param->disconnect.conn_id][i] = 0;
 			}
 			
 			if(ID_TABLE[param->disconnect.conn_id] == SERVER) {
@@ -1353,7 +1356,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         memcpy(gl_internal_clients_tab[SERVER_S1].remote_bda, p_data->open.remote_bda, 6);
         gl_internal_clients_tab[SERVER_S1].conn_id = p_data->open.conn_id;
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_OPEN_EVT conn_id %d, if %d, status %d, mtu %d", p_data->open.conn_id, gattc_if, p_data->open.status, p_data->open.mtu);
-        ESP_LOGI(GATTC_TAG, "REMOTE BDA:");
+        ESP_LOGI(GATTC_TAG, "REMOTE MAC:");
         esp_log_buffer_hex(GATTC_TAG, p_data->open.remote_bda, sizeof(esp_bd_addr_t));
         esp_err_t mtu_ret = esp_ble_gattc_send_mtu_req (gattc_if, p_data->open.conn_id);
         if (mtu_ret){
@@ -1621,7 +1624,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         memcpy(gl_internal_clients_tab[SERVER_S2].remote_bda, p_data->open.remote_bda, 6);
         gl_internal_clients_tab[SERVER_S2].conn_id = p_data->open.conn_id;
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_OPEN_EVT conn_id %d, if %d, status %d, mtu %d", p_data->open.conn_id, gattc_if, p_data->open.status, p_data->open.mtu);
-        ESP_LOGI(GATTC_TAG, "REMOTE BDA:");
+        ESP_LOGI(GATTC_TAG, "REMOTE MAC:");
         esp_log_buffer_hex(GATTC_TAG, p_data->open.remote_bda, sizeof(esp_bd_addr_t));
         esp_err_t mtu_ret = esp_ble_gattc_send_mtu_req (gattc_if, p_data->open.conn_id);
         if (mtu_ret){
@@ -1872,7 +1875,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         memcpy(gl_internal_clients_tab[SERVER_S3].remote_bda, p_data->open.remote_bda, 6);
         gl_internal_clients_tab[SERVER_S3].conn_id = p_data->open.conn_id;
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_OPEN_EVT conn_id %d, if %d, status %d, mtu %d", p_data->open.conn_id, gattc_if, p_data->open.status, p_data->open.mtu);
-        ESP_LOGI(GATTC_TAG, "REMOTE BDA:");
+        ESP_LOGI(GATTC_TAG, "REMOTE MAC:");
         esp_log_buffer_hex(GATTC_TAG, p_data->open.remote_bda, sizeof(esp_bd_addr_t));
         esp_err_t mtu_ret = esp_ble_gattc_send_mtu_req (gattc_if, p_data->open.conn_id);
         if (mtu_ret){
@@ -2176,9 +2179,9 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 						uint8_t check = 1;
 						for(k=0; k<6; k++) {
-							if(BDAS[i][k] != scan_result->scan_rst.bda[k]) check = 0;
+							if(MACS[i][k] != scan_result->scan_rst.bda[k]) check = 0;
 						}
-						if(check) break; // This BDA is already in the list of connected devices
+						if(check) break; // This MAC is already in the list of connected devices
 					}			
 					
 					
@@ -2304,9 +2307,9 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 						uint8_t check = 1;
 						for(k=0; k<6; k++) {
-							if(BDAS[i][k] != scan_result->scan_rst.bda[k]) check = 0;
+							if(MACS[i][k] != scan_result->scan_rst.bda[k]) check = 0;
 						}
-						if(check) break; // This BDA is already in the list of connected devices
+						if(check) break; // This MAC is already in the list of connected devices
 					}			
 					
 					
@@ -2431,9 +2434,9 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 						uint8_t check = 1;
 						for(k=0; k<6; k++) {
-							if(BDAS[i][k] != scan_result->scan_rst.bda[k]) check = 0;
+							if(MACS[i][k] != scan_result->scan_rst.bda[k]) check = 0;
 						}
-						if(check) break; // This BDA is already in the list of connected devices
+						if(check) break; // This MAC is already in the list of connected devices
 					}			
 					
 					
@@ -2525,8 +2528,8 @@ uint8_t get_num_connections() {
 	return n_connections;
 }
 
-uint8_t** get_connected_BDAS() {
-	return BDAS;
+uint8_t** get_connected_MACS() {
+	return MACS;
 }
 
 uint8_t get_type_connection(uint8_t conn_id) {
@@ -2815,7 +2818,6 @@ void ble_esp_startup() {
     
 }
 
-
 uint8_t get_node_type() {
 	if(server) return SERVER;
 	else return CLIENT;
@@ -2835,6 +2837,7 @@ bool is_advertising() {
 	
 	
 } 
+
 bool is_scanning() {
 	uint8_t dev = get_node_type();
 	switch(dev) {
@@ -2850,8 +2853,9 @@ bool is_scanning() {
 
 }
 
-uint8_t get_gatt_if(uint8_t node) {
-	switch(node) {
+uint8_t get_gatt_if() {
+	uint8_t dev = get_node_type();
+	switch(dev) {
 	case SERVER:
 		return gl_profile_tab[PROFILE_A_APP_ID].gatts_if;
 	case CLIENT:
@@ -2860,6 +2864,7 @@ uint8_t get_gatt_if(uint8_t node) {
 		return NOID;
 	}	
 }
+
 uint8_t get_client_connid() {
 	uint8_t dev = get_node_type();
 	if(dev == CLIENT) return gl_profile_tab2[PROFILE_A_APP_ID].conn_id;
@@ -2876,10 +2881,47 @@ uint8_t* get_server_connids() {
 	return arr;
 }
 
-uint8_t* get_connid_BDA(uint8_t conn_id) {
-	return BDAS[conn_id];
+uint8_t* get_connid_MAC(uint8_t conn_id) {
+	uint8_t dev = get_node_type();
+	if(dev == SERVER) return MACS[conn_id];
+	else return gl_profile_tab2[PROFILE_A_APP_ID].remote_bda;
+	
 }
 
+uint8_t get_MAC_connid(uint8_t* mac_addr) {
+	int i,j;
+	uint8_t dev = get_node_type();
+	
+	if(dev == SERVER) {
+		for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
+			uint8_t check = 1;
+			for(j=0; j<6; j++) {
+				if(MACS[i][j] != mac_addr[j]) check=0;
+			}
+			if(check) return i;
+		}
+		return NOID; 
+	} else return gl_profile_tab2[PROFILE_A_APP_ID].conn_id;
+	
+}
+
+uint8_t* get_my_MAC() {
+	uint8_t mac[6] = { 0 };
+	
+	esp_err_t ret = esp_efuse_mac_get_default(mac);
+	if (ret) {
+		ESP_LOGE(GATTC_TAG, "Cannot retrieve the MAC address, err %x", ret);
+		return mac;
+	}
+	
+	return mac;
+}
+
+uint8_t install_NotifyCb(NotifyCb cb) {
+	if(!cb) return 1;
+	ntf_cb = cb;
+	return 0;
+}
 
 
 

@@ -35,7 +35,7 @@
 
 
 
-
+typedef void(*NotifyCb)();
 
 /*
  *  	FUNCTIONS DECLARATION
@@ -74,22 +74,35 @@ void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array,
 uint8_t* read_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr);
 uint8_t get_CHR_value_len(uint8_t chr); // Get the lenght of the last read value of a characteristic
 
-uint8_t get_num_connections(); // Number of connected devices
-uint8_t** get_connected_BDAS(); // List of all connected devices, either clients or servers
-uint8_t get_type_connection(uint8_t conn_id); // Returns CLIENT or SERVER depending on the link with conn_id
-uint8_t* get_connid_BDA(uint8_t conn_id); // Returns the BDA of a connected device conn_id
-// aggiungere client
 
+// SERVER / CLIENT FUNCTIONS
+uint8_t get_num_connections(); // Number of connected devices
+uint8_t** get_connected_MACS(); // List of all connected devices, either clients or servers
+uint8_t get_type_connection(uint8_t conn_id); // Returns CLIENT or SERVER depending on the link with conn_id
+
+uint8_t* get_connid_MAC(uint8_t conn_id); // Returns the MAC of a connected device conn_id
+uint8_t get_MAC_connid(uint8_t* mac_addr); // Returns the conn_id from a MAC of a connected device
+uint8_t* get_my_MAC(); // Returns the MAC address of the device calling the function
 
 uint8_t get_node_type(); // Returns CLIENT/SERVER
 bool is_advertising(); // If the device is a server, returns true if it is advertising, false otherwise
 bool is_scanning();	// If the device is a client, returns true if it is scanning. If the device is a server it may be scanning, looking for other servers to connect with.
 
-uint8_t get_gatt_if(uint8_t node); // node can be SERVER/CLIENT, returns the interface
-uint8_t get_client_connid(); // Returns the conn_id that is assigned to a server (if exists)
+uint8_t get_gatt_if(); //  Returns the interface of the device calling it, either server or client
+uint8_t get_client_connid(); // Returns the conn_id that is assigned from the client to a server (if exists)
 
 // Returns an array of 1 and 0. Position i has value 1 if i is an assigned conn_id, 0 otherwise.
 // The array has length TOTAL_NUMBER_LIMIT. Use get_type_connection to know if a conn_id refers to a server or a client
 uint8_t* get_server_connids(); 
 
 
+
+// INTERNAL CLIENTS FUNCTIONS
+// These functions have to be executed if the device is a server
+// and the internal client of interest has been registered using register_internal_client(client_num);
+
+
+
+
+// CALLBACKS
+uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
