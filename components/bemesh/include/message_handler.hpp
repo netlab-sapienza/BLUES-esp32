@@ -46,7 +46,7 @@ namespace bemesh {
     uint8_t tx_size;
 
     // Constructor
-    MessageHandler(void);    
+    MessageHandler(void);
 
     // Basic primitive for message parsing. The FSM requires one byte per
     // iteration in order to correctly parse it.

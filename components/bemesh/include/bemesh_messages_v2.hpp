@@ -11,9 +11,9 @@
 #include <istream>
 
 namespace bemesh {
-
+#define MESSAGE_TYPE_MAX 4
   class MessageHeader {
-    #define MESSAGE_HEADER_DATA_SIZE 16
+#define MESSAGE_HEADER_DATA_SIZE 16
   protected:
     dev_addr_t m_dest_addr;
     dev_addr_t m_src_addr;
@@ -25,6 +25,7 @@ namespace bemesh {
     MessageHeader();
     MessageHeader(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_id,
 		  uint8_t t_hops, uint8_t t_seq, uint8_t t_psize);
+    MessageHeader(const MessageHeader& h);
     
     dev_addr_t& destination(void);
     dev_addr_t& source(void);
