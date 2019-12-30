@@ -72,7 +72,10 @@ namespace bemesh {
   }
 
   void MessageHandler::handle(void) {
-    // first execute readings
+    // reset the tx iterator
+    m_tx_buf_iterator=m_tx_buf;
+    
+    // Execute readings
     while(m_rx_entries>0) {
       MessageHeader* recv_msg=MessageHeader::unserialize(m_rx_strm);
       if(recv_msg==nullptr) {
@@ -89,9 +92,10 @@ namespace bemesh {
       }
       m_rx_entries--;
     }
-    // then execute writings
+    
+    // Execute writings
     while(m_tx_entries>0) {
-      uint8_t* tx_it=m_tx_buf;
+      uint8_t* tx_it=m_tx_buf_iterator;
       // Read first std::size_t from the stream
       m_tx_strm.read(reinterpret_cast<char*>(tx_it), sizeof(std::size_t));
       // parse the message size;
@@ -112,6 +116,7 @@ namespace bemesh {
 	}	
       }
       m_tx_entries--;
+      m_tx_buf_iterator+=sizeof(std::size_t)+msg_len;
     }
   }
 }
