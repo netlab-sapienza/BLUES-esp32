@@ -8,6 +8,7 @@
 #include "bemesh_messages.hpp"
 
 
+
 namespace bemesh {
   template <class T>
   class ring_buffer {
@@ -26,8 +27,5 @@ namespace bemesh {
     std::size_t size() const;
     void reset(void);
   };
-
   void delete_message(MessageHeader* t_h);
 }
-    
-

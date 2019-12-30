@@ -23,6 +23,8 @@
 #include "sdkconfig.h"
 
 #include "services.hpp"
+#include "rtable.hpp"
+
 
 
 #include <string>
@@ -38,12 +40,17 @@ namespace  bemesh{
 
 
     class Master{
-
-            uint8_t masterId;
-            std::string TAG;
+            std::string name;
             const int MAX_NUM_CLIENTS = 7;
-            gatts_profile_inst gl_profile_tab[NUM];
-            //NextIdService nextIdService;
+            
+            bool esp;
+            bool connected_to_internet;
+            dev_addr_t address;
+            
+
+            uint8_t master_id; //for Android compatibility mode.
+
+
 
             
             
@@ -51,10 +58,39 @@ namespace  bemesh{
             uint8_t adv_config_done = 0;
 
             public:
+                
+                
+                //to be deleted
                 Master(uint8_t id, std::string TAG);
                 Master(uint8_t id);
-                std::string getTAG();
-                uint8_t getId();
+
+
+                ~Master();
+                Master(bool is_esp, bool connected_to_internet);
+
+
+                
+                
+                std::string get_name();
+                void set_name(std::string name);
+                
+                uint8_t get_id();
+                void set_id(uint8_t new_id);
+
+
+                bool is_connected_to_internet();
+                void set_connected_to_internet(bool connected_to_internet);
+
+                bool is_esp();
+                void set_esp(bool is_esp);
+
+                dev_addr_t get_dev_addr();
+                void set_dev_addr(dev_addr_t new_dev_addr);
+
+
+
+
+
                 void init();
                 /*
                 NextIdService getNextIdService(){return nextIdService;}
@@ -64,11 +100,6 @@ namespace  bemesh{
 
                 //Read the value of a characteristic stored on a specific service stored in the
                 //service table of the esp.
-
-                esp_gatt_rsp_t read_characteristic(struct gatts_profile_inst* table, 
-                                        unsigned int table_size,
-                                        uint16_t service_handle, uint16_t char_handle,
-                                        esp_ble_gatts_cb_param_t *param);
 
                 int write_characteristic(struct gatts_profile_inst* table,
                                         unsigned int table_size, uint16_t service_handle, 
@@ -87,6 +118,9 @@ namespace  bemesh{
                 
                 void ble_indicate(uint8_t value, uint16_t id);
                 
+                uint16_t read_characterstic(uint16_t characteristic, dev_addr_t dev_addr);
+                                        
+
                 
         };
 }

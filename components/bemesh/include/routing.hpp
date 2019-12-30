@@ -63,7 +63,6 @@ namespace bemesh {
 
     // Returns a constant reference to the router's own address
     dev_addr_t& addr(void);
-
     // Returns the encoded routing table in form of array of bytes (uint8_t)
     // Used to pass the routing table to other devices.
     std::vector<routing_params_t> getRoutingTable(void);

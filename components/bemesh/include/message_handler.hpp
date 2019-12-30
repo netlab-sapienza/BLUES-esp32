@@ -5,7 +5,6 @@
 #pragma once
 #include "bemesh_messages.hpp"
 #include "bemesh_status.hpp"
-
 #include <array>
 
 namespace bemesh {
@@ -46,7 +45,7 @@ namespace bemesh {
     uint8_t tx_size;
 
     // Constructor
-    MessageHandler(void);
+    MessageHandler(void);    
 
     // Basic primitive for message parsing. The FSM requires one byte per
     // iteration in order to correctly parse it.

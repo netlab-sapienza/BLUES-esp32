@@ -120,7 +120,6 @@ namespace bemesh {
   dev_addr_t& Router::addr(void) {
     return m_node_addr;
   }
-
   std::vector<routing_params_t> Router::getRoutingTable(void) {
     std::vector<routing_params_t> vectorized_rtable=m_rtable.exportTable();
     return vectorized_rtable;
@@ -171,7 +170,7 @@ namespace bemesh {
   uint8_t Router::hasUpdates(void) {
     return m_update_vect.size()>0;
   }
-  
+
   // Returns a copy of update_vect update vector. This will clear the internal
   // update_vect in order not to store previously committed updates.
   std::vector<routing_update_t> Router::getRoutingUpdates(void) {

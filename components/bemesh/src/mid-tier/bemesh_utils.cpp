@@ -69,8 +69,6 @@ namespace bemesh {
     m_tail = (m_tail+1)%m_max_size;
     return val;
   }
-
-
   void delete_message(MessageHeader* t_h) {
     std::size_t message_size=MESSAGE_SIZE(t_h);
     uint8_t *h=(uint8_t*)t_h;
