@@ -12,6 +12,11 @@ namespace bemesh {
     params=t_params;
     update_state=t_state;
   }
+
+  std::ostream& operator <<(std::ostream& os, const routing_update_t& up) {
+    os<<up.params<<up.update_state;
+    return os;
+  }
   
   Router::Router(dev_addr_t t_node_addr):m_rtable() {
     m_node_addr=t_node_addr;
@@ -126,7 +131,7 @@ namespace bemesh {
     std::size_t updated_rows=0;
     for(auto const &it : t_update_vect) {
       routing_params_t update_params=it.params;
-      UpdateState update_state=it.update_state;
+      UpdateState update_state=(UpdateState)it.update_state;
 
       if(update_state==UpdateState::Removed) {
 	// use the remove method to decide what to do

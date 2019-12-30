@@ -7,9 +7,13 @@
 #pragma once
 
 #include "routing.hpp"
+#include <ostream>
+#include <istream>
 
 namespace bemesh {
+
   class MessageHeader {
+    #define MESSAGE_HEADER_DATA_SIZE 16
   protected:
     dev_addr_t m_dest_addr;
     dev_addr_t m_src_addr;
@@ -18,6 +22,7 @@ namespace bemesh {
     uint8_t m_seq;
     uint8_t m_psize;
   public:
+    MessageHeader();
     MessageHeader(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_id,
 		  uint8_t t_hops, uint8_t t_seq, uint8_t t_psize);
     
@@ -28,21 +33,37 @@ namespace bemesh {
     uint8_t seq(void);
     uint8_t psize(void);
     void setHops(uint8_t t_hops);
-    std::size_t size(void);
+    uint8_t size(void) const;
+
+    // Serialization
+    virtual void serialize(std::ostream&) const;
+    // Unserialization
+    static MessageHeader* unserialize(std::istream& istr);
+    virtual MessageHeader* create(std::istream&);
   };
 
   class IndexedMessage : public MessageHeader {
   protected:
-    std::size_t m_entries;
+    uint8_t m_entries;
   public:
+    IndexedMessage();
     IndexedMessage(std::size_t t_entries, dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_id,
 		  uint8_t t_hops, uint8_t t_seq, uint8_t t_psize);
-    std::size_t entries(void);    
+    std::size_t entries(void);
+
+    // Serialization
+    virtual void serialize(std::ostream&) const;
   };
 
 #define ROUTING_DISCOVERY_REQ_ID 0x00
   class RoutingDiscoveryRequest : public MessageHeader {
+  public:
+    RoutingDiscoveryRequest();
     RoutingDiscoveryRequest(dev_addr_t t_dest, dev_addr_t t_src);
+    
+    // Serialization
+    void serialize(std::ostream&) const;
+    RoutingDiscoveryRequest* create(std::istream&);
   };
 
 #define ROUTING_DISCOVERY_RES_ID 0x01
@@ -50,11 +71,16 @@ namespace bemesh {
   class RoutingDiscoveryResponse : public IndexedMessage {
     std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> m_payload;
   public:
+    RoutingDiscoveryResponse();
     RoutingDiscoveryResponse(dev_addr_t t_dest, dev_addr_t t_src,
 			     std::array<routing_params_t,
 			     ROUTING_DISCOVERY_RES_ENTRIES_MAX> t_payload,
 			     std::size_t t_pentries);
     std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> payload(void);
+
+    // Serialization
+    void serialize(std::ostream&) const;
+    RoutingDiscoveryResponse* create(std::istream&);
   };
   
 #define ROUTING_UPDATE_ID 0x02
@@ -62,10 +88,15 @@ namespace bemesh {
   class RoutingUpdateMessage : public IndexedMessage {
     std::array<routing_update_t, ROUTING_UPDATE_ENTRIES_MAX> m_payload;
   public:
+    RoutingUpdateMessage();
     RoutingUpdateMessage(dev_addr_t t_dest, dev_addr_t t_src,
 			 std::array<routing_update_t,
 			 ROUTING_UPDATE_ENTRIES_MAX> t_payload,
 			 std::size_t t_pentries);
     std::array<routing_update_t, ROUTING_UPDATE_ENTRIES_MAX> payload(void);
-  };  
+
+    // Serialization
+    void serialize(std::ostream&) const;
+    RoutingUpdateMessage* create(std::istream&);
+  };
 }
