@@ -6,10 +6,14 @@
 namespace bemesh{
   
 
-    Master::Master(uint8_t id, std::string name):name(name),connection_id(id){ 
+    Master::Master(uint8_t id, std::string name):name(name),device_conn_id(id){ 
     }
 
-    Master::Master(uint8_t id):connection_id(id){
+    Master::Master(uint8_t id):device_conn_id(id){
+    }
+
+    Master::Master(){
+        
     }
 
     
@@ -25,15 +29,6 @@ namespace bemesh{
 
     void Master::set_name(std::string new_name){
         name = new_name;
-        return;
-    }
-
-    uint8_t Master::get_id(){
-        return connection_id;
-    }
-
-    void Master::set_id(uint8_t id){
-        connection_id = id;
         return;
     }
 
@@ -57,16 +52,32 @@ namespace bemesh{
         return;
     }
 
-    dev_addr_t Master::get_dev_addr(){
+    uint8_t* Master::get_dev_addr(){
         return address;
     }
 
-    void Master::set_dev_addr(dev_addr_t dev_addr){
+    void Master::set_dev_addr(uint8_t* dev_addr){
         if(esp)
             address = dev_addr;
         return;
     }
 
+
+    uint16_t Master::get_device_connection_id(){
+        return device_conn_id;
+    }
+
+    void Master::set_device_connection_id(uint16_t conn_id){
+        device_conn_id = conn_id;
+    }
+
+    uint8_t Master::get_device_gatt_if(){
+        return device_gatt_if;
+    }
+
+    void Master::set_device_gatt_if(uint16_t gatt_if){
+        device_gatt_if = gatt_if;
+    }
 
 
     int16_t Master::read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
@@ -101,7 +112,7 @@ namespace bemesh{
     {
         if(buffer == NULL)
             return WrongPayload;
-        if(conn_id != connection_id)
+        if(conn_id != device_conn_id)
             return WrongAddress;
 
         if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B ||

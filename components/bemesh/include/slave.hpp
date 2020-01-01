@@ -17,16 +17,15 @@ namespace bemesh{
     static std::string comm_char = "Hello everyone";
 
     class Slave{
-        dev_addr_t address;
+        uint8_t* address;
         uint16_t server_conn_id;
+        uint16_t device_conn_id; // also for android compatibility mode.
+        uint8_t device_gatt_if;
         bool esp;
         bool connected_to_internet;
         std::string name;
         MessageHandler msg_handler;
 
-
-
-        uint8_t device_id; //for android compatibility mode.
 
 
         public:
@@ -43,11 +42,18 @@ namespace bemesh{
             bool is_esp();
             void set_esp(bool is_esp);
 
-            dev_addr_t get_dev_addr();
-            void set_dev_addr(dev_addr_t new_dev_addr);
+            uint8_t* get_dev_addr();
+            void set_dev_addr(uint8_t* new_dev_addr);
 
             uint16_t get_server_connection_id();
             void set_server_connection_id(uint16_t conn_id);
+
+            uint16_t get_device_connection_id();
+            void set_device_connection_id(uint16_t device_conn_id);
+
+            uint8_t get_device_gatt_if();
+            void set_device_gatt_if(uint16_t gatt_if);
+
 
             MessageHandler get_message_handler();
 
@@ -69,6 +75,9 @@ namespace bemesh{
                                     uint8_t message_size);
 
 
+            //Util to print slave status and to verify correct data initialization.
+            void print_status();
+            
 
     };
 }

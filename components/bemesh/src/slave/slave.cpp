@@ -7,26 +7,11 @@ namespace bemesh{
     Slave::Slave(){
         esp = true;
         connected_to_internet = false;
-        device_id = 0;
-        
-        
-        //dev_addr_t = 0;
 
     }
 
     Slave::Slave(bool is_esp, bool connected_to_internet):esp(is_esp), connected_to_internet(connected_to_internet){
-        device_id = 0;
-
-        /*
-        if(is_esp)
-            address = 0;
-        else
-        {
-            //disable mac address recognition
-            address = 0;
-        }
-         */           
-
+        
     }
 
     Slave::~Slave(){
@@ -63,11 +48,11 @@ namespace bemesh{
         return;
     }
 
-    dev_addr_t Slave::get_dev_addr(){
+    uint8_t* Slave::get_dev_addr(){
         return address;
     }
 
-    void Slave::set_dev_addr(dev_addr_t dev_addr){
+    void Slave::set_dev_addr(uint8_t* dev_addr){
         if(esp)
             address = dev_addr;
     }
@@ -81,6 +66,21 @@ namespace bemesh{
         server_conn_id = conn_id;
     }
 
+    uint16_t Slave::get_device_connection_id(){
+        return device_conn_id;
+    }
+
+    void Slave::set_device_connection_id(uint16_t conn_id){
+        device_conn_id = conn_id;
+    }
+
+    uint8_t Slave::get_device_gatt_if(){
+        return device_gatt_if;
+    }
+
+    void Slave::set_device_gatt_if(uint16_t gatt_if){
+        device_gatt_if = gatt_if;
+    }
 
     MessageHandler Slave::get_message_handler(){
         return msg_handler;
@@ -160,6 +160,20 @@ namespace bemesh{
 
     }
 
+
+    void Slave::print_status(){
+        std::cout<<"Printing slave status:"<<std::endl;
+        
+        std::cout <<"Device mac address: "<<this->address<<std::endl;
+        std::cout<<"Device connection id: "<<this->device_conn_id<<std::endl;
+        std::cout<<"Device connected to internet: "<<this->connected_to_internet<<std::endl;
+        std::cout<<"Device is esp: "<<this->esp<<std::endl;
+        std::cout<<"Device gatt if: "<<this->device_gatt_if<<std::endl;
+
+        return;
+
+
+    }
 
 
 

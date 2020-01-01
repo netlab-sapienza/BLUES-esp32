@@ -33,7 +33,16 @@
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 
+#define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
 
+#define TOTAL_NUMBER_LIMIT 7 // Total of incoming and outgoing edges is 7
+#define CLIENTS_NUMBER_LIMIT 4 // Incoming links of clients
+#define SERVERS_NUMBER_LIMIT 3 // Outgoing or incoming connections with servers
+
+// Macros for the ID_TABLE
+
+#define CLIENT 0
+#define SERVER 1
 
 typedef void(*NotifyCb)();
 
@@ -106,3 +115,8 @@ uint8_t* get_server_connids();
 
 // CALLBACKS
 uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
+
+
+
+
+bool has_ended_scanning();

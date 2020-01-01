@@ -4,16 +4,7 @@
  *  	MACROS
  */
  
-#define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
 
-#define TOTAL_NUMBER_LIMIT 7 // Total of incoming and outgoing edges is 7
-#define CLIENTS_NUMBER_LIMIT 4 // Incoming links of clients
-#define SERVERS_NUMBER_LIMIT 3 // Outgoing or incoming connections with servers
-
-// Macros for the ID_TABLE
-
-#define CLIENT 0
-#define SERVER 1
 
 /*
  *  	CALLBACKS
@@ -2837,6 +2828,10 @@ bool is_advertising() {
 	
 	
 } 
+
+bool has_ended_scanning(){
+    return stop_scan_done;
+}
 
 bool is_scanning() {
 	uint8_t dev = get_node_type();
