@@ -22,10 +22,18 @@
 
 #include "sdkconfig.h"
 
+
+
 #include "services.hpp"
 #include "rtable.hpp"
+#include "bemesh_messages.hpp"
+#include "bemesh_status.hpp"
+#include "gatts_table.h"
 
 
+extern "C"{
+    #include "kernel.h"
+}
 
 #include <string>
 
@@ -45,10 +53,11 @@ namespace  bemesh{
             
             bool esp;
             bool connected_to_internet;
-            dev_addr_t address;
-            
+            uint8_t* address;
+            uint8_t device_conn_id; //for Android compatibility mode.
+            uint16_t device_gatt_if;
 
-            uint8_t master_id; //for Android compatibility mode.
+
 
 
 
@@ -63,6 +72,9 @@ namespace  bemesh{
                 //to be deleted
                 Master(uint8_t id, std::string TAG);
                 Master(uint8_t id);
+                Master();
+
+                
 
 
                 ~Master();
@@ -74,20 +86,21 @@ namespace  bemesh{
                 std::string get_name();
                 void set_name(std::string name);
                 
-                uint8_t get_id();
-                void set_id(uint8_t new_id);
-
-
+                
                 bool is_connected_to_internet();
                 void set_connected_to_internet(bool connected_to_internet);
 
                 bool is_esp();
                 void set_esp(bool is_esp);
 
-                dev_addr_t get_dev_addr();
-                void set_dev_addr(dev_addr_t new_dev_addr);
+                uint8_t* get_dev_addr();
+                void set_dev_addr(uint8_t* new_dev_addr);
+                
+                uint16_t get_device_connection_id();
+                void set_device_connection_id(uint16_t device_conn_id);
 
-
+                uint8_t get_device_gatt_if();
+                void set_device_gatt_if(uint16_t gatt_if);
 
 
 
@@ -118,7 +131,16 @@ namespace  bemesh{
                 
                 void ble_indicate(uint8_t value, uint16_t id);
                 
-                uint16_t read_characterstic(uint16_t characteristic, dev_addr_t dev_addr);
+                int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint16_t conn_id);
+
+            
+                ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
+                                        uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id);
+            
+
+
                                         
 
                 

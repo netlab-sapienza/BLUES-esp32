@@ -1,6 +1,5 @@
 #include "slave.hpp"
 
-
 //TO-DO. complete stuff.
 
 
@@ -8,26 +7,11 @@ namespace bemesh{
     Slave::Slave(){
         esp = true;
         connected_to_internet = false;
-        device_id = 0;
-        
-        
-        //dev_addr_t = 0;
 
     }
 
     Slave::Slave(bool is_esp, bool connected_to_internet):esp(is_esp), connected_to_internet(connected_to_internet){
-        device_id = 0;
-
-        /*
-        if(is_esp)
-            address = 0;
-        else
-        {
-            //disable mac address recognition
-            address = 0;
-        }
-         */           
-
+        
     }
 
     Slave::~Slave(){
@@ -64,24 +48,135 @@ namespace bemesh{
         return;
     }
 
-    dev_addr_t Slave::get_dev_addr(){
+    uint8_t* Slave::get_dev_addr(){
         return address;
     }
 
-    void Slave::set_dev_addr(dev_addr_t dev_addr){
+    void Slave::set_dev_addr(uint8_t* dev_addr){
         if(esp)
             address = dev_addr;
     }
 
 
-    uint16_t Slave::read_characteristic(uint16_t characteristic, dev_addr_t address,void* buffer,uint16_t char_size){
-        if(buffer == NULL)
-            return 0;
-        if(characteristic == 0)
-            return 1;     
+    uint16_t Slave::get_server_connection_id(){
+        return server_conn_id;
+    }
 
-        return 0;
+    void Slave::set_server_connection_id(uint16_t conn_id){
+        server_conn_id = conn_id;
+    }
+
+    uint16_t Slave::get_device_connection_id(){
+        return device_conn_id;
+    }
+
+    void Slave::set_device_connection_id(uint16_t conn_id){
+        device_conn_id = conn_id;
+    }
+
+    uint8_t Slave::get_device_gatt_if(){
+        return device_gatt_if;
+    }
+
+    void Slave::set_device_gatt_if(uint16_t gatt_if){
+        device_gatt_if = gatt_if;
+    }
+
+    MessageHandler Slave::get_message_handler(){
+        return msg_handler;
+    }
+
+    
+
+
+
+
+
+    int16_t Slave::read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint16_t conn_id)
+    {
+        if(buffer == NULL)
+            return -1;
+        if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B || 
+            characteristic == IDX_CHAR_C)
+        {
+
+            uint8_t* received_bytes=  read_CHR(gattc_if,conn_id,characteristic);
+            uint8_t char_len_read = get_CHR_value_len(characteristic);
+            if(buffer_size < char_len_read){
+                return -1;
+            }
+            memcpy((void*)received_bytes,buffer,char_len_read);
+            return char_len_read;
+
+        }
+        else
+            return -1;    
 
     }
+
+
+    ErrStatus Slave::send_message(uint16_t gattc_if,uint16_t conn_id,char* message,
+                                        uint8_t message_size)
+    {
+        if(message == NULL || message_size == 0){
+            return WrongPayload;
+        }
+        if(conn_id != this->server_conn_id)
+            return WrongAddress;
+        else
+        {
+            write_CHR(gattc_if,conn_id,IDX_CHAR_A,(uint8_t *)message,message_size);
+            return Success;
+        }
+        //Implementare una sorta di meccanismo di acknowledgement se possibile.
+        
+            
+
+    }
+
+
+
+    ErrStatus Slave::write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
+                                        uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id)
+    {
+        if(buffer == NULL)
+            return WrongPayload;
+        if(conn_id != server_conn_id)
+            return WrongAddress;
+
+        if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B ||
+            characteristic == IDX_CHAR_C )
+        {
+            write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
+            return Success;
+        }        
+        
+        else
+        {
+            return GenericError;
+        }
+
+    }
+
+
+    void Slave::print_status(){
+        std::cout<<"Printing slave status:"<<std::endl;
+        
+        std::cout <<"Device mac address: "<<this->address<<std::endl;
+        std::cout<<"Device connection id: "<<this->device_conn_id<<std::endl;
+        std::cout<<"Device connected to internet: "<<this->connected_to_internet<<std::endl;
+        std::cout<<"Device is esp: "<<this->esp<<std::endl;
+        std::cout<<"Device gatt if: "<<this->device_gatt_if<<std::endl;
+
+        return;
+
+
+    }
+
+
+
+
 
 }

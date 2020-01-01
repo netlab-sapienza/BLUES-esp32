@@ -4,16 +4,14 @@
  *  	MACROS
  */
  
-#define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
 
-#define TOTAL_NUMBER_LIMIT 7 // Total of incoming and outgoing edges is 7
-#define CLIENTS_NUMBER_LIMIT 4 // Incoming links of clients
-#define SERVERS_NUMBER_LIMIT 3 // Outgoing or incoming connections with servers
 
-// Macros for the ID_TABLE
+/*
+ *  	CALLBACKS
+ */
+// Callback when a client receive a notification from a server
+NotifyCb ntf_cb;
 
-#define CLIENT 0
-#define SERVER 1
 
 /*
  *  	CALLBACKS
@@ -1085,10 +1083,15 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                 ESP_LOGE(GATTS_TAG, "create attr table failed, error code = %x", create_attr_ret);
             }
         
+        server = 1;
         /* ---------------------------- */
         //xTaskCreate(server_task, "ServerTask", 2048, NULL, 2, NULL); //https://www.freertos.org/a00125.html 
+<<<<<<< HEAD
+		break;
+=======
         server = 1;
         
+>>>>>>> master
      case ESP_GATTS_READ_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_READ_EVT");
        	    break;
@@ -2529,7 +2532,11 @@ uint8_t get_num_connections() {
 }
 
 uint8_t** get_connected_MACS() {
+<<<<<<< HEAD
+	return (uint8_t**) MACS;
+=======
 	return MACS;
+>>>>>>> master
 }
 
 uint8_t get_type_connection(uint8_t conn_id) {
@@ -2838,6 +2845,10 @@ bool is_advertising() {
 	
 } 
 
+bool has_ended_scanning(){
+    return stop_scan_done;
+}
+
 bool is_scanning() {
 	uint8_t dev = get_node_type();
 	switch(dev) {
@@ -2873,7 +2884,7 @@ uint8_t get_client_connid() {
 
 uint8_t* get_server_connids() {
 	int i;
-	uint8_t arr[TOTAL_NUMBER_LIMIT];
+	uint8_t* arr = malloc(sizeof(uint8_t)*TOTAL_NUMBER_LIMIT);
 	for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 		if(ID_TABLE[i] != NOID) arr[i] = 1;
 		else arr[i] = 0;
@@ -2906,7 +2917,9 @@ uint8_t get_MAC_connid(uint8_t* mac_addr) {
 }
 
 uint8_t* get_my_MAC() {
-	uint8_t mac[6] = { 0 };
+	uint8_t* mac = malloc(6*sizeof(uint8_t));
+	int i;
+	for(i=0; i<6; ++i) mac[i] = NOID;
 	
 	esp_err_t ret = esp_efuse_mac_get_default(mac);
 	if (ret) {
@@ -2921,6 +2934,57 @@ uint8_t install_NotifyCb(NotifyCb cb) {
 	if(!cb) return 1;
 	ntf_cb = cb;
 	return 0;
+}
+
+uint8_t get_internal_client_connid(uint8_t client_id) {
+	switch(client_id) {
+	case SERVER_S1:
+		if(conn_device_S1 == true) return gl_internal_clients_tab[SERVER_S1].conn_id;
+		return NOID;
+	case SERVER_S2:
+		if(conn_device_S2 == true) return gl_internal_clients_tab[SERVER_S2].conn_id;
+		return NOID;
+	case SERVER_S3:
+		if(conn_device_S3 == true) return gl_internal_clients_tab[SERVER_S3].conn_id;
+		return NOID;
+	default:
+		return NOID;
+	}
+}
+
+uint8_t get_internal_client_gattif(uint8_t client_id) {
+	switch(client_id) {
+	case SERVER_S1:
+		if(conn_device_S1 == true) return gl_internal_clients_tab[SERVER_S1].gattc_if;
+		return NOID;
+	case SERVER_S2:
+		if(conn_device_S2 == true) return gl_internal_clients_tab[SERVER_S2].gattc_if;
+		return NOID;
+	case SERVER_S3:
+		if(conn_device_S3 == true) return gl_internal_clients_tab[SERVER_S3].gattc_if;
+		return NOID;
+	default:
+		return NOID;
+	}
+}
+
+uint8_t* get_internal_client_serverMAC(uint8_t client_id) {
+	uint8_t* mac = malloc(6*sizeof(uint8_t));
+	int i;
+	for(i=0; i<6; ++i) mac[i] = NOID;
+	switch(client_id) {
+	case SERVER_S1:
+		if(conn_device_S1 == true) memcpy(mac, gl_internal_clients_tab[SERVER_S1].remote_bda, 6);
+		return mac;
+	case SERVER_S2:
+		if(conn_device_S2 == true) memcpy(mac, gl_internal_clients_tab[SERVER_S2].remote_bda, 6);
+		return mac;
+	case SERVER_S3:
+		if(conn_device_S3 == true) memcpy(mac, gl_internal_clients_tab[SERVER_S3].remote_bda, 6);
+		return mac;
+	default:
+		return mac;
+	}	
 }
 
 /* 

@@ -8,6 +8,14 @@
 #include "routing.hpp"
 #include "message_constant.hpp"
 
+
+
+//TODO: fonte di possibili problemi: carattere di terminazione.
+
+#define MAX_COMM_MESSAGE_LENGHT 210  //255 -17 -18 
+
+
+
 namespace bemesh {
   // Number of possible different messages
   #define MESSAGE_TYPES_MAX 16
@@ -67,7 +75,7 @@ namespace bemesh {
     uint8_t operation; //18 bytes
 
     //payload part (check it is less than 255 bytes)
-    char* payload;
+    char payload[MAX_COMM_MESSAGE_LENGHT];
   };
 #define COMMUNICATION_MESSAGE_ID 0x04
 
