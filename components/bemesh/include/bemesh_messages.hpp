@@ -19,6 +19,9 @@
 namespace bemesh {
   // Number of possible different messages
   #define MESSAGE_TYPES_MAX 16
+
+  #define MESSAGE_SIZE_MAX 255
+
   /*
    * Header structure:
    * - destination [dev_addr] 6
@@ -39,6 +42,7 @@ namespace bemesh {
     uint8_t payload_size;
   };
 
+  inline std::size_t MESSAGE_SIZE(MessageHeader* h) {return (sizeof(MessageHeader)+h->payload_size);}
   struct NumeratedMessageHeader {
     MessageHeader header; // 16 bytes
     uint8_t num_entries; // 1 byte = 17 bytes
@@ -74,4 +78,5 @@ namespace bemesh {
     char payload[MAX_COMM_MESSAGE_LENGHT];
   };
 #define COMMUNICATION_MESSAGE_ID 0x04
+
 }

@@ -5,6 +5,8 @@
 #pragma once
 
 #include <memory>
+#include "bemesh_messages.hpp"
+
 
 
 namespace bemesh {
@@ -16,7 +18,7 @@ namespace bemesh {
     const std::size_t m_max_size;
     bool m_full=0;
   public:
-    explicit ring_buffer(std::size_t t_size);
+    ring_buffer(std::size_t t_size);
     void put(T t_item);
     T get();
     bool empty(void) const;
@@ -25,5 +27,5 @@ namespace bemesh {
     std::size_t size() const;
     void reset(void);
   };
+  void delete_message(MessageHeader* t_h);
 }
-    

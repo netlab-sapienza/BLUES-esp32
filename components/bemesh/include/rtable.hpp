@@ -7,6 +7,7 @@
 #include <array>
 #include <map>
 #include <vector>
+#include <ostream>
 
 #include "bemesh_status.hpp"
 
@@ -30,6 +31,8 @@ namespace bemesh {
 
     inline bool operator==(const routing_params_t& rhs) {
       return (target_addr==rhs.target_addr)&&(hop_addr==rhs.hop_addr);}
+
+    friend std::ostream& operator <<(std::ostream& os, const routing_params_t& up);
   };
 
   int printDevAddr(char* buf, const dev_addr_t& addr);
