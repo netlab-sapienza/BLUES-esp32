@@ -1086,12 +1086,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
         server = 1;
         /* ---------------------------- */
         //xTaskCreate(server_task, "ServerTask", 2048, NULL, 2, NULL); //https://www.freertos.org/a00125.html 
-<<<<<<< HEAD
 		break;
-=======
-        server = 1;
-        
->>>>>>> master
      case ESP_GATTS_READ_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_READ_EVT");
        	    break;
@@ -2532,11 +2527,7 @@ uint8_t get_num_connections() {
 }
 
 uint8_t** get_connected_MACS() {
-<<<<<<< HEAD
 	return (uint8_t**) MACS;
-=======
-	return MACS;
->>>>>>> master
 }
 
 uint8_t get_type_connection(uint8_t conn_id) {

@@ -108,7 +108,6 @@ uint8_t get_client_connid(); // Returns the conn_id that is assigned from the cl
 uint8_t* get_server_connids(); 
 
 
-<<<<<<< HEAD
 // INTERNAL CLIENTS FUNCTIONS
 // These functions have to be executed if the device is a server
 // and the internal client of interest has been registered using register_internal_client(client_num);
@@ -125,15 +124,3 @@ uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
 
 
 bool has_ended_scanning();
-=======
-
-// INTERNAL CLIENTS FUNCTIONS
-// These functions have to be executed if the device is a server
-// and the internal client of interest has been registered using register_internal_client(client_num);
-
-
-
-
-// CALLBACKS
-uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
->>>>>>> master
