@@ -105,12 +105,13 @@ uint8_t get_client_connid(); // Returns the conn_id that is assigned from the cl
 uint8_t* get_server_connids(); 
 
 
-
 // INTERNAL CLIENTS FUNCTIONS
 // These functions have to be executed if the device is a server
 // and the internal client of interest has been registered using register_internal_client(client_num);
-
-
+// Client ids are: SERVER_S1, SERVER_S2, SERVER_S3
+uint8_t get_internal_client_connid(uint8_t client_id);
+uint8_t get_internal_client_gattif(uint8_t client_id);
+uint8_t* get_internal_client_serverMAC(uint8_t client_id); // Returns the MAC address of the server which is connected to
 
 
 // CALLBACKS
