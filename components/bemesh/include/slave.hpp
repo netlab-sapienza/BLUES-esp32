@@ -1,3 +1,6 @@
+
+
+#pragma once
 #include "rtable.hpp" //For dev_addr_t data type.
 #include <stdint.h>
 #include <string>
@@ -32,6 +35,9 @@ namespace bemesh{
             Slave();
             ~Slave();
             Slave(bool is_esp, bool connected_to_internet);
+
+            void start();
+            void shutdown();
 
             std::string get_name();
             void set_name(std::string name);
@@ -77,7 +83,11 @@ namespace bemesh{
 
             //Util to print slave status and to verify correct data initialization.
             void print_status();
+
+
             
 
     };
+
+    extern Slave* slave_istance;
 }

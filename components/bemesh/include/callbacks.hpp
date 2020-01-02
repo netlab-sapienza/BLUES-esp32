@@ -1,14 +1,11 @@
 
-
-#include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "sdkconfig.h"
 
 #include <stdint.h>
-#include <string.h>
-#include <stdbool.h>
+
 
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -24,22 +21,35 @@
 #include "esp_gatts_api.h"
 #include "esp_bt_defs.h"
 
-#include <stdlib.h>
+
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 
 
-/*
- *  	MACROS
- */
-namespace bemesh{
-    class Utils{
-        public:
-            static bool Isconnecting    = false;
-            static bool stop_scan_done  = false;
+#define FUNCTOR_TAG "FUNCTOR"
 
-            static void start_scan(void);
+
+
+#include "master.hpp"
+#include "slave.hpp"
+
+
+extern "C"{
+    #include "kernel.h"
+}
+
+namespace bemesh{
+    class Callback{
+        
+        static void init_callback(uint8_t type);
+        static void notify_callback(void);
+
+        public:
+            void operator()(void);
+            Callback();
     };
 }
+
+
 
 

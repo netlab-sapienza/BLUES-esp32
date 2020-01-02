@@ -127,16 +127,19 @@ namespace bemesh{
             return GenericError;
         }
 
+
+    }
+
+    void Master::shutdown(){
+        if(master_istance != NULL)
+            delete master_istance;
+    }
+    
+
+    //Master object main task. Used to test functions and primitives.
+    void Master::start(){
+        
     }
 
 
-
-
-
-
-
-
-
-
-    
 }

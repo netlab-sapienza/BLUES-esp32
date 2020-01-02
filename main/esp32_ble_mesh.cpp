@@ -43,7 +43,7 @@
 
 #include "slave.hpp"
 #include "master.hpp"
-
+#include "callbacks.hpp"
 
 extern "C" {
   #include "kernel.h"
@@ -53,8 +53,9 @@ extern "C" {
 
 
 bemesh::MessageHandler handler;
-bemesh::Slave slave;
-bemesh::Master master(10);
+
+bool becoming_client;
+bool becoming_server;
 
 
 static void communication_message_callback(bemesh::MessageHeader* header,void * args){
@@ -78,6 +79,9 @@ static void* routing_discovery_message_callback_args;
 
 
 int main(void) {
+  becoming_client = false;
+  becoming_server = false;
+  
 
 
   //Installing messages on the application.
@@ -96,51 +100,53 @@ int main(void) {
   };
 
   err = handler.installOps(&routing_discovery_message_ops);
-  slave.sayHello();
+  
   
   ESP_LOGE(LOG_TAG, "Initializing project");
   ble_esp_startup();
   gatt_client_main();
-  ESP_LOGE(LOG_TAG,"Success initializing client device");
+  bemesh::Callback callback_functor;
+  //Installing all callbacks
+  callback_functor();
+
+
+
+  /*while(!(becoming_client || becoming_server));
   
-  while(!has_ended_scanning());
-  if(get_node_type() == SERVER){
-    std::cout<<"I'm a server"<<std::endl;
-    gatt_server_main();
-    uint8_t gatt_if = get_gatt_if();
-    uint8_t connection_id = get_client_connid();
-    uint8_t* server_mac_address = get_my_MAC();
-    master.set_device_connection_id(connection_id);
-    master.set_dev_addr(server_mac_address);
-    master.set_device_gatt_if(gatt_if);
-    ESP_LOGE("SERVER","SUCCESS INITIALIZING SERVER DEVICE");
+  if(becoming_client){
+    //reset global variable.
+    becoming_client = false;
+    ESP_LOGE(LOG_TAG, "I'm becoming a client");
+    if(slave_istance == NULL){
+      slave_istance = new bemesh::Slave();
+      ESP_LOGE(LOG_TAG,"Building slave object on heap");
+      uint8_t device_gatt_if = get_gatt_if();
+      uint8_t* device_mac_address = get_my_MAC();
+      uint8_t device_conn_id = get_client_connid();
+      slave_istance->set_device_gatt_if(device_gatt_if);
+      slave_istance->set_dev_addr(device_mac_address);
+      slave_istance->set_server_connection_id(device_conn_id);
+      //slave_istance->print_status();
+    }
   }
-  else if(get_node_type()  == CLIENT){
+  else if(becoming_server){
+    becoming_server = false;
+    ESP_LOGE(LOG_TAG, "I'm becoming a server");
+    if(master_istance == NULL){
+      master_istance = new bemesh::Master();
+      ESP_LOGE(LOG_TAG,"Building master object on heap");
+      uint8_t device_gatt_if = get_gatt_if();
+      uint8_t* device_mac_address = get_my_MAC();
+      uint8_t device_conn_id = get_client_connid();
+      master_istance->set_device_gatt_if(device_gatt_if);
+      master_istance->set_dev_addr(device_mac_address);
+      master_istance->set_device_connection_id(device_conn_id);
+      ESP_LOGE(LOG_TAG,"DEVICE CONN_ID: %d",master_istance->get_device_connection_id());
 
-    //std::cout<<"I'm a client"<<std::endl;
-    gatt_client_main();
-    //TO-DO complete client device code.
-    uint8_t gatt_if = get_gatt_if();
-    uint8_t connection_id = get_client_connid();
-    uint8_t* client_mac_address = get_my_MAC();
-    slave.set_server_connection_id(connection_id);
-    slave.set_dev_addr(client_mac_address);
-    slave.set_device_gatt_if(gatt_if);
-    ESP_LOGE("CLIENT","GATT_IF: %d CONNECTION_ID: %d MAC_ADDRESS: %p",gatt_if,connection_id,client_mac_address);
-    ESP_LOGE("CLIENT","SUCCESS INITIALIZING CLIENT DEVICE");
-
-  
-
-
+    }
   }
-  else{
-    std::cout<<"I'm NO ONE something's wrong"<<std::endl;  
-    //TO-Do complete server device code.
-  }
-  
-
-
-
+*/
+ 
   return 0;
   
   

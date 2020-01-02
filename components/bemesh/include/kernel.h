@@ -5,6 +5,9 @@
 #pragma once
 #include "gatts_table.h"
 
+
+
+
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -44,10 +47,15 @@
 #define CLIENT 0
 #define SERVER 1
 
+
+
+extern bool becoming_client;
+extern bool becoming_server;
+
 typedef void(*NotifyCb)();
 
 
-typedef void(*NotifyCb)();
+typedef void(*InitCb)(uint8_t);
 
 /*
  *  	FUNCTIONS DECLARATION
@@ -80,6 +88,10 @@ void unregister_client();
 void unregister_server();
 void start_internal_client(uint8_t client); // internal clients are SERVER_S1, SERVER_S2, SERVER_S3. This includes the registration
 void change_name(uint8_t flag, uint8_t idx); // Flag: 1 -> +, 0 -> -
+
+
+
+//Trasferite in characteristic.h
 
 uint8_t find_CHR(uint16_t handle); // Given an handle find the characteristic it refers to
 void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array, uint8_t len);
@@ -119,7 +131,7 @@ uint8_t* get_internal_client_serverMAC(uint8_t client_id); // Returns the MAC ad
 
 // CALLBACKS
 uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
-
+uint8_t install_InitCb(InitCb cb); //Same as above.
 
 
 

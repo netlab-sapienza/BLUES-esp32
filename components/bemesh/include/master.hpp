@@ -1,3 +1,5 @@
+
+#pragma once
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,6 +76,10 @@ namespace  bemesh{
                 Master(uint8_t id);
                 Master();
 
+                void start();
+                void shutdown();
+                
+
                 
 
 
@@ -145,6 +151,9 @@ namespace  bemesh{
 
                 
         };
+
+
+        extern Master* master_istance;
 }
 
 

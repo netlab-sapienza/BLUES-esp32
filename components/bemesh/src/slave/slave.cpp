@@ -127,7 +127,7 @@ namespace bemesh{
             return WrongAddress;
         else
         {
-            write_CHR(gattc_if,conn_id,IDX_CHAR_A,(uint8_t *)message,message_size);
+            //write_CHR(gattc_if,conn_id,IDX_CHAR_A,(uint8_t *)message,message_size);
             return Success;
         }
         //Implementare una sorta di meccanismo di acknowledgement se possibile.
@@ -149,7 +149,7 @@ namespace bemesh{
         if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B ||
             characteristic == IDX_CHAR_C )
         {
-            write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
+            //write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
             return Success;
         }        
         
@@ -158,6 +158,11 @@ namespace bemesh{
             return GenericError;
         }
 
+    }
+    
+    void Slave::shutdown(){
+        if(slave_istance != NULL)
+            delete slave_istance;
     }
 
 

@@ -6,20 +6,13 @@
  
 
 
-/*
- *  	CALLBACKS
- */
-// Callback when a client receive a notification from a server
-NotifyCb ntf_cb;
-
 
 /*
  *  	CALLBACKS
  */
 // Callback when a client receive a notification from a server
 NotifyCb ntf_cb;
-
-
+InitCb init_cb;
 /*
  *  	SETTINGS
  */
@@ -30,12 +23,12 @@ uint8_t MACS[TOTAL_NUMBER_LIMIT][6] = { 0 };
 uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
 uint8_t n_connections = 0;
 
-
+/*
 // Characteristics
 uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
 uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX] = { 0 }; // Characteristic's values
 uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characteristic's values in CHR_VALUES
-
+*/
 // Scan parameters
 uint32_t base_scan = 2;
 uint32_t scan_dividend = 10;
@@ -352,6 +345,10 @@ uint16_t max_length;       !< Maximum length of the element
 uint16_t length;           !< Current length of the element    
 uint8_t  *value;           !< Element value array
 */
+uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
+uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX] = { 0 }; // Characteristic's values
+uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characteristic's values in CHR_VALUES
+
 
 ///
 const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
@@ -674,7 +671,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         }
         ESP_LOGI(GATTC_TAG, "write descr success ");
         
-        
+        becoming_client = true;
+        (*init_cb)(CLIENT);
         //xTaskCreate(my_task2, "TASK", 2048, NULL, 2, NULL);
         
         /*
@@ -782,10 +780,10 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6); 
-            ESP_LOGI(GATTC_TAG, "searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
 
 #if CONFIG_EXAMPLE_DUMP_ADV_DATA_AND_SCAN_RESP
@@ -1100,6 +1098,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                     // Used for the exchange of characteristics handles
                     if (descr_value == 0x0001){
                         ESP_LOGI(GATTS_TAG, "notify enable");
+                       
                         uint8_t notify_data[HRS_IDX_NB+1];
                         for (int i = 0; i < sizeof(notify_data); ++i) {
 							if(!i) notify_data[i] = 0xaa;
@@ -1207,6 +1206,10 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             break;
         case ESP_GATTS_START_EVT:
             ESP_LOGI(GATTS_TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
+            
+            (*init_cb)(SERVER);
+            becoming_server = true;
+        
             break;
         case ESP_GATTS_CONNECT_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_CONNECT_EVT, conn_id = %d", param->connect.conn_id);
@@ -2149,12 +2152,12 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
-            ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
-            ESP_LOGI(GATTC_TAG, "\n");
+            //ESP_LOGI(GATTC_TAG, "\n");
             if (Isconnecting){
                 break;
             }
@@ -2277,12 +2280,12 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
        case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
-            ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
-            ESP_LOGI(GATTC_TAG, "\n");
+            //ESP_LOGI(GATTC_TAG, "\n");
             if (Isconnecting){
                 break;
             }
@@ -2404,12 +2407,12 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
-            ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
-            ESP_LOGI(GATTC_TAG, "\n");
+            //ESP_LOGI(GATTC_TAG, "\n");
             if (Isconnecting){
                 break;
             }
@@ -2599,6 +2602,7 @@ uint8_t find_CHR(uint16_t handle) {
 	}
 	return NOID;
 }
+
 
 void change_name(uint8_t flag, uint8_t idx) {
 	int i = device_name[idx] - '0';
@@ -2926,6 +2930,13 @@ uint8_t install_NotifyCb(NotifyCb cb) {
 	ntf_cb = cb;
 	return 0;
 }
+
+uint8_t install_InitCb(InitCb cb){
+    if(!cb)return 1;
+    init_cb = cb;
+    return 0;
+}
+
 
 uint8_t get_internal_client_connid(uint8_t client_id) {
 	switch(client_id) {
