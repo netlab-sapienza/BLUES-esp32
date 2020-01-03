@@ -26,15 +26,24 @@
 
 
 
+
+
+
 #include "services.hpp"
+#include "constant.hpp"
+
+
+//Mid-tier.
 #include "rtable.hpp"
-#include "bemesh_messages.hpp"
-#include "bemesh_status.hpp"
-#include "gatts_table.h"
+#include "routing.hpp"
+#include "message_handler_v2.hpp"
+
+
 
 
 extern "C"{
     #include "kernel.h"
+    #include "gatts_table.h"
 }
 
 #include <string>
@@ -58,25 +67,35 @@ namespace  bemesh{
             uint8_t* address;
             uint8_t device_conn_id; //for Android compatibility mode.
             uint16_t device_gatt_if;
-
-
-
-
-
-            
-            
             //Used to be static
             uint8_t adv_config_done = 0;
+
+            //Server-side buffer for message transmission
+            uint8_t master_tx_buffer[MASTER_TX_BUFFER_SIZE];
+
+
+            //Objects to be used by master class
+            Router* router;
+            MessageHandler mes_handler;
+
+
+            //Private function to convert a uint8_t* to a dev_addr_t.
+            dev_addr_t _build_dev_addr(uint8_t* address);
+
 
             public:
                 
                 
-                //to be deleted
+                //To be deleted
                 Master(uint8_t id, std::string TAG);
                 Master(uint8_t id);
                 Master();
+                
 
+                //Start method to initialize all fields of the class.
                 void start();
+
+                //Shutdown method to cancel objects on heap.
                 void shutdown();
                 
 
@@ -108,35 +127,10 @@ namespace  bemesh{
                 uint8_t get_device_gatt_if();
                 void set_device_gatt_if(uint16_t gatt_if);
 
-
-
-                void init();
-                /*
-                NextIdService getNextIdService(){return nextIdService;}
-
-                void setNextIdService(unsigned int next_id){nextIdService.nextId = next_id;}
-                */
-
-                //Read the value of a characteristic stored on a specific service stored in the
-                //service table of the esp.
-
-                int write_characteristic(struct gatts_profile_inst* table,
-                                        unsigned int table_size, uint16_t service_handle, 
-                                        uint16_t char_handle, void* value);
-                        
-                //void addService()
-                //void addCharacteristic
-                void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
-                void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
-                
-                
-                //Callback for A profile and its services.
-                void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
-                
-                
-                
-                void ble_indicate(uint8_t value, uint16_t id);
-                
+                Router* get_router();
+                MessageHandler* get_message_handler();
+                uint8_t* get_master_tx_buffer();
+ 
                 int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
                                         uint16_t buffer_size, uint16_t gattc_if,
                                         uint16_t conn_id);
@@ -152,7 +146,7 @@ namespace  bemesh{
                 
         };
 
-
+        //Istanza della classe accessibile ovunque nel codice.
         extern Master* master_istance;
 }
 

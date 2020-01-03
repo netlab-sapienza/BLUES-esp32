@@ -4,16 +4,19 @@
 #include "rtable.hpp" //For dev_addr_t data type.
 #include <stdint.h>
 #include <string>
-#include  "gatts_table.h"
-#include "message_handler.hpp"
-#include "bemesh_messages.hpp"
+
+
 #include "bemesh_status.hpp"
+#include "message_handler_v2.hpp"
+#include "routing.hpp"
+#include "constant.hpp"
 #include <stdlib.h>
 #include <iostream>
 
 
 extern "C"{
     #include "kernel.h"
+    #include "gatts_table.h"
 }
 
 namespace bemesh{
@@ -27,8 +30,19 @@ namespace bemesh{
         bool esp;
         bool connected_to_internet;
         std::string name;
-        MessageHandler msg_handler;
 
+
+        //Objects used by the slave istance.
+        Router* router;
+        MessageHandler mes_handler;
+
+        //Buffer for message send/receive
+        uint8_t slave_tx_buffer[SLAVE_TX_BUFFER_SIZE];
+        
+
+        dev_addr_t _build_dev_addr(uint8_t* address);
+
+       
 
 
         public:
@@ -60,8 +74,11 @@ namespace bemesh{
             uint8_t get_device_gatt_if();
             void set_device_gatt_if(uint16_t gatt_if);
 
+            Router* get_router();
+            MessageHandler* get_message_handler();
+            uint8_t * get_slave_tx_buffer();
 
-            MessageHandler get_message_handler();
+
 
             int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
                                         uint16_t buffer_size, uint16_t gattc_if,

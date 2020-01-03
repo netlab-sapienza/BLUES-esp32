@@ -82,11 +82,27 @@ namespace bemesh{
         device_gatt_if = gatt_if;
     }
 
-    MessageHandler Slave::get_message_handler(){
-        return msg_handler;
+    Router* Slave::get_router(){
+        return router;
     }
 
-    
+    MessageHandler* Slave::get_message_handler(){
+        return &mes_handler;
+    }
+
+    uint8_t* Slave::get_slave_tx_buffer(){
+        return slave_tx_buffer;
+    }
+
+
+    dev_addr_t Slave::_build_dev_addr(uint8_t* address){
+        int i;
+        dev_addr_t ret;
+        for(i = 0; i<DEV_ADDR_LEN; ++i){
+            ret[i] = address[i];
+        }
+        return ret;
+    }
 
 
 
@@ -149,7 +165,7 @@ namespace bemesh{
         if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B ||
             characteristic == IDX_CHAR_C )
         {
-            //write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
+            write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
             return Success;
         }        
         
@@ -165,6 +181,47 @@ namespace bemesh{
             delete slave_istance;
     }
 
+    void Slave::start(){
+        if(slave_istance == NULL)
+            return;
+        
+        //Initialize all fields of the class;
+        uint16_t gatt_if = get_gatt_if();
+        uint8_t* mac_address = get_my_MAC();
+        uint8_t conn_id = get_client_connid();
+
+        set_device_gatt_if(gatt_if);
+        set_device_connection_id(conn_id);
+        set_dev_addr(mac_address);
+
+        dev_addr_t converted_address = _build_dev_addr(mac_address);  
+        if(mac_address != NULL){
+            router = new Router(converted_address);
+        }
+
+        mes_handler.installTxBuffer(slave_tx_buffer);
+
+        const char* fake_message = "HELLO";
+        std::cout<<"I'm about to write smth"<<std::endl;
+        int i;
+        for( i = 0;i< 10; i++)
+            write_characteristic(IDX_CHAR_A,converted_address,(void*)fake_message,
+                                6,gatt_if,conn_id);
+        
+        uint8_t buffer[6];
+        int16_t bytes_read;
+        for(i = 0; i<10; i++){
+            bytes_read = read_characteristic(IDX_CHAR_A,converted_address,(void*)buffer,6,
+                                gatt_if,conn_id);
+            std::cout<<buffer[0]<<buffer[1]<<buffer[2]<<buffer[3]<<buffer[4]<<buffer[5]<<std::endl;
+            std::cout<<"Bytes read: "<<bytes_read<<std::endl;
+        }
+
+
+
+
+
+    }
 
     void Slave::print_status(){
         std::cout<<"Printing slave status:"<<std::endl;
@@ -180,6 +237,8 @@ namespace bemesh{
 
     }
 
+
+    
 
 
 

@@ -14,11 +14,15 @@ namespace bemesh{
             case SERVER:{
                 master_istance = new Master();
                 ESP_LOGE(FUNCTOR_TAG,"OGGETTO MASTER SULL'HEAP");
+                
+                //Inizializzazione e start del server.
+                master_istance->start();
                 return;
             }
             case CLIENT:{
                 slave_istance = new Slave();
                 ESP_LOGE(FUNCTOR_TAG,"OGGETTO SLAVE SULL'HEAP");
+                slave_istance->start();
                 return;
             }
             default:{

@@ -5,7 +5,7 @@
 #pragma once
 
 #include <memory>
-#include "bemesh_messages.hpp"
+#include "bemesh_messages_v2.hpp"
 
 
 

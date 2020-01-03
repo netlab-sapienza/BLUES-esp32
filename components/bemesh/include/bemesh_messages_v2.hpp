@@ -10,6 +10,10 @@
 #include <ostream>
 #include <istream>
 
+#define MESSAGE_TYPES_MAX 16
+#define MESSAGE_SIZE_MAX 255
+#define MAX_COMM_MESSAGE_LENGHT 210 
+
 namespace bemesh {
 #define MESSAGE_TYPE_MAX 4
   class MessageHeader {
@@ -99,5 +103,11 @@ namespace bemesh {
     // Serialization
     void serialize(std::ostream&) const;
     RoutingUpdateMessage* create(std::istream&);
+  };
+
+
+  //TO-DO complete.
+  class CommunicationMessage : public MessageHeader{
+
   };
 }

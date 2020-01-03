@@ -23,12 +23,7 @@ uint8_t MACS[TOTAL_NUMBER_LIMIT][6] = { 0 };
 uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
 uint8_t n_connections = 0;
 
-/*
-// Characteristics
-uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
-uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX] = { 0 }; // Characteristic's values
-uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characteristic's values in CHR_VALUES
-*/
+
 // Scan parameters
 uint32_t base_scan = 2;
 uint32_t scan_dividend = 10;
@@ -360,7 +355,7 @@ const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 
     /* Characteristic Declaration */
     [IDX_CHAR_A]     =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
     /* Characteristic Value */
@@ -2576,6 +2571,9 @@ void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array,
 		if(ret) {
 			ESP_LOGE(GATTC_TAG, "Error writing the char: %x", ret);
 		}
+        else{
+            ESP_LOGE(GATTC_TAG,"Success writing the char: %x",ret);
+        }
 		vTaskDelay(200);
 }
 
