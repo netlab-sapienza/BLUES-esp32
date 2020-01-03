@@ -1233,7 +1233,13 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			//Restart the advs to be avaiable --> MULTIPLE CLIENTS
 			esp_ble_gap_start_advertising(&adv_params);
 			advertising = 1;
-
+			
+			// Updating MACs table
+			int k;
+			for(k=0; k<6; k++) {
+				MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
+			}
+			
             (*server_update_cb)(MACS);
 
             break;
