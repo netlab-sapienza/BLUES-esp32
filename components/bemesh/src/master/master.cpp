@@ -144,10 +144,6 @@ namespace bemesh{
 
         //Error. It returns -1.
         write_characteristic(IDX_CHAR_VAL_A,addr,(void*)fake_message,5,device_gatt_if,device_conn_id);
-
-
-
-
     }
 
 
@@ -222,16 +218,16 @@ namespace bemesh{
         uint8_t SIZE = 6;
         int i;
         for(i = 0; i<SIZE;i++){
-            std::cout<<address[i];
+           ESP_LOGE("CLIENT","Byte[%d]: %x",i,address[i]);
         }
-        std::cout<<std::endl;
     }
 
     void Master::update_master_macs(uint8_t** macs){
         int i;
-        //std::cout<<"Updating client table"<<std::endl;
+        std::cout<<"Updating client table"<<std::endl;
         for(i = 0; i<TOTAL_NUMBER_LIMIT; i++){
-            //_print_mac_address(macs[i]);
+            if(macs[i])
+                _print_mac_address(macs[i]);
             connected_devices_macs[i] = macs[i];
         }
         return;

@@ -204,23 +204,28 @@ namespace bemesh{
         mes_handler.installTxBuffer(slave_tx_buffer);
 
         const char* fake_message = "HELLO";
+        uint8_t trys[6] = {4};
         std::cout<<"I'm about to write smth"<<std::endl;
         int i;
 
         //Characteristic subscription?
         
         for( i = 0;i< 10; i++){
-            write_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)fake_message,
+            write_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)trys,
                                 6,gatt_if,conn_id);
         }
-        uint8_t buffer[6] = {0};
+
+        for( i = 0;i< 10; i++){
+            write_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)trys,
+                                6,gatt_if,conn_id);
+        }
+        uint8_t buffer[24] = {0};
         int16_t bytes_read;
         for(i = 0; i<10; i++){
             bytes_read = read_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)buffer,6,
                                 gatt_if,conn_id);
         }
-
-
+        
     }
 
     void Slave::_print_mac_address(uint8_t* address){

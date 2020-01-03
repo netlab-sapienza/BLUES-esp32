@@ -33,7 +33,6 @@ namespace bemesh{
 
 
     void Callback::server_update_callback( uint8_t** macs){
-        //server_istance->update_id_table(id_table);
         master_istance->update_master_macs(macs);
     }
 

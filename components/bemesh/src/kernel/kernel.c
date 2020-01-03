@@ -193,6 +193,7 @@ static esp_attr_value_t gatts_demo_char1_val =
     .attr_value   = char1_str,
 };
 */
+
 uint8_t adv_config_done = 0;
 #define adv_config_flag      (1 << 0)
 #define scan_rsp_config_flag (1 << 1)
