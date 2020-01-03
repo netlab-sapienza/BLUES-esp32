@@ -31,6 +31,12 @@ namespace bemesh{
         }
     }
 
+
+    void Callback::server_update_callback( uint8_t** macs){
+        //server_istance->update_id_table(id_table);
+        master_istance->update_master_macs(macs);
+    }
+
     void Callback::notify_callback(void){
     }
 
@@ -42,6 +48,11 @@ namespace bemesh{
         ret = install_NotifyCb(notify_callback);
         if(ret){
             ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della notify_callback");
+        }
+
+        ret = install_ServerUpdateCb(server_update_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della server_update_callback"); 
         }
 
         ESP_LOGE(FUNCTOR_TAG,"HO FINITO DI INSTALLARE LE CALLBACKS");

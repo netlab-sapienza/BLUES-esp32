@@ -64,11 +64,26 @@ namespace  bemesh{
             
             bool esp;
             bool connected_to_internet;
-            uint8_t* address;
-            uint8_t device_conn_id; //for Android compatibility mode.
+            dev_addr_t address;
+
+            //For characteristic writing/reading.
+            uint8_t device_conn_id; 
             uint16_t device_gatt_if;
-            //Used to be static
-            uint8_t adv_config_done = 0;
+
+            //List of mac addresses of connected devices.
+            uint8_t** connected_devices_macs;
+
+            //List of connection_ids of connected devices.
+            uint8_t* connected_devices_conn_id;
+            
+
+            //To be implemented. For android compatibility mode.
+            uint8_t device_id;
+
+
+
+
+
 
             //Server-side buffer for message transmission
             uint8_t master_tx_buffer[MASTER_TX_BUFFER_SIZE];
@@ -81,6 +96,7 @@ namespace  bemesh{
 
             //Private function to convert a uint8_t* to a dev_addr_t.
             dev_addr_t _build_dev_addr(uint8_t* address);
+            void _print_mac_address(uint8_t* mac);
 
 
             public:
@@ -118,8 +134,8 @@ namespace  bemesh{
                 bool is_esp();
                 void set_esp(bool is_esp);
 
-                uint8_t* get_dev_addr();
-                void set_dev_addr(uint8_t* new_dev_addr);
+                dev_addr_t get_dev_addr();
+                void set_dev_addr(dev_addr_t new_dev_addr);
                 
                 uint16_t get_device_connection_id();
                 void set_device_connection_id(uint16_t device_conn_id);
@@ -130,6 +146,16 @@ namespace  bemesh{
                 Router* get_router();
                 MessageHandler* get_message_handler();
                 uint8_t* get_master_tx_buffer();
+                uint8_t** get_connected_devices_macs();
+                uint8_t* get_connected_devices_conn_id();
+
+
+                void update_master_macs(uint8_t** macs);
+                
+
+
+
+
  
                 int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
                                         uint16_t buffer_size, uint16_t gattc_if,

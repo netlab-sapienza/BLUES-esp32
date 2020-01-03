@@ -52,11 +52,11 @@ namespace bemesh{
         return;
     }
 
-    uint8_t* Master::get_dev_addr(){
+    dev_addr_t Master::get_dev_addr(){
         return address;
     }
 
-    void Master::set_dev_addr(uint8_t* dev_addr){
+    void Master::set_dev_addr(dev_addr_t dev_addr){
         if(esp)
             address = dev_addr;
         return;
@@ -91,26 +91,45 @@ namespace bemesh{
         return master_tx_buffer;
     }
 
+    uint8_t** Master::get_connected_devices_macs(){
+        return connected_devices_macs;
+    }
+
+    uint8_t* Master::get_connected_devices_conn_id(){
+        return connected_devices_conn_id;
+    }
+
+
+
+
     //Master object main task. Used to test functions and primitives.
     void Master::start(){
 
         //Can't start if master is not allocated.
         if(master_istance == NULL)
             return;
+
+        //For now there will only be esp.They won't send data to internet.
+        set_esp(true);
+        set_connected_to_internet(false);
+
         uint16_t  gatt_if = get_gatt_if();
         uint8_t* mac_address = get_my_MAC();
         uint8_t conn_id = get_client_connid();
+        uint8_t** devices = get_connected_MACS();
+        connected_devices_macs = devices;
 
-        
-        set_device_gatt_if(gatt_if);
-        set_device_connection_id(conn_id);
-        set_dev_addr(mac_address);
         dev_addr_t addr;
         if(mac_address != NULL){
             addr = _build_dev_addr(mac_address);
             //Router object allocation.
             router = new Router(addr);
         }
+        
+        set_device_gatt_if(gatt_if);
+        set_device_connection_id(conn_id);
+        set_dev_addr(addr);
+        
 
         //Buffer to send/receive messages.
         mes_handler.installTxBuffer(master_tx_buffer);
@@ -124,7 +143,7 @@ namespace bemesh{
 
 
         //Error. It returns -1.
-        write_characteristic(IDX_CHAR_A,addr,(void*)fake_message,5,device_gatt_if,device_conn_id);
+        write_characteristic(IDX_CHAR_VAL_A,addr,(void*)fake_message,5,device_gatt_if,device_conn_id);
 
 
 
@@ -199,6 +218,22 @@ namespace bemesh{
         }
         return ret;
     }
+    void Master::_print_mac_address(uint8_t* address){
+        uint8_t SIZE = 6;
+        int i;
+        for(i = 0; i<SIZE;i++){
+            std::cout<<address[i];
+        }
+        std::cout<<std::endl;
+    }
 
-    
+    void Master::update_master_macs(uint8_t** macs){
+        int i;
+        //std::cout<<"Updating client table"<<std::endl;
+        for(i = 0; i<TOTAL_NUMBER_LIMIT; i++){
+            //_print_mac_address(macs[i]);
+            connected_devices_macs[i] = macs[i];
+        }
+        return;
+    }
 }

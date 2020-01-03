@@ -12,6 +12,8 @@
  */
 // Callback when a client receive a notification from a server
 NotifyCb ntf_cb;
+ServerUpdateCb server_update_cb;
+
 InitCb init_cb;
 /*
  *  	SETTINGS
@@ -116,6 +118,8 @@ bool conn_device_S3   = false;
 bool get_service_S1   = false;
 bool get_service_S2   = false;
 bool get_service_S3   = false;
+
+
 
 bool Isconnecting    = false;
 bool stop_scan_done  = false;
@@ -1228,6 +1232,9 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			//Restart the advs to be avaiable --> MULTIPLE CLIENTS
 			esp_ble_gap_start_advertising(&adv_params);
 			advertising = 1;
+
+            (*server_update_cb)(MACS);
+
             break;
         case ESP_GATTS_DISCONNECT_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_DISCONNECT_EVT, reason = 0x%x", param->disconnect.reason);
@@ -2935,6 +2942,11 @@ uint8_t install_InitCb(InitCb cb){
     return 0;
 }
 
+uint8_t install_ServerUpdateCb(ServerUpdateCb cb){
+    if(!cb) return 1;
+    server_update_cb = cb;
+    return 0;
+}
 
 uint8_t get_internal_client_connid(uint8_t client_id) {
 	switch(client_id) {

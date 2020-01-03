@@ -56,6 +56,7 @@ typedef void(*NotifyCb)();
 
 
 typedef void(*InitCb)(uint8_t);
+typedef void(*ServerUpdateCb)(uint8_t**);
 
 /*
  *  	FUNCTIONS DECLARATION
@@ -132,7 +133,7 @@ uint8_t* get_internal_client_serverMAC(uint8_t client_id); // Returns the MAC ad
 // CALLBACKS
 uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
 uint8_t install_InitCb(InitCb cb); //Same as above.
-
+uint8_t install_ServerUpdateCb(ServerUpdateCb cb); //Same as above
 
 
 bool has_ended_scanning();

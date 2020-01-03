@@ -114,16 +114,17 @@ namespace bemesh{
     {
         if(buffer == NULL)
             return -1;
-        if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B || 
-            characteristic == IDX_CHAR_C)
+        if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B || 
+            characteristic == IDX_CHAR_VAL_C)
         {
 
             uint8_t* received_bytes=  read_CHR(gattc_if,conn_id,characteristic);
             uint8_t char_len_read = get_CHR_value_len(characteristic);
-            if(buffer_size < char_len_read){
+            /*if(buffer_size < char_len_read){
                 return -1;
-            }
+            }*/
             memcpy((void*)received_bytes,buffer,char_len_read);
+            std::cout<<"Byte[0]: "<<received_bytes[0]<<std::endl;
             return char_len_read;
 
         }
@@ -162,8 +163,8 @@ namespace bemesh{
         if(conn_id != server_conn_id)
             return WrongAddress;
 
-        if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B ||
-            characteristic == IDX_CHAR_C )
+        if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B ||
+            characteristic == IDX_CHAR_VAL_C )
         {
             write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
             return Success;
@@ -189,6 +190,7 @@ namespace bemesh{
         uint16_t gatt_if = get_gatt_if();
         uint8_t* mac_address = get_my_MAC();
         uint8_t conn_id = get_client_connid();
+        _print_mac_address(mac_address);
 
         set_device_gatt_if(gatt_if);
         set_device_connection_id(conn_id);
@@ -204,23 +206,30 @@ namespace bemesh{
         const char* fake_message = "HELLO";
         std::cout<<"I'm about to write smth"<<std::endl;
         int i;
-        for( i = 0;i< 10; i++)
-            write_characteristic(IDX_CHAR_A,converted_address,(void*)fake_message,
-                                6,gatt_if,conn_id);
+
+        //Characteristic subscription?
         
-        uint8_t buffer[6];
+        for( i = 0;i< 10; i++){
+            write_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)fake_message,
+                                6,gatt_if,conn_id);
+        }
+        uint8_t buffer[6] = {0};
         int16_t bytes_read;
         for(i = 0; i<10; i++){
-            bytes_read = read_characteristic(IDX_CHAR_A,converted_address,(void*)buffer,6,
+            bytes_read = read_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)buffer,6,
                                 gatt_if,conn_id);
-            std::cout<<buffer[0]<<buffer[1]<<buffer[2]<<buffer[3]<<buffer[4]<<buffer[5]<<std::endl;
-            std::cout<<"Bytes read: "<<bytes_read<<std::endl;
         }
 
 
+    }
 
-
-
+    void Slave::_print_mac_address(uint8_t* address){
+        uint8_t SIZE = 6;
+        int i;
+        for(i = 0; i<SIZE;i++){
+           ESP_LOGE("CLIENT","Byte[%d]: %x",i,address[i]);
+        }
+       
     }
 
     void Slave::print_status(){
