@@ -23,7 +23,7 @@
 #include "esp_gatt_common_api.h"
 
 #include "sdkconfig.h"
-
+#include <list>
 
 
 
@@ -80,6 +80,8 @@ namespace  bemesh{
             //To be implemented. For android compatibility mode.
             uint8_t device_id;
 
+
+            std::list<uint8_t*> connected_clients;
 
 
 
@@ -148,11 +150,26 @@ namespace  bemesh{
                 uint8_t* get_master_tx_buffer();
                 uint8_t** get_connected_devices_macs();
                 uint8_t* get_connected_devices_conn_id();
-
-
-                void update_master_macs(uint8_t** macs);
+                
+                std::list<uint8_t*> get_connected_clients();
+                //Add the MAC address ("new address") to the connected client list.
+                void add_connected_client(uint8_t* new_address);
+                //Remove the MAC address ("address") to the connected client list.
+                void remove_connected_client(uint8_t* address);
                 
 
+
+                void update_master_macs(uint8_t* macs);
+                void update_master_routing_table (uint8_t* address);
+
+                
+                void add_routing_table_entry(dev_addr_t target_addr,
+                                    dev_addr_t hop_addr,uint8_t num_hops, uint8_t t_flags);
+
+                void remove_routing_table_entry(dev_addr_t addr);
+                dev_addr_t& get_next_hop(dev_addr_t target_addr);
+                
+                dev_addr_t& get_router_dev_addr();
 
 
 
@@ -164,16 +181,11 @@ namespace  bemesh{
             
                 ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
                                         uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id);
-            
-
-
-                                        
-
                 
         };
 
         //Istanza della classe accessibile ovunque nel codice.
-        extern Master* master_istance;
+        extern Master* master_instance;
 }
 
 

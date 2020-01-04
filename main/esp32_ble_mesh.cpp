@@ -65,7 +65,6 @@ int main(void) {
   bemesh::Callback callback_functor;
   //Installing all callbacks
   callback_functor();
-
   return 0;
   
   

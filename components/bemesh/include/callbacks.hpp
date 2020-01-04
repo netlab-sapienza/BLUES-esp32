@@ -43,7 +43,7 @@ namespace bemesh{
         
         static void init_callback(uint8_t type);
         static void notify_callback(void);
-        static void server_update_callback(uint8_t** macs);
+        static void server_update_callback(uint8_t* macs);
 
         public:
             void operator()(void);

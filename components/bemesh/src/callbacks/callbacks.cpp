@@ -3,8 +3,8 @@
 
 
 namespace bemesh{
-    Master* master_istance;
-    Slave* slave_istance;
+    Master* master_instance;
+    Slave* slave_instance;
 
 
     Callback::Callback(){}
@@ -12,17 +12,17 @@ namespace bemesh{
     void Callback::init_callback(uint8_t type){
         switch(type){
             case SERVER:{
-                master_istance = new Master();
+                master_instance = new Master();
                 ESP_LOGE(FUNCTOR_TAG,"OGGETTO MASTER SULL'HEAP");
                 
                 //Inizializzazione e start del server.
-                master_istance->start();
+                master_instance->start();
                 return;
             }
             case CLIENT:{
-                slave_istance = new Slave();
+                slave_instance = new Slave();
                 ESP_LOGE(FUNCTOR_TAG,"OGGETTO SLAVE SULL'HEAP");
-                slave_istance->start();
+                slave_instance->start();
                 return;
             }
             default:{
@@ -32,8 +32,8 @@ namespace bemesh{
     }
 
 
-    void Callback::server_update_callback( uint8_t** macs){
-        master_istance->update_master_macs(macs);
+    void Callback::server_update_callback( uint8_t* macs){
+        master_instance->update_master_macs(macs);
     }
 
     void Callback::notify_callback(void){

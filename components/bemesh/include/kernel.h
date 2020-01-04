@@ -21,6 +21,8 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 
+
+
 #include "esp_bt.h"
 #include "esp_gap_ble_api.h"
 #include "esp_gattc_api.h"
@@ -35,18 +37,41 @@
 #include <stdlib.h>
 #include "freertos/event_groups.h"
 #include "esp_system.h"
+#include "constant.hpp"
+
 
 #define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
 
 #define TOTAL_NUMBER_LIMIT 7 // Total of incoming and outgoing edges is 7
 #define CLIENTS_NUMBER_LIMIT 4 // Incoming links of clients
 #define SERVERS_NUMBER_LIMIT 3 // Outgoing or incoming connections with servers
-
+#define PROFILE_NUM      1
 // Macros for the ID_TABLE
 
 #define CLIENT 0
 #define SERVER 1
+#define GATTC_TAG "GATT_CLIENT"
+#define REMOTE_SERVICE_UUID        0x00FF
+#define REMOTE_NOTIFY_CHAR_UUID    0xFF01
+#define PROFILE_A_APP_ID 0
+#define INVALID_HANDLE   0
+struct gattc_profile_inst {
+    esp_gattc_cb_t gattc_cb;
+    uint16_t gattc_if;
+    uint16_t app_id;
+    uint16_t conn_id;
+    uint16_t service_start_handle;
+    uint16_t service_end_handle;
+    uint16_t char_handle;
+    esp_bd_addr_t remote_bda;
+} ;
 
+
+
+extern uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX];
+extern uint16_t CHR_HANDLES[HRS_IDX_NB];
+extern struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM];
+extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
 
 
 extern bool becoming_client;
@@ -56,7 +81,11 @@ typedef void(*NotifyCb)();
 
 
 typedef void(*InitCb)(uint8_t);
-typedef void(*ServerUpdateCb)(uint8_t**);
+
+
+//Mi faccio passare direttamente la entry della mac table e ne tengo una custom sul server.
+
+typedef void(*ServerUpdateCb)(uint8_t*);
 
 /*
  *  	FUNCTIONS DECLARATION

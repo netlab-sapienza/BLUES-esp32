@@ -41,12 +41,6 @@ uint8_t server_scanning = 0; // Server is scanning?
  *  	CLIENT
  */
  
-#define GATTC_TAG "GATT_CLIENT"
-#define REMOTE_SERVICE_UUID        0x00FF
-#define REMOTE_NOTIFY_CHAR_UUID    0xFF01
-#define PROFILE_NUM      1
-#define PROFILE_A_APP_ID 0
-#define INVALID_HANDLE   0
 
 
 esp_bt_uuid_t remote_filter_service_uuid = {
@@ -73,16 +67,6 @@ esp_ble_scan_params_t ble_scan_params = {
     .scan_duplicate         = BLE_SCAN_DUPLICATE_DISABLE
 };
 
-struct gattc_profile_inst {
-    esp_gattc_cb_t gattc_cb;
-    uint16_t gattc_if;
-    uint16_t app_id;
-    uint16_t conn_id;
-    uint16_t service_start_handle;
-    uint16_t service_end_handle;
-    uint16_t char_handle;
-    esp_bd_addr_t remote_bda;
-} ;
 
 #define DEVICE_NAME_LEN 6
 const char remote_device_name[] = "SERVER";
@@ -1240,7 +1224,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 				MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
 			}
 			
-            (*server_update_cb)(MACS);
+            //Send the new mac_address to the server.
+            (*server_update_cb)(MACS[param->connect.conn_id]);
 
             break;
         case ESP_GATTS_DISCONNECT_EVT:

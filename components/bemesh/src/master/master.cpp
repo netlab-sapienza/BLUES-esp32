@@ -6,13 +6,15 @@
 namespace bemesh{
   
 
-    Master::Master(uint8_t id, std::string name):name(name),device_conn_id(id){ 
+    Master::Master(uint8_t id, std::string name):name(name),device_conn_id(id),
+    connected_clients()
+    { 
     }
 
-    Master::Master(uint8_t id):device_conn_id(id){
+    Master::Master(uint8_t id):device_conn_id(id),connected_clients(){
     }
 
-    Master::Master(){
+    Master::Master():connected_clients(){
         
     }
 
@@ -91,12 +93,47 @@ namespace bemesh{
         return master_tx_buffer;
     }
 
+
+    //Puntatore alla matrice.
     uint8_t** Master::get_connected_devices_macs(){
         return connected_devices_macs;
     }
 
     uint8_t* Master::get_connected_devices_conn_id(){
         return connected_devices_conn_id;
+    }
+
+    void Master::add_routing_table_entry(dev_addr_t target_addr, dev_addr_t hop_addr,
+                            uint8_t num_hops, uint8_t t_flags)
+    {
+        router->add(target_addr,hop_addr, num_hops,t_flags);                    
+    }
+
+    void Master::remove_routing_table_entry(dev_addr_t target_addr){
+        router->remove(target_addr);
+    }
+
+    dev_addr_t& Master::get_next_hop(dev_addr_t addr){
+        return router->nextHop(addr);
+    }
+
+    void Master::add_connected_client(uint8_t* new_address){
+        //Implement a contains check
+        connected_clients.push_back(new_address);
+    }
+
+    void Master::remove_connected_client(uint8_t* address ){
+        //Implement a contains check.
+        connected_clients.remove(address);
+    }
+
+    std::list<uint8_t*> Master::get_connected_clients(){
+        std::list<uint8_t*> ret(connected_clients);
+        return ret;
+    }
+
+    dev_addr_t& Master::get_router_dev_addr(){
+        return router->addr();
     }
 
 
@@ -106,7 +143,7 @@ namespace bemesh{
     void Master::start(){
 
         //Can't start if master is not allocated.
-        if(master_istance == NULL)
+        if(master_instance == NULL)
             return;
 
         //For now there will only be esp.They won't send data to internet.
@@ -118,6 +155,8 @@ namespace bemesh{
         uint8_t conn_id = get_client_connid();
         uint8_t** devices = get_connected_MACS();
         connected_devices_macs = devices;
+        
+
 
         dev_addr_t addr;
         if(mac_address != NULL){
@@ -133,17 +172,10 @@ namespace bemesh{
 
         //Buffer to send/receive messages.
         mes_handler.installTxBuffer(master_tx_buffer);
-        
-
-        //Implement the transmission and receive callbacks.
-
-        const char* fake_message = "HELLO";
-        uint16_t BUF_SIZE = 256;
-        uint8_t buff[BUF_SIZE];
+        //Routing mechanism
+        //Next hop di un client è sempre un server.
 
 
-        //Error. It returns -1.
-        write_characteristic(IDX_CHAR_VAL_A,addr,(void*)fake_message,5,device_gatt_if,device_conn_id);
     }
 
 
@@ -160,9 +192,11 @@ namespace bemesh{
 
             uint8_t* received_bytes=  read_CHR(gattc_if,conn_id,characteristic);
             uint8_t char_len_read = get_CHR_value_len(characteristic);
+
             if(buffer_size < char_len_read){
                 return -1;
             }
+
             memcpy((void*)received_bytes,buffer,char_len_read);
             return char_len_read;
 
@@ -199,8 +233,8 @@ namespace bemesh{
     }
 
     void Master::shutdown(){
-        if(master_istance != NULL)
-            delete master_istance;
+        if(master_instance != NULL)
+            delete master_instance;
     }
     
     /*
@@ -215,21 +249,33 @@ namespace bemesh{
         return ret;
     }
     void Master::_print_mac_address(uint8_t* address){
-        uint8_t SIZE = 6;
+        
         int i;
-        for(i = 0; i<SIZE;i++){
+        for(i = 0; i<MAC_ADDRESS_SIZE;i++){
            ESP_LOGE("CLIENT","Byte[%d]: %x",i,address[i]);
         }
     }
 
-    void Master::update_master_macs(uint8_t** macs){
-        int i;
+    //Applicazione che mette in atto il processo di sincronizzazione delle routing table.
+    //Interfaccia che permette di inviare i comandi.
+    //Nodi che forwardano la routing table.
+
+    //Function that updates the client connected table.
+    void Master::update_master_macs(uint8_t* address){
         std::cout<<"Updating client table"<<std::endl;
-        for(i = 0; i<TOTAL_NUMBER_LIMIT; i++){
-            if(macs[i])
-                _print_mac_address(macs[i]);
-            connected_devices_macs[i] = macs[i];
-        }
-        return;
+        if(address){
+            add_connected_client(address);
+            std::cout<<"New address is:"<<std::endl;
+            _print_mac_address(address);
+            dev_addr_t addr = _build_dev_addr(address);
+            uint8_t hops = 1;
+            uint8_t flags = 0;
+            dev_addr_t my_addr = get_router_dev_addr();
+            add_routing_table_entry(addr,my_addr,hops,flags);
+            std::cout<<"Added an entry to the routing table: "<<std::endl;
+        } 
+        
     }
+
+   
 }

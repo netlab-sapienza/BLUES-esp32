@@ -94,6 +94,23 @@ namespace bemesh{
         return slave_tx_buffer;
     }
 
+    void Slave::add_routing_table_entry(dev_addr_t target_addr, dev_addr_t hop_addr,
+                            uint8_t num_hops, uint8_t t_flags)
+    {
+        router->add(target_addr,hop_addr, num_hops,t_flags);                    
+    }
+
+    void Slave::remove_routing_table_entry(dev_addr_t target_addr){
+        router->remove(target_addr);
+    }
+
+    dev_addr_t& Slave::get_next_hop(dev_addr_t addr){
+        return router->nextHop(addr);
+    }
+
+
+
+
 
     dev_addr_t Slave::_build_dev_addr(uint8_t* address){
         int i;
@@ -123,8 +140,12 @@ namespace bemesh{
             /*if(buffer_size < char_len_read){
                 return -1;
             }*/
-            memcpy((void*)received_bytes,buffer,char_len_read);
-            std::cout<<"Byte[0]: "<<received_bytes[0]<<std::endl;
+                          
+            ESP_LOGE("CLIENT", "Read[0]: %d Read[1]: %d Read[2]: %d Read[3]: %d Read[4]: %d Read[5]: %d",
+                                CHR_VALUES[IDX_CHAR_VAL_A][0],received_bytes[1],received_bytes[2],
+                                received_bytes[3],received_bytes[4], received_bytes[5]);
+            memcpy(buffer,(void*)received_bytes,buffer_size);
+           
             return char_len_read;
 
         }
@@ -155,13 +176,12 @@ namespace bemesh{
 
 
 
-    ErrStatus Slave::write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
+    ErrStatus Slave::write_characteristic(uint8_t characteristic, dev_addr_t address,uint8_t* buffer,
                                         uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id)
     {
         if(buffer == NULL)
             return WrongPayload;
-        if(conn_id != server_conn_id)
-            return WrongAddress;
+        
 
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B ||
             characteristic == IDX_CHAR_VAL_C )
@@ -176,14 +196,71 @@ namespace bemesh{
         }
 
     }
+
+
+    
+    
+    
+    
+    void my_task2(void *pvParameters) {
+
+        //vTaskDelay(1000); // Waiting for 1000 ticks (not ms)
+
+        //uint8_t arr[13] = {3,3,3,3,3,3,3,3,3,3,3,3};
+        uint8_t arr[8] = {1,4,5,6,11,4,6,2};
+        //esp_ble_gattc_write_char(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, gl_profile_tab2[PROFILE_A_APP_ID].conn_id, CHR_HANDLES[IDX_CHAR_VAL_A], sizeof(arr), arr, ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
+
+        write_CHR(get_gatt_if(), get_client_connid(), IDX_CHAR_VAL_A, arr, 8);
+
+        uint8_t * test = read_CHR(get_gatt_if(), get_client_connid(), IDX_CHAR_VAL_A);
+        int i;
+
+        ESP_LOGE(GATTC_TAG, "ARRIVATO! LEN %d", get_CHR_value_len(IDX_CHAR_VAL_A));
+        for(i=0; i<get_CHR_value_len(IDX_CHAR_VAL_A); i++) {
+            ESP_LOGE(GATTC_TAG, "ELEM %d", test[i]);
+        }
+
+        vTaskDelete(NULL);
+    }
+    ///////////////////////////////////////
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     void Slave::shutdown(){
-        if(slave_istance != NULL)
-            delete slave_istance;
+        if(slave_instance != NULL)
+            delete slave_instance;
     }
 
     void Slave::start(){
-        if(slave_istance == NULL)
+        if(slave_instance == NULL)
             return;
         
         //Initialize all fields of the class;
@@ -202,30 +279,9 @@ namespace bemesh{
         }
 
         mes_handler.installTxBuffer(slave_tx_buffer);
+        //Read e write vanno fatte con dei task.
+        xTaskCreate(my_task2, "TASK", 2048, NULL, 2, NULL);
 
-        const char* fake_message = "HELLO";
-        uint8_t trys[6] = {4};
-        std::cout<<"I'm about to write smth"<<std::endl;
-        int i;
-
-        //Characteristic subscription?
-        
-        for( i = 0;i< 10; i++){
-            write_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)trys,
-                                6,gatt_if,conn_id);
-        }
-
-        for( i = 0;i< 10; i++){
-            write_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)trys,
-                                6,gatt_if,conn_id);
-        }
-        uint8_t buffer[24] = {0};
-        int16_t bytes_read;
-        for(i = 0; i<10; i++){
-            bytes_read = read_characteristic(IDX_CHAR_VAL_A,converted_address,(void*)buffer,6,
-                                gatt_if,conn_id);
-        }
-        
     }
 
     void Slave::_print_mac_address(uint8_t* address){

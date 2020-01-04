@@ -21,7 +21,7 @@
 #include "sdkconfig.h"
 
 
-
+#include <stdlib.h>
 
 #include "rtable.hpp" //For dev_addr_t data type.
 #include <stdint.h>
@@ -103,6 +103,14 @@ namespace bemesh{
             MessageHandler* get_message_handler();
             uint8_t * get_slave_tx_buffer();
 
+            
+
+            void add_routing_table_entry(dev_addr_t target_addr,
+                                dev_addr_t hop_addr,uint8_t num_hops, uint8_t t_flags);
+
+            void remove_routing_table_entry(dev_addr_t addr);
+            dev_addr_t& get_next_hop(dev_addr_t target_addr);
+                
 
 
             int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
@@ -110,7 +118,7 @@ namespace bemesh{
                                         uint16_t conn_id);
 
             
-            ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
+            ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, uint8_t* buffer,
                                         uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id);
             
 
@@ -131,5 +139,5 @@ namespace bemesh{
 
     };
 
-    extern Slave* slave_istance;
+    extern Slave* slave_instance;
 }
