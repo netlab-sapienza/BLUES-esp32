@@ -51,10 +51,19 @@
 #define CLIENT 0
 #define SERVER 1
 #define GATTC_TAG "GATT_CLIENT"
+#define GATTS_TAG "GATT_SERVER"
 #define REMOTE_SERVICE_UUID        0x00FF
 #define REMOTE_NOTIFY_CHAR_UUID    0xFF01
 #define PROFILE_A_APP_ID 0
 #define INVALID_HANDLE   0
+
+
+#define SERVERS_NUM 3
+#define SERVER_S1 0
+#define SERVER_S2 1
+#define SERVER_S3 2
+#define INVALID_HANDLE   0
+
 struct gattc_profile_inst {
     esp_gattc_cb_t gattc_cb;
     uint16_t gattc_if;
@@ -78,15 +87,14 @@ extern bool becoming_client;
 extern bool becoming_server;
 
 typedef void(*NotifyCb)();
-
-
 typedef void(*InitCb)(uint8_t);
+//This callback function pass the newly updated MAC table entry to the master object.
+typedef void(*ServerUpdateCb)(uint8_t*,uint8_t);
+//This callback function is triggered whenever two servers meet for the first time so that they
+//can exchange their routing tables.
+typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t gattc_if,uint8_t conn_id);
 
-
-//Mi faccio passare direttamente la entry della mac table e ne tengo una custom sul server.
-
-typedef void(*ServerUpdateCb)(uint8_t*);
-
+//
 /*
  *  	FUNCTIONS DECLARATION
  */
@@ -163,6 +171,7 @@ uint8_t* get_internal_client_serverMAC(uint8_t client_id); // Returns the MAC ad
 uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
 uint8_t install_InitCb(InitCb cb); //Same as above.
 uint8_t install_ServerUpdateCb(ServerUpdateCb cb); //Same as above
+uint8_t install_ExchangeRoutingTableCb(ExchangeRoutingTableCb cb); //Same as above
 
 
 bool has_ended_scanning();

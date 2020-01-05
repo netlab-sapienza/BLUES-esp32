@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -31,6 +32,7 @@
 
 #include "services.hpp"
 #include "constant.hpp"
+#include "common.hpp"
 
 
 //Mid-tier.
@@ -55,7 +57,17 @@ extern "C"{
 #define NUM 2
 
 namespace  bemesh{
-     
+    
+    //Reception callback for messages. From here all callbacks will be invoked
+    //according to the message_id.
+    void master_reception_callback(MessageHeader* header_t, void* args);
+    
+                
+    //Trtansmission callback for messages. From here all callbacks will be invoked
+    //according to the message_id.
+    void master_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                void* args);
+                        
 
 
     class Master{
@@ -69,12 +81,10 @@ namespace  bemesh{
             //For characteristic writing/reading.
             uint8_t device_conn_id; 
             uint16_t device_gatt_if;
+            //The internal client gatt_if to perform characteristic readin/writing
+            uint16_t internal_client_gatt_if;
+            uint8_t internal_client_conn_id;
 
-            //List of mac addresses of connected devices.
-            uint8_t** connected_devices_macs;
-
-            //List of connection_ids of connected devices.
-            uint8_t* connected_devices_conn_id;
             
 
             //To be implemented. For android compatibility mode.
@@ -82,6 +92,7 @@ namespace  bemesh{
 
 
             std::list<uint8_t*> connected_clients;
+            std::list<uint8_t*> neighbours;
 
 
 
@@ -96,10 +107,7 @@ namespace  bemesh{
             MessageHandler mes_handler;
 
 
-            //Private function to convert a uint8_t* to a dev_addr_t.
-            dev_addr_t _build_dev_addr(uint8_t* address);
-            void _print_mac_address(uint8_t* mac);
-
+            
 
             public:
                 
@@ -148,9 +156,14 @@ namespace  bemesh{
                 Router* get_router();
                 MessageHandler* get_message_handler();
                 uint8_t* get_master_tx_buffer();
-                uint8_t** get_connected_devices_macs();
-                uint8_t* get_connected_devices_conn_id();
                 
+                uint16_t get_internal_client_gatt_if();
+                void set_internal_client_gatt_if(uint16_t internal_gatt_if);
+
+                uint8_t get_internal_client_conn_id();
+                void set_internal_client_conn_id(uint8_t conn_id);
+
+
                 std::list<uint8_t*> get_connected_clients();
                 //Add the MAC address ("new address") to the connected client list.
                 void add_connected_client(uint8_t* new_address);
@@ -158,8 +171,16 @@ namespace  bemesh{
                 void remove_connected_client(uint8_t* address);
                 
 
+                std::list<uint8_t*> get_neighbours();
+                //Add the MAC address("new address") to the neighbour list. This MAC address
+                //represents a server.
+                void add_neighbour(uint8_t* new_address);
+                //Remove the server represented by "address" by the neighbour list
+                void remove_neighbour(uint8_t* address);
+                
 
-                void update_master_macs(uint8_t* macs);
+
+                void update_master_macs(uint8_t* macs,uint8_t flag);
                 void update_master_routing_table (uint8_t* address);
 
                 
@@ -171,6 +192,23 @@ namespace  bemesh{
                 
                 dev_addr_t& get_router_dev_addr();
 
+                std::vector<routing_update_t>get_routing_updates();
+                        
+
+                //Message reception callbacks
+                void routing_discovery_request_reception_callback(MessageHeader* header_t, void*args);
+                void routing_discovery_response_reception_callback(MessageHeader* header_t, void* args);
+                void routing_update_reception_callback(MessageHeader* header_t, void* args);
+
+
+                //Message transmission callbacks
+                void routing_discovery_request_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args);
+                void routing_discovery_response_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args);
+                void routing_update_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args);
+                                
 
 
  

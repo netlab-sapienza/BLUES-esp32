@@ -13,8 +13,8 @@
 // Callback when a client receive a notification from a server
 NotifyCb ntf_cb;
 ServerUpdateCb server_update_cb;
-
 InitCb init_cb;
+ExchangeRoutingTableCb exchange_routing_table_cb;
 /*
  *  	SETTINGS
  */
@@ -89,12 +89,6 @@ struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM] = {
  *  	INTERNAL CLIENTS
  */
 
-#define SERVERS_NUM 3
-#define SERVER_S1 0
-#define SERVER_S2 1
-#define SERVER_S3 2
-#define INVALID_HANDLE   0
-
 bool conn_device_S1   = false;
 bool conn_device_S2   = false;
 bool conn_device_S3   = false;
@@ -142,7 +136,7 @@ struct gattc_profile_inst gl_internal_clients_tab[SERVERS_NUM] = {
  
 bool server_is_busy = false;
 
-#define GATTS_TAG "GATT_SERVER"
+
 #define GATTS_SERVICE_UUID_TEST_A   0x00FF
 //#define GATTS_CHAR_UUID_TEST_A      0xFF01
 #define GATTS_DESCR_UUID_TEST_A     0x3333
@@ -1105,6 +1099,13 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 						ESP_LOGE(GATTS_TAG, "A new server is connected");
 
 						ID_TABLE[param->connect.conn_id] = SERVER;
+                        int k;
+                        for(k=0; k<6; k++) {
+                            MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
+                        }
+                        (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_SERVER);
+                        (*exchange_routing_table_cb)(get_my_MAC(),get_internal_client_serverMAC(SERVER_S1),
+                                                    get_internal_client_gattif(SERVER_S1),get_internal_client_connid(SERVER_S1));
 
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
@@ -1225,7 +1226,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			}
 			
             //Send the new mac_address to the server.
-            (*server_update_cb)(MACS[param->connect.conn_id]);
+            (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT);
 
             break;
         case ESP_GATTS_DISCONNECT_EVT:
@@ -1237,11 +1238,16 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 							MACS[param->disconnect.conn_id][0], MACS[param->disconnect.conn_id][1], MACS[param->disconnect.conn_id][2],
 								MACS[param->disconnect.conn_id][3], MACS[param->disconnect.conn_id][4], MACS[param->disconnect.conn_id][5]);
             
+            (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT);
+
             int i;
 			for(i=0; i<6; i++) {
 				MACS[param->disconnect.conn_id][i] = 0;
 			}
+            
+            //Update the serer istance to track disconnection.
 			
+
 			if(ID_TABLE[param->disconnect.conn_id] == SERVER) {
 				change_name(0, SERVERS_IDX);
 			} else if (ID_TABLE[param->disconnect.conn_id] == CLIENT) {
@@ -2937,6 +2943,12 @@ uint8_t install_InitCb(InitCb cb){
 uint8_t install_ServerUpdateCb(ServerUpdateCb cb){
     if(!cb) return 1;
     server_update_cb = cb;
+    return 0;
+}
+
+uint8_t install_ExchangeRoutingTableCb(ExchangeRoutingTableCb cb){
+    if(!cb) return 1;
+    exchange_routing_table_cb = cb;
     return 0;
 }
 

@@ -32,7 +32,8 @@
 
 #include "master.hpp"
 #include "slave.hpp"
-
+#include "routing.hpp"
+#include <assert.h>
 
 extern "C"{
     #include "kernel.h"
@@ -43,7 +44,9 @@ namespace bemesh{
         
         static void init_callback(uint8_t type);
         static void notify_callback(void);
-        static void server_update_callback(uint8_t* macs);
+        static void server_update_callback(uint8_t* macs,uint8_t flags);
+        static void exchange_routing_table_callback(uint8_t* src,uint8_t* dest,
+                                                uint16_t gatt_if,uint8_t conn_id);
 
         public:
             void operator()(void);

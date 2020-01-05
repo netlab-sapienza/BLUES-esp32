@@ -112,16 +112,7 @@ namespace bemesh{
 
 
 
-    dev_addr_t Slave::_build_dev_addr(uint8_t* address){
-        int i;
-        dev_addr_t ret;
-        for(i = 0; i<DEV_ADDR_LEN; ++i){
-            ret[i] = address[i];
-        }
-        return ret;
-    }
-
-
+   
 
 
 
@@ -284,14 +275,7 @@ namespace bemesh{
 
     }
 
-    void Slave::_print_mac_address(uint8_t* address){
-        uint8_t SIZE = 6;
-        int i;
-        for(i = 0; i<SIZE;i++){
-           ESP_LOGE("CLIENT","Byte[%d]: %x",i,address[i]);
-        }
-       
-    }
+   
 
     void Slave::print_status(){
         std::cout<<"Printing slave status:"<<std::endl;

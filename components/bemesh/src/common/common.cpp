@@ -1,0 +1,37 @@
+
+
+#include "common.hpp"
+
+
+bool contains_mac(std::list<uint8_t*> ls,uint8_t* address, uint8_t address_size){
+    std::list<uint8_t*>::iterator it;
+    for(it = ls.begin(); it != ls.end(); ++it){
+        uint8_t * addr = *it;
+        int i;
+        bool found = true;
+        for(i = 0;i<address_size; i++){
+            if(addr[i] != address[i])
+                found = false;
+        }
+        if(found)
+            return true;
+    }
+    return false;
+
+}
+
+
+bemesh::dev_addr_t _build_dev_addr(uint8_t* address){
+        int i;
+        bemesh::dev_addr_t ret;
+        for(i = 0; i<DEV_ADDR_LEN; ++i){
+            ret[i] = address[i];
+        }
+        return ret;
+    }
+void _print_mac_address(uint8_t* address){
+    int i;
+    for(i = 0; i<MAC_ADDRESS_SIZE;i++){
+        ESP_LOGE("CLIENT","Byte[%d]: %x",i,address[i]);
+    }
+}

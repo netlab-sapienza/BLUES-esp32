@@ -32,6 +32,7 @@
 #include "message_handler_v2.hpp"
 #include "routing.hpp"
 #include "constant.hpp"
+#include "common.hpp"
 #include <stdlib.h>
 #include <iostream>
 
@@ -61,14 +62,7 @@ namespace bemesh{
         //Buffer for message send/receive
         uint8_t slave_tx_buffer[SLAVE_TX_BUFFER_SIZE];
         
-        //This is used to convert uint8_t* to dev_addr_t.
-        dev_addr_t _build_dev_addr(uint8_t* address);
-
-        void _print_mac_address(uint8_t* address);
-
-
-       
-
+     
 
         public:
             Slave();

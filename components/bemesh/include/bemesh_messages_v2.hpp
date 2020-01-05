@@ -106,8 +106,5 @@ namespace bemesh {
   };
 
 
-  //TO-DO complete.
-  class CommunicationMessage : public MessageHeader{
 
-  };
 }

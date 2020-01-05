@@ -7,14 +7,14 @@ namespace bemesh{
   
 
     Master::Master(uint8_t id, std::string name):name(name),device_conn_id(id),
-    connected_clients()
+    connected_clients(),neighbours()
     { 
     }
 
-    Master::Master(uint8_t id):device_conn_id(id),connected_clients(){
+    Master::Master(uint8_t id):device_conn_id(id),connected_clients(),neighbours(){
     }
 
-    Master::Master():connected_clients(){
+    Master::Master():connected_clients(),neighbours(){
         
     }
 
@@ -94,14 +94,7 @@ namespace bemesh{
     }
 
 
-    //Puntatore alla matrice.
-    uint8_t** Master::get_connected_devices_macs(){
-        return connected_devices_macs;
-    }
-
-    uint8_t* Master::get_connected_devices_conn_id(){
-        return connected_devices_conn_id;
-    }
+    
 
     void Master::add_routing_table_entry(dev_addr_t target_addr, dev_addr_t hop_addr,
                             uint8_t num_hops, uint8_t t_flags)
@@ -119,12 +112,18 @@ namespace bemesh{
 
     void Master::add_connected_client(uint8_t* new_address){
         //Implement a contains check
-        connected_clients.push_back(new_address);
+        if(!contains_mac(connected_clients,new_address,MAC_ADDRESS_SIZE) && new_address){
+            //std::cout<<"Adding"<<std::endl;
+            connected_clients.push_back(new_address);
+        }
     }
 
     void Master::remove_connected_client(uint8_t* address ){
         //Implement a contains check.
-        connected_clients.remove(address);
+        if(contains_mac(connected_clients,address,MAC_ADDRESS_SIZE) && address){
+            //std::cout<<"Removing"<<std::endl;
+            connected_clients.remove(address);
+        }
     }
 
     std::list<uint8_t*> Master::get_connected_clients(){
@@ -132,12 +131,149 @@ namespace bemesh{
         return ret;
     }
 
+    std::list<uint8_t*> Master::get_neighbours(){
+        std::list<uint8_t*> ret(neighbours);
+        return ret;
+    }
+
+
+    void Master::add_neighbour(uint8_t* new_address){
+        if(new_address && !contains_mac(neighbours,new_address,MAC_ADDRESS_SIZE)){
+            std::cout<<"Adding a neighbour"<<std::endl;
+            neighbours.push_back(new_address);
+        }
+    }
+
+    void Master::remove_neighbour(uint8_t* address){
+        if(address && contains_mac(neighbours, address, MAC_ADDRESS_SIZE)){
+            std::cout<<"Removing a neighbour"<<std::endl;
+            neighbours.remove(address);
+        }
+    }
+
     dev_addr_t& Master::get_router_dev_addr(){
         return router->addr();
     }
 
+    std::vector<routing_update_t> Master::get_routing_updates(){
+        if(router != NULL)
+            return router->getRoutingUpdates();
+        std::vector<routing_update_t> vec;
+        return vec;
+    }
 
+    uint16_t Master::get_internal_client_gatt_if(){
+        return internal_client_gatt_if;
+    }
 
+    void Master::set_internal_client_gatt_if(uint16_t internal_gatt_if){
+        internal_client_gatt_if = internal_gatt_if;
+    }
+
+    uint8_t Master::get_internal_client_conn_id(){
+        return internal_client_conn_id;
+    }
+
+    void Master::set_internal_client_conn_id(uint8_t conn_id){
+        internal_client_conn_id = conn_id;
+    }
+
+    void Master::routing_discovery_request_reception_callback(MessageHeader* header_t,
+                            void* args)
+    {
+        ESP_LOGE(GATTS_TAG, "Someone wants to discover my routing table");
+        return;                        
+    }
+
+    void Master::routing_discovery_response_reception_callback(MessageHeader* header_t,
+                            void* args)
+    {
+        ESP_LOGE(GATTS_TAG, "Someone has answered discoverying my routing table");
+        return;
+
+    }
+
+    void Master::routing_update_reception_callback(MessageHeader* header_t, void* args)
+    {
+        ESP_LOGE(GATTS_TAG, "Someone has updates for my routing table");
+        return;
+    }
+
+    void master_reception_callback(MessageHeader* header_t, void* args)
+    {
+        if(master_instance == NULL)
+            return;
+        
+        switch(header_t->id()){
+            case ROUTING_DISCOVERY_REQ_ID:{
+                master_instance->routing_discovery_request_reception_callback(header_t,args);
+                break;
+            }
+            case ROUTING_DISCOVERY_RES_ID:{
+                master_instance->routing_discovery_response_reception_callback(header_t,args);
+                break;
+            }
+            case ROUTING_UPDATE_ID:{
+                master_instance->routing_update_reception_callback(header_t,args);
+                break;
+            }
+            default:{
+                ESP_LOGE(GATTS_TAG,"Unknown message");
+                break;
+            }
+        }
+        return;
+    }
+
+    void Master::routing_discovery_request_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args)
+    {
+        ESP_LOGE(GATTS_TAG,"In routing discovery request transmission callback");
+        return;
+    }
+
+    void Master::routing_discovery_response_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args)
+    {
+        ESP_LOGE(GATTS_TAG,"In routing discovery response transmission callback");
+        //Write to some characteristic
+
+        return;
+    }
+
+    void Master::routing_update_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args)
+    {
+        ESP_LOGE(GATTS_TAG,"In routing update transmission callback");
+        return;
+    }
+                                    
+    void master_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args)
+    {
+        if(master_instance == NULL)
+            return;
+        switch(header_t->id()){
+            case ROUTING_DISCOVERY_REQ_ID:{
+                master_instance->routing_discovery_request_transmission_callback(buffer,size,header_t,args);
+                break;
+            }
+            case ROUTING_DISCOVERY_RES_ID:{
+                master_instance->routing_discovery_response_transmission_callback(buffer,size,header_t,args);
+                break;
+            }
+            case ROUTING_UPDATE_ID:{
+                master_instance->routing_update_transmission_callback(buffer,size,header_t,args);
+                break;
+            }
+            default:{
+                ESP_LOGE(GATTS_TAG,"Unknown message for transmission");
+                break;
+            }
+        }
+        return;                     
+    }
+                        
 
     //Master object main task. Used to test functions and primitives.
     void Master::start(){
@@ -153,9 +289,6 @@ namespace bemesh{
         uint16_t  gatt_if = get_gatt_if();
         uint8_t* mac_address = get_my_MAC();
         uint8_t conn_id = get_client_connid();
-        uint8_t** devices = get_connected_MACS();
-        connected_devices_macs = devices;
-        
 
 
         dev_addr_t addr;
@@ -169,12 +302,27 @@ namespace bemesh{
         set_device_connection_id(conn_id);
         set_dev_addr(addr);
         
-
+        ErrStatus ret;
         //Buffer to send/receive messages.
-        mes_handler.installTxBuffer(master_tx_buffer);
-        //Routing mechanism
-        //Next hop di un client è sempre un server.
-
+        ret =  mes_handler.installTxBuffer(master_tx_buffer);
+        assert(ret == Success);
+        ret = mes_handler.installTxCb(&master_transmission_callback);
+        assert(ret == Success);
+        //Install reception callback for messages. Extra arguments to be added.
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_RES_ID,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,&master_reception_callback,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&master_reception_callback,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&master_reception_callback,nullptr);
+        assert(ret == Success);
+        
+        ESP_LOGE(GATTS_TAG,"Finished installing all things");
 
     }
 
@@ -240,41 +388,57 @@ namespace bemesh{
     /*
         Private functions
     */
-    dev_addr_t Master::_build_dev_addr(uint8_t* address){
-        int i;
-        dev_addr_t ret;
-        for(i = 0; i<DEV_ADDR_LEN; ++i){
-            ret[i] = address[i];
-        }
-        return ret;
-    }
-    void Master::_print_mac_address(uint8_t* address){
-        
-        int i;
-        for(i = 0; i<MAC_ADDRESS_SIZE;i++){
-           ESP_LOGE("CLIENT","Byte[%d]: %x",i,address[i]);
-        }
-    }
+    
 
     //Applicazione che mette in atto il processo di sincronizzazione delle routing table.
     //Interfaccia che permette di inviare i comandi.
     //Nodi che forwardano la routing table.
 
     //Function that updates the client connected table.
-    void Master::update_master_macs(uint8_t* address){
-        std::cout<<"Updating client table"<<std::endl;
-        if(address){
-            add_connected_client(address);
-            std::cout<<"New address is:"<<std::endl;
-            _print_mac_address(address);
-            dev_addr_t addr = _build_dev_addr(address);
-            uint8_t hops = 1;
-            uint8_t flags = 0;
-            dev_addr_t my_addr = get_router_dev_addr();
-            add_routing_table_entry(addr,my_addr,hops,flags);
-            std::cout<<"Added an entry to the routing table: "<<std::endl;
-        } 
-        
+    void Master::update_master_macs(uint8_t* address,uint8_t flag){
+        if(flag == UPDATE_ADD_CLIENT){    
+            //std::cout<<"Updating client table"<<std::endl;
+            if(address){
+                add_connected_client(address);
+                //std::cout<<"New address is:"<<std::endl;
+                //_print_mac_address(address);
+                dev_addr_t addr = _build_dev_addr(address);
+                uint8_t hops = 1;
+                uint8_t flags = 0;
+                dev_addr_t my_addr = get_router_dev_addr();
+                add_routing_table_entry(addr,my_addr,hops,flags);
+                //std::cout<<"Added an entry to the routing table: "<<std::endl;
+                return;
+            } 
+        }
+        else if(flag == UPDATE_REMOVE_CLIENT){
+            //std::cout<<"Updating client table"<<std::endl;
+            if(address){
+                remove_connected_client(address);
+                //std::cout<<"Old address is:"<<std::endl;
+                //_print_mac_address(address);
+                dev_addr_t addr = _build_dev_addr(address);
+                remove_routing_table_entry(addr);
+                //std::cout<<"Removed an entry to the routing table: "<<std::endl;
+                return;
+            }       
+        }
+        else if(flag == UPDATE_ADD_SERVER){
+            //std::cout<<"Updating server table"<<std::endl;
+            if(address){
+                add_neighbour(address);
+                //std::cout<<"New address is: "<<std::endl;
+                /*
+                dev_addr_t addr = _build_dev_addr(address);
+                uint8_t num_hops = 1;
+                uint8_t flags = 0;
+                dev_addr_t my_addr = get_router_dev_addr();
+                add_routing_table_entry(addr,my_addr,num_hops,flags);
+                */
+
+            }
+        }
+        return;
     }
 
    
