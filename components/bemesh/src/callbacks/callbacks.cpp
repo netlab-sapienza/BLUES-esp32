@@ -62,6 +62,32 @@ namespace bemesh{
 
     }
 
+
+    void Callback::send_routing_table_callback(uint8_t* src, uint8_t* dst, 
+                                        uint16_t gatt_if, uint8_t conn_id)
+    {
+        dev_addr_t src_address = _build_dev_addr(src);
+        dev_addr_t dst_address = _build_dev_addr(dst);
+
+        std::vector<routing_params_t>rtable = master_instance->get_router()->getRoutingTable();
+        std::cout<<"Extracting routing table"<<std::endl;
+
+        int table_entries = rtable.size();
+        std::array<routing_params_t,ROUTING_DISCOVERY_RES_ENTRIES_MAX>rtable_array;
+
+        //Copy the elements of the vector into the array.
+        std::copy_n(rtable.begin(),table_entries,rtable_array.begin());
+        std::cout<<"Routing table copied and array formed"<<std::endl;
+        RoutingDiscoveryResponse routing_discovery_res_message(src_address,dst_address,
+                                    rtable_array,table_entries);
+        master_instance->get_message_handler()->send((MessageHeader*)&routing_discovery_res_message);
+        std::cout<<"RoutingDiscoveryResponseMessage sent"<<std::endl;
+        master_instance->get_message_handler()->handle();
+        std::cout<<"Message handled"<<std::endl;
+        //And see what happens.
+
+    }
+
     void Callback::notify_callback(void){
     }
 

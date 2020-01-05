@@ -35,6 +35,10 @@
 #include "routing.hpp"
 #include <assert.h>
 #include <stdlib.h>
+#include <iostream>
+#include <vector>
+#include <array>
+#include <algorithm>
 
 extern "C"{
     #include "kernel.h"
@@ -48,6 +52,10 @@ namespace bemesh{
         static void server_update_callback(uint8_t* macs,uint8_t flags);
         static void exchange_routing_table_callback(uint8_t* src,uint8_t* dest,
                                                 uint16_t gatt_if,uint8_t conn_id);
+        static void send_routing_table_callback(uint8_t* src, uint8_t* dest, uint16_t gatt_if,
+                                                uint8_t conn_id);
+
+                                            
 
         public:
             void operator()(void);

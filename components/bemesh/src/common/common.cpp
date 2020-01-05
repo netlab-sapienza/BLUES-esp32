@@ -54,12 +54,12 @@ void write_characteristic_task(void * task_param) {
     
     write_CHR(gatt_if, conn_id, charact, data, buffer_size);
     std::cout<<"I wrote"<<std::endl;
-    uint8_t * test = read_CHR(gatt_if,conn_id, charact);
+   /* uint8_t * test = read_CHR(gatt_if,conn_id, charact);
     int i;
     for(i = 0; i<buffer_size; i++){
         ESP_LOGE(GATTS_TAG,"Found: %d",test[i]);
     }
-  
+  */
     vTaskDelete(NULL);
 
 }
