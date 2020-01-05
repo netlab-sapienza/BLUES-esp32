@@ -52,13 +52,12 @@ namespace bemesh{
         //std::cout<<"Address built"<<std::endl;
         RoutingDiscoveryRequest routing_discovery_request_message(src_addr,dest_addr);
         //Serialize message (prepare message)
+                           
         master_instance->get_message_handler()->send((MessageHeader*)&routing_discovery_request_message);
         //std::cout<<"Message sent"<<std::endl;
         master_instance->get_message_handler()->handle();
         //std::cout<<"Messange handled"<<std::endl;
         //And see what happens.
-                                                
-        //Send the message (writer to a characteristic)
         
 
     }

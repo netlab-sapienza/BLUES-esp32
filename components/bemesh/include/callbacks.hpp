@@ -34,6 +34,7 @@
 #include "slave.hpp"
 #include "routing.hpp"
 #include <assert.h>
+#include <stdlib.h>
 
 extern "C"{
     #include "kernel.h"

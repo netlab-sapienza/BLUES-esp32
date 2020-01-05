@@ -217,8 +217,8 @@ namespace  bemesh{
                                         uint16_t conn_id);
 
             
-                ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
-                                        uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id);
+                ErrStatus write_characteristic(uint8_t characteristic, uint8_t* buffer,
+                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id);
                 
         };
 

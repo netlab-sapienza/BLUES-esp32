@@ -229,6 +229,12 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery request transmission callback");
+       
+        uint8_t characteristic = IDX_CHAR_VAL_B;
+        //Writing the packet to the characteristic
+        write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
+                                    internal_client_conn_id);
+                
         return;
     }
 
@@ -237,6 +243,9 @@ namespace bemesh{
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery response transmission callback");
         //Write to some characteristic
+        uint8_t characteristic = IDX_CHAR_VAL_B;
+        write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
+                                internal_client_conn_id);
 
         return;
     }
@@ -245,6 +254,9 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing update transmission callback");
+        uint8_t characteristic = IDX_CHAR_VAL_B;
+        write_characteristic(characteristic, buffer,size,internal_client_gatt_if,
+                                internal_client_conn_id);
         return;
     }
                                     
@@ -357,18 +369,26 @@ namespace bemesh{
 
 
 
-    ErrStatus Master::write_characteristic(uint8_t characteristic, dev_addr_t address, void* buffer,
-                                        uint8_t buffer_size, uint16_t gatts_if,uint16_t conn_id)
+    ErrStatus Master::write_characteristic(uint8_t characteristic, uint8_t* buffer,
+                                        uint16_t buffer_size, uint16_t gatts_if,uint8_t conn_id)
     {
         if(buffer == NULL)
             return WrongPayload;
-        if(conn_id != device_conn_id)
-            return WrongAddress;
-
-        if(characteristic == IDX_CHAR_A || characteristic == IDX_CHAR_B ||
-            characteristic == IDX_CHAR_C )
+        
+        if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B ||
+            characteristic == IDX_CHAR_VAL_C )
         {
-            write_CHR(gatts_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
+            task_param_write_t write_params;
+            write_params.conn_id = conn_id;
+            write_params.gatt_if = gatts_if;
+            write_params.characteristic = characteristic;
+            write_params.buffer = buffer;
+            write_params.buffer_size = buffer_size;
+            std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
+            std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
+            //Spara un task per scrivere su una caratteristica.
+            xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)&write_params,TASK_PRIORITY,NULL);
+
             return Success;
         }        
         

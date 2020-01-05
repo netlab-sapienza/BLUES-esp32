@@ -193,27 +193,6 @@ namespace bemesh{
     
     
     
-    void my_task2(void *pvParameters) {
-
-        //vTaskDelay(1000); // Waiting for 1000 ticks (not ms)
-
-        //uint8_t arr[13] = {3,3,3,3,3,3,3,3,3,3,3,3};
-        uint8_t arr[8] = {1,4,5,6,11,4,6,2};
-        //esp_ble_gattc_write_char(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, gl_profile_tab2[PROFILE_A_APP_ID].conn_id, CHR_HANDLES[IDX_CHAR_VAL_A], sizeof(arr), arr, ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
-
-        write_CHR(get_gatt_if(), get_client_connid(), IDX_CHAR_VAL_A, arr, 8);
-
-        uint8_t * test = read_CHR(get_gatt_if(), get_client_connid(), IDX_CHAR_VAL_A);
-        int i;
-
-        ESP_LOGE(GATTC_TAG, "ARRIVATO! LEN %d", get_CHR_value_len(IDX_CHAR_VAL_A));
-        for(i=0; i<get_CHR_value_len(IDX_CHAR_VAL_A); i++) {
-            ESP_LOGE(GATTC_TAG, "ELEM %d", test[i]);
-        }
-
-        vTaskDelete(NULL);
-    }
-    ///////////////////////////////////////
     
     
     
@@ -271,7 +250,7 @@ namespace bemesh{
 
         mes_handler.installTxBuffer(slave_tx_buffer);
         //Read e write vanno fatte con dei task.
-        xTaskCreate(my_task2, "TASK", 2048, NULL, 2, NULL);
+        //xTaskCreate(my_task2, "TASK", 2048, NULL, 2, NULL);
 
     }
 
