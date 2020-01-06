@@ -99,11 +99,18 @@ namespace bemesh{
     void Master::add_routing_table_entry(dev_addr_t target_addr, dev_addr_t hop_addr,
                             uint8_t num_hops, uint8_t t_flags)
     {
-        router->add(target_addr,hop_addr, num_hops,t_flags);                    
+        if(router)
+            router->add(target_addr,hop_addr, num_hops,t_flags);                    
     }
 
     void Master::remove_routing_table_entry(dev_addr_t target_addr){
-        router->remove(target_addr);
+        if(router)
+            router->remove(target_addr);
+    }
+
+    void Master::add_routing_table_entry(routing_params_t& routing_params){
+        if(router)
+            router->add(routing_params);
     }
 
     dev_addr_t& Master::get_next_hop(dev_addr_t addr){
@@ -178,17 +185,30 @@ namespace bemesh{
         internal_client_conn_id = conn_id;
     }
 
+    
+
     void Master::routing_discovery_request_reception_callback(MessageHeader* header_t,
                             void* args)
     {
-        ESP_LOGE(GATTS_TAG, "Someone wants to discover my routing table");
+        ESP_LOGE(GATTS_TAG, "Someone wants to discover my routing table and I prepare a routing discovery response");
+
+        //Prepare the routing discovery response message.
+
         return;                        
     }
 
     void Master::routing_discovery_response_reception_callback(MessageHeader* header_t,
                             void* args)
     {
-        ESP_LOGE(GATTS_TAG, "Someone has answered discoverying my routing table");
+        ESP_LOGE(GATTS_TAG, "Received a discovery response message");
+        int i;
+        RoutingDiscoveryResponse* res = (RoutingDiscoveryResponse*) header_t;
+        for(i = 0; i<res->entries(); i++){
+            routing_params_t tmp = res->payload()[i];
+            //We add the received routing table entry.
+            add_routing_table_entry(tmp);
+        }
+
         return;
 
     }
@@ -459,6 +479,31 @@ namespace bemesh{
             }
         }
         return;
+    }
+
+    ErrStatus Master::send_routing_table(uint8_t* src, uint8_t* dst, uint16_t gatt_if,
+                                        uint8_t conn_id)
+    {
+        dev_addr_t src_address = _build_dev_addr(src);
+        dev_addr_t dst_address = _build_dev_addr(dst);
+
+        std::vector<routing_params_t>rtable = master_instance->get_router()->getRoutingTable();
+        std::cout<<"Extracting routing table"<<std::endl;
+
+        int table_entries = rtable.size();
+        std::array<routing_params_t,ROUTING_DISCOVERY_RES_ENTRIES_MAX>rtable_array;
+
+        //Copy the elements of the vector into the array.
+        std::copy_n(rtable.begin(),table_entries,rtable_array.begin());
+        std::cout<<"Routing table copied and array formed"<<std::endl;
+        RoutingDiscoveryResponse routing_discovery_res_message(src_address,dst_address,
+                                    rtable_array,table_entries);
+        master_instance->get_message_handler()->send((MessageHeader*)&routing_discovery_res_message);
+        std::cout<<"RoutingDiscoveryResponseMessage sent"<<std::endl;
+        master_instance->get_message_handler()->handle();
+        std::cout<<"Message handled"<<std::endl;
+        //And see what happens.
+        return Success;
     }
 
    

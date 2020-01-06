@@ -11,10 +11,17 @@
  *  	CALLBACKS
  */
 // Callback when a client receive a notification from a server
+
+//TO-DO. Levare sta schifezza e fare un array di callback.
 NotifyCb ntf_cb;
 ServerUpdateCb server_update_cb;
 InitCb init_cb;
 ExchangeRoutingTableCb exchange_routing_table_cb;
+ExchangeRoutingTableCb send_routing_table_callback;
+ReceivedPacketCb received_packet_cb;
+
+
+
 /*
  *  	SETTINGS
  */
@@ -632,7 +639,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
 				if(ret) {
 					ESP_LOGE(GATTC_TAG, "Error reading the char: %x", ret);
 				}
-				(*ntf_cb)();
+				(*ntf_cb)(gattc_if,get_client_connid(),p_data->notify.value[1]);
 			}
 			
 			
@@ -1138,11 +1145,19 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 				
 				// CHAR B: Someone is changing the value of the characteristic
                 if (heart_rate_handle_table[IDX_CHAR_VAL_B] == param->write.handle) {
+
+                    //Spostarlo sotto GATTS_WRITE_EVT per reagire a tutti i messaggi.
+                    (*received_packet_cb)(param->write.value,param->write.len);
+                    
+
+
 					// The value has been changed, I'm going to notify my neighbors
 					int i;
 					uint8_t indicate_data[2];
 					indicate_data[0] = 0xaa;
 					indicate_data[1] = heart_rate_handle_table[IDX_CHAR_VAL_B];
+
+                    
 
 					for(i=0; i<TOTAL_NUMBER_LIMIT; ++i) {
 						if(ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) {
@@ -2950,6 +2965,14 @@ uint8_t install_ExchangeRoutingTableCb(ExchangeRoutingTableCb cb){
     if(!cb) return 1;
     exchange_routing_table_cb = cb;
     return 0;
+}
+
+uint8_t install_ReceivedPacketCb(ReceivedPacketCb cb)
+{
+    if(!cb) return 1;
+    received_packet_cb = cb;
+    return 0;
+
 }
 
 uint8_t get_internal_client_connid(uint8_t client_id) {

@@ -86,13 +86,16 @@ extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
 extern bool becoming_client;
 extern bool becoming_server;
 
-typedef void(*NotifyCb)();
+typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t);
 typedef void(*InitCb)(uint8_t);
 //This callback function pass the newly updated MAC table entry to the master object.
 typedef void(*ServerUpdateCb)(uint8_t*,uint8_t);
 //This callback function is triggered whenever two servers meet for the first time so that they
 //can exchange their routing tables.
 typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t gattc_if,uint8_t conn_id);
+typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
+
+
 
 //
 /*
@@ -172,6 +175,6 @@ uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
 uint8_t install_InitCb(InitCb cb); //Same as above.
 uint8_t install_ServerUpdateCb(ServerUpdateCb cb); //Same as above
 uint8_t install_ExchangeRoutingTableCb(ExchangeRoutingTableCb cb); //Same as above
-
+uint8_t install_ReceivedPacketCb(ReceivedPacketCb cb); //Same as above
 
 bool has_ended_scanning();

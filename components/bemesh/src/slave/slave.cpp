@@ -115,33 +115,23 @@ namespace bemesh{
    
 
 
-
-    int16_t Slave::read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
-                                        uint16_t buffer_size, uint16_t gattc_if,
+    //Implementare, in seguito, un check su conn_id e gattc_if
+    uint8_t* Slave::read_characteristic(uint8_t characteristic, uint16_t gattc_if,
                                         uint16_t conn_id)
     {
-        if(buffer == NULL)
-            return -1;
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B || 
             characteristic == IDX_CHAR_VAL_C)
         {
 
             uint8_t* received_bytes=  read_CHR(gattc_if,conn_id,characteristic);
             uint8_t char_len_read = get_CHR_value_len(characteristic);
-            /*if(buffer_size < char_len_read){
-                return -1;
-            }*/
-                          
-            ESP_LOGE("CLIENT", "Read[0]: %d Read[1]: %d Read[2]: %d Read[3]: %d Read[4]: %d Read[5]: %d",
-                                CHR_VALUES[IDX_CHAR_VAL_A][0],received_bytes[1],received_bytes[2],
-                                received_bytes[3],received_bytes[4], received_bytes[5]);
-            memcpy(buffer,(void*)received_bytes,buffer_size);
-           
-            return char_len_read;
+            ESP_LOGE(GATTC_TAG,"Performed read on characteristic: %d ",characteristic);
+            esp_log_buffer_hex(GATTC_TAG,received_bytes,char_len_read);
+            return received_bytes;
 
         }
         else
-            return -1;    
+            return NULL;    
 
     }
 

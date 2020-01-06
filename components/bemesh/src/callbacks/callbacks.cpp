@@ -88,7 +88,28 @@ namespace bemesh{
 
     }
 
-    void Callback::notify_callback(void){
+
+    void Callback::received_packet_callback(uint8_t* packet,uint16_t size){
+        if(!packet )
+            return;
+        std::cout<<"Received a packet"<<std::endl;
+        esp_log_buffer_hex(FUNCTOR_TAG,packet,size);
+        //Read the packet.
+        master_instance->get_message_handler()->read(packet);
+        
+        //Then call the handle function.
+        master_instance->get_message_handler()->handle();
+
+    }
+
+    void Callback::notify_callback(uint16_t gatt_if,uint8_t conn_id,uint8_t characteristic){
+        //Triggered when a client is notified. The client can now read the characteristic
+        
+        //(Read the characteristic)
+        uint8_t* received_bytes =  slave_instance->read_characteristic(characteristic,gatt_if, conn_id);
+        //Check if read is complete.
+        //Then see what happens.
+
     }
 
 
@@ -110,8 +131,13 @@ namespace bemesh{
         }
         assert(ret == 0);        
         ret = install_ExchangeRoutingTableCb(exchange_routing_table_callback);
-         if(ret){
+        if(ret){
            ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della exchange_routing_table_callback"); 
+        }
+        assert(ret == 0);
+        ret = install_ReceivedPacketCb(received_packet_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della received_packet_callback"); 
         }
         assert(ret == 0);
 

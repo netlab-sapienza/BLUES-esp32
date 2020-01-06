@@ -27,6 +27,9 @@
 #include "rtable.hpp"
 #include <memory>
 #include <iostream>
+#include <algorithm>
+
+
 extern "C"{
     #include "kernel.h"
     #include "gatts_table.h"

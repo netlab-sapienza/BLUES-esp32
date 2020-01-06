@@ -107,9 +107,7 @@ namespace bemesh{
                 
 
 
-            int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
-                                        uint16_t buffer_size, uint16_t gattc_if,
-                                        uint16_t conn_id);
+            uint8_t* read_characteristic(uint8_t characteristic,uint16_t gattc_if, uint16_t conn_id);
 
             
             ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, uint8_t* buffer,

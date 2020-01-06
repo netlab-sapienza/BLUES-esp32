@@ -188,6 +188,12 @@ namespace  bemesh{
                                     dev_addr_t hop_addr,uint8_t num_hops, uint8_t t_flags);
 
                 void remove_routing_table_entry(dev_addr_t addr);
+
+                //Overloaded version with the routing_params_t structure.
+                void add_routing_table_entry(routing_params_t& routing_param);
+
+
+
                 dev_addr_t& get_next_hop(dev_addr_t target_addr);
                 
                 dev_addr_t& get_router_dev_addr();
@@ -219,7 +225,10 @@ namespace  bemesh{
             
                 ErrStatus write_characteristic(uint8_t characteristic, uint8_t* buffer,
                                         uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id);
-                
+
+
+                ErrStatus send_routing_table(uint8_t* src,uint8_t* dst, uint16_t gatt_if, uint8_t conn_id);
+
         };
 
         //Istanza della classe accessibile ovunque nel codice.
