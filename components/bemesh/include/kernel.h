@@ -38,7 +38,7 @@
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "constant.hpp"
-
+#include <stdio.h>
 
 #define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
 
@@ -86,14 +86,18 @@ extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
 extern bool becoming_client;
 extern bool becoming_server;
 
+extern bool wants_to_discover;
+extern bool wants_to_send_routing_table;
+
 typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t);
 typedef void(*InitCb)(uint8_t);
 typedef void(*ShutDownCb)(uint8_t);
 //This callback function pass the newly updated MAC table entry to the master object.
-typedef void(*ServerUpdateCb)(uint8_t*,uint8_t);
+typedef void(*ServerUpdateCb)(uint8_t*,uint8_t,uint16_t,uint8_t,uint8_t);
 //This callback function is triggered whenever two servers meet for the first time so that they
 //can exchange their routing tables.
-typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t gattc_if,uint8_t conn_id);
+typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
+typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
 typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
 
 
@@ -177,6 +181,7 @@ uint8_t install_InitCb(InitCb cb); //Same as above.
 uint8_t install_ServerUpdateCb(ServerUpdateCb cb); //Same as above
 uint8_t install_ExchangeRoutingTableCb(ExchangeRoutingTableCb cb); //Same as above
 uint8_t install_ReceivedPacketCb(ReceivedPacketCb cb); //Same as above
-uint8_t install_ShutDownCb(ShutDownCb cb);
+uint8_t install_ShutDownCb(ShutDownCb cb); //Same as above
+uint8_t install_SendRoutingTableCb(SendRoutingTableCb cb); //Same as above.
 
 bool has_ended_scanning();

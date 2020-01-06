@@ -4,7 +4,10 @@
 
 
 namespace bemesh{
-  
+    
+
+
+
 
     Master::Master():connected_clients(),neighbours(){
         
@@ -130,23 +133,26 @@ namespace bemesh{
         return ret;
     }
 
-    std::list<uint8_t*> Master::get_neighbours(){
-        std::list<uint8_t*> ret(neighbours);
+    std::list<connected_server_params_t> Master::get_neighbours(){
+        std::list<connected_server_params_t> ret(neighbours);
         return ret;
     }
 
 
-    void Master::add_neighbour(uint8_t* new_address){
-        if(new_address && !contains_mac(neighbours,new_address,MAC_ADDRESS_SIZE)){
-            std::cout<<"Adding a neighbour"<<std::endl;
-            neighbours.push_back(new_address);
+    void Master::add_neighbour(connected_server_params_t new_server){
+        uint8_t id = new_server.server_id;
+        if(!contains_server(neighbours,id)){
+            ESP_LOGE(GATTS_TAG,"Adding a neighbour: %d, %d, %d",new_server.server_id,new_server.gatt_if, new_server.conn_id);
+            
+            neighbours.push_back(new_server);
         }
     }
 
-    void Master::remove_neighbour(uint8_t* address){
-        if(address && contains_mac(neighbours, address, MAC_ADDRESS_SIZE)){
+    void Master::remove_neighbour(connected_server_params_t server){
+        uint8_t id = server.server_id;
+        if(contains_server(neighbours, id)){
             std::cout<<"Removing a neighbour"<<std::endl;
-            neighbours.remove(address);
+            neighbours.remove(server);
         }
     }
 
@@ -183,8 +189,17 @@ namespace bemesh{
                             void* args)
     {
         ESP_LOGE(GATTS_TAG, "Someone wants to discover my routing table and I prepare a routing discovery response");
+        //I must connect to the server that has requested the routing table and then exchange with it.
+       
+        /* Commented for test reasons.
+        wants_to_discover = false;
+        wants_to_send_routing_table = true;
+        start_internal_client(SERVER_S2);
+        */
+
 
         //Prepare the routing discovery response message.
+        
 
         return;                        
     }
@@ -302,6 +317,14 @@ namespace bemesh{
     }
 
 
+    void Master::prepare_routing_response_message(uint8_t* src, uint8_t* dst, uint16_t gatt_if,
+                                        uint8_t conn_id)
+    {
+        dev_addr_t src_addr = _build_dev_addr(src);
+        dev_addr_t dest_addr = _build_dev_addr(dst);
+
+    }
+
     void Master::prepare_routing_update(){
         std::vector<routing_update_t> r_updates = router->getRoutingUpdates();
         std::size_t num_updates = r_updates.size();
@@ -312,7 +335,9 @@ namespace bemesh{
         //Send the routing updates to all neighbours.
         
         for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
-            dev_addr_t dest_addr = _build_dev_addr(*it);
+            connected_server_params_t server = *it;
+            //Retrieve the mac address from the data structure
+            dev_addr_t dest_addr = server.server_mac_address;
             RoutingUpdateMessage routing_update_message(src_addr,dest_addr,arr_updates,num_updates);
             //Send the message.
             get_message_handler()->send((MessageHeader*)&routing_update_message);
@@ -457,7 +482,8 @@ namespace bemesh{
     //Nodi che forwardano la routing table.
 
     //Function that updates the client connected table.
-    void Master::update_master_macs(uint8_t* address,uint8_t flag){
+    void Master::update_master_macs(uint8_t* address,uint16_t gatt_if,uint8_t conn_id,
+                                    uint8_t server_id, uint8_t flag){
         if(flag == UPDATE_ADD_CLIENT){    
             //std::cout<<"Updating client table"<<std::endl;
             if(address){
@@ -488,7 +514,10 @@ namespace bemesh{
         else if(flag == UPDATE_ADD_SERVER){
             //std::cout<<"Updating server table"<<std::endl;
             if(address){
-                add_neighbour(address);
+                dev_addr_t addr = _build_dev_addr(address);
+                connected_server_params_t new_server(server_id,gatt_if,conn_id,addr);
+                add_neighbour(new_server);
+
                 //std::cout<<"New address is: "<<std::endl;
                 /*
                 dev_addr_t addr = _build_dev_addr(address);
@@ -520,12 +549,15 @@ namespace bemesh{
         std::cout<<"Routing table copied and array formed"<<std::endl;
         RoutingDiscoveryResponse routing_discovery_res_message(src_address,dst_address,
                                     rtable_array,table_entries);
-        master_instance->get_message_handler()->send((MessageHeader*)&routing_discovery_res_message);
+        ErrStatus ret_val = master_instance->get_message_handler()->send((MessageHeader*)&routing_discovery_res_message);
+        
+
+        
         std::cout<<"RoutingDiscoveryResponseMessage sent"<<std::endl;
         master_instance->get_message_handler()->handle();
         std::cout<<"Message handled"<<std::endl;
         //And see what happens.
-        return Success;
+        return ret_val;
     }
 
    

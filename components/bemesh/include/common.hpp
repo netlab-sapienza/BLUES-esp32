@@ -35,7 +35,7 @@ extern "C"{
     #include "gatts_table.h"
 }
 
-
+namespace bemesh{
     struct task_param_write_t{
         uint8_t conn_id;
         uint16_t gatt_if;
@@ -45,8 +45,24 @@ extern "C"{
         task_param_write_t();
     };
 
+    struct connected_server_params_t{
+        uint8_t server_id;  //could be one of SERVER_S1, SERVER_S2, SERVER_S3
+        uint16_t gatt_if;
+        uint8_t conn_id;
+        dev_addr_t server_mac_address;
+        connected_server_params_t();
+        connected_server_params_t(uint8_t server_id,uint16_t gatt_if,uint8_t conn_id,
+                                dev_addr_t server_mac);
 
-bool contains_mac(std::list<uint8_t*> ls,uint8_t* address, uint8_t address_size);
-bemesh::dev_addr_t _build_dev_addr(uint8_t* address);
-void _print_mac_address(uint8_t* address);
-void write_characteristic_task(void* task_param);
+        bool operator ==  (const connected_server_params_t& cc);
+        bool operator != (const connected_server_params_t& cc);
+
+    };
+
+    bool same_addresses(dev_addr_t addr1,dev_addr_t addr2,uint8_t address_size);
+    bool contains_mac(std::list<uint8_t*> ls,uint8_t* address, uint8_t address_size);
+    bool contains_server(std::list<connected_server_params_t> ls,uint8_t server_id);
+    bemesh::dev_addr_t _build_dev_addr(uint8_t* address);
+    void _print_mac_address(uint8_t* address);
+    void write_characteristic_task(void* task_param);
+}

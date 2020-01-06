@@ -17,7 +17,7 @@ NotifyCb ntf_cb;
 ServerUpdateCb server_update_cb;
 InitCb init_cb;
 ExchangeRoutingTableCb exchange_routing_table_cb;
-ExchangeRoutingTableCb send_routing_table_callback;
+SendRoutingTableCb send_routing_table_callback;
 ReceivedPacketCb received_packet_cb;
 ShutDownCb shutdown_cb;
 
@@ -42,6 +42,10 @@ uint8_t server = 0;
 uint8_t scanning = 0; // Client is scanning?
 uint8_t advertising = 0; // Server is advertising?
 uint8_t server_scanning = 0; // Server is scanning?
+
+
+bool wants_to_discover = true;
+bool wants_to_send_routing_table = false;
 
 
 /*
@@ -1110,9 +1114,31 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         for(k=0; k<6; k++) {
                             MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
                         }
-                        (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_SERVER);
-                        (*exchange_routing_table_cb)(get_my_MAC(),get_internal_client_serverMAC(SERVER_S1),
-                                                    get_internal_client_gattif(SERVER_S1),get_internal_client_connid(SERVER_S1));
+
+                        //If something's wrong we'll see 66 in the logs.
+                        uint8_t s_id = 66;
+                        if(conn_device_S1)
+                            s_id = SERVER_S1;
+                        else if(conn_device_S2)
+                            s_id = SERVER_S2;
+                        else if(conn_device_S3)
+                            s_id = SERVER_S3;
+
+                        (*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                                            get_internal_client_connid(s_id),s_id);
+                        if(wants_to_discover){
+                            ESP_LOGE(GATTS_TAG,"I want to discover some routing table");
+                            (*exchange_routing_table_cb)(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id));       
+                        }
+
+                        else if(wants_to_send_routing_table){
+                            ESP_LOGE(GATTS_TAG,"I want to send my routing table entries");
+                            (*send_routing_table_callback)(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id));
+                            wants_to_send_routing_table = false;
+                            wants_to_discover = true;
+                        }
 
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
@@ -1241,7 +1267,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			}
 			
             //Send the new mac_address to the server.
-            (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT);
+            (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
 
             break;
         case ESP_GATTS_DISCONNECT_EVT:
@@ -1253,7 +1279,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 							MACS[param->disconnect.conn_id][0], MACS[param->disconnect.conn_id][1], MACS[param->disconnect.conn_id][2],
 								MACS[param->disconnect.conn_id][3], MACS[param->disconnect.conn_id][4], MACS[param->disconnect.conn_id][5]);
             
-            (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT);
+            (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
+            
 
             int i;
 			for(i=0; i<6; i++) {
@@ -2980,7 +3007,11 @@ uint8_t install_ShutDownCb(ShutDownCb cb){
     return 0;
 }
 
-
+uint8_t install_SendRoutingTableCb(SendRoutingTableCb cb){
+    if(!cb) return 1;
+    send_routing_table_callback = cb;
+    return 0;
+}
 
 uint8_t get_internal_client_connid(uint8_t client_id) {
 	switch(client_id) {

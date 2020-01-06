@@ -34,6 +34,12 @@ namespace bemesh{
         }
     }
 
+    void Callback::send_routing_table_callback(uint8_t* src, uint8_t* dst, uint16_t gatt_if,
+                                            uint8_t conn_id)
+    {
+
+    }
+
     void Callback::shutdown_device_callback(uint8_t type){
         switch(type){
             case SERVER:{
@@ -47,10 +53,13 @@ namespace bemesh{
         }
     }
 
-    void Callback::server_update_callback( uint8_t* macs,uint8_t flag){
-        master_instance->update_master_macs(macs,flag);
+    void Callback::server_update_callback( uint8_t* mac,uint8_t flag,uint16_t gatt_if, uint8_t conn_id,
+                                           uint8_t server_id){
+        master_instance->update_master_macs(mac,gatt_if,conn_id,server_id,flag);
         //Send a routing update to the neighbouring servers.
-        master_instance->prepare_routing_update();
+
+        //Commented for test reasons.
+        //master_instance->prepare_routing_update();
     }
 
     //Invoked when two servers meet each other.

@@ -58,6 +58,7 @@ extern "C"{
 
 namespace  bemesh{
     
+    
     //Reception callback for messages. From here all callbacks will be invoked
     //according to the message_id.
     void master_reception_callback(MessageHeader* header_t, void* args);
@@ -92,7 +93,7 @@ namespace  bemesh{
 
 
             std::list<uint8_t*> connected_clients;
-            std::list<uint8_t*> neighbours;
+            std::list<connected_server_params_t> neighbours;
 
 
 
@@ -162,16 +163,17 @@ namespace  bemesh{
                 void remove_connected_client(uint8_t* address);
                 
 
-                std::list<uint8_t*> get_neighbours();
+                std::list<connected_server_params_t> get_neighbours();
                 //Add the MAC address("new address") to the neighbour list. This MAC address
                 //represents a server.
-                void add_neighbour(uint8_t* new_address);
+                void add_neighbour(connected_server_params_t new_address);
                 //Remove the server represented by "address" by the neighbour list
-                void remove_neighbour(uint8_t* address);
+                void remove_neighbour(connected_server_params_t address);
                 
 
 
-                void update_master_macs(uint8_t* macs,uint8_t flag);
+                void update_master_macs(uint8_t* macs,uint16_t gatt_if,uint8_t conn_id,
+                                        uint8_t server_id, uint8_t flag);
                 void update_master_routing_table (uint8_t* address);
 
                 
@@ -207,7 +209,12 @@ namespace  bemesh{
                                     void* args);
 
                 //prepare the routing update message whenever a new client connects.
-                void prepare_routing_update();         
+                void prepare_routing_update();  
+
+                //Send the routing response message whenever requested.
+                void prepare_routing_response_message(uint8_t* src,uint8_t* dst,
+                                                uint16_t gatt_if, uint8_t conn_id);
+
 
 
  
