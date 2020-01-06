@@ -441,8 +441,10 @@ namespace bemesh{
     }
 
     void Master::shutdown(){
-        if(master_instance != NULL)
+        if(master_instance != NULL){
+            delete master_instance->get_router();
             delete master_instance;
+        }
     }
     
     /*

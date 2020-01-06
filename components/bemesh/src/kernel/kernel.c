@@ -19,7 +19,7 @@ InitCb init_cb;
 ExchangeRoutingTableCb exchange_routing_table_cb;
 ExchangeRoutingTableCb send_routing_table_callback;
 ReceivedPacketCb received_packet_cb;
-
+ShutDownCb shutdown_cb;
 
 
 /*
@@ -2972,8 +2972,15 @@ uint8_t install_ReceivedPacketCb(ReceivedPacketCb cb)
     if(!cb) return 1;
     received_packet_cb = cb;
     return 0;
-
 }
+
+uint8_t install_ShutDownCb(ShutDownCb cb){
+    if(!cb) return 1;
+    shutdown_cb = cb;
+    return 0;
+}
+
+
 
 uint8_t get_internal_client_connid(uint8_t client_id) {
 	switch(client_id) {

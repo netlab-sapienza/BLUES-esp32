@@ -34,6 +34,18 @@ namespace bemesh{
         }
     }
 
+    void Callback::shutdown_device_callback(uint8_t type){
+        switch(type){
+            case SERVER:{
+                ESP_LOGE(FUNCTOR_TAG,"Shutting down the master object");
+                master_instance->shutdown();
+            }
+            case CLIENT:{
+                ESP_LOGE(FUNCTOR_TAG,"Shutting down the slave object");
+                slave_instance->shutdown();
+            }
+        }
+    }
 
     void Callback::server_update_callback( uint8_t* macs,uint8_t flag){
         master_instance->update_master_macs(macs,flag);
@@ -119,10 +131,19 @@ namespace bemesh{
            ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della received_packet_callback"); 
         }
         assert(ret == 0);
+        
+        ret = install_ShutDownCb(shutdown_device_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della shutdown_callback"); 
+        }
+        assert(ret == 0);
+
+
 
         ESP_LOGE(FUNCTOR_TAG,"HO FINITO DI INSTALLARE LE CALLBACKS");
         return;
     }
+
 
 
     
