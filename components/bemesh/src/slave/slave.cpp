@@ -5,14 +5,13 @@
 
 namespace bemesh{
     Slave::Slave(){
+
+        //Toglierle(?)
         esp = true;
         connected_to_internet = false;
 
     }
 
-    Slave::Slave(bool is_esp, bool connected_to_internet):esp(is_esp), connected_to_internet(connected_to_internet){
-        
-    }
 
     Slave::~Slave(){
 

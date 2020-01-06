@@ -81,7 +81,7 @@ namespace  bemesh{
             //For characteristic writing/reading.
             uint8_t device_conn_id; 
             uint16_t device_gatt_if;
-            //The internal client gatt_if to perform characteristic readin/writing
+            //The internal client gatt_if to perform characteristic reading/writing
             uint16_t internal_client_gatt_if;
             uint8_t internal_client_conn_id;
 
@@ -112,27 +112,18 @@ namespace  bemesh{
             public:
                 
                 
-                //To be deleted
-                Master(uint8_t id, std::string TAG);
-                Master(uint8_t id);
+               
                 Master();
                 
+                ~Master();
+              
 
                 //Start method to initialize all fields of the class.
                 void start();
 
                 //Shutdown method to cancel objects on heap.
                 void shutdown();
-                
-
-                
-
-
-                ~Master();
-                Master(bool is_esp, bool connected_to_internet);
-
-
-                
+         
                 
                 std::string get_name();
                 void set_name(std::string name);
@@ -214,7 +205,9 @@ namespace  bemesh{
                                     void* args);
                 void routing_update_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args);
-                                
+
+                //prepare the routing update message whenever a new client connects.
+                void prepare_routing_update();         
 
 
  

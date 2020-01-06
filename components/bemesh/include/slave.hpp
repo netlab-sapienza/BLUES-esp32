@@ -67,8 +67,7 @@ namespace bemesh{
         public:
             Slave();
             ~Slave();
-            Slave(bool is_esp, bool connected_to_internet);
-
+            
             void start();
             void shutdown();
 

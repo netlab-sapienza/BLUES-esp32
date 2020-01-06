@@ -6,14 +6,6 @@
 namespace bemesh{
   
 
-    Master::Master(uint8_t id, std::string name):name(name),device_conn_id(id),
-    connected_clients(),neighbours()
-    { 
-    }
-
-    Master::Master(uint8_t id):device_conn_id(id),connected_clients(),neighbours(){
-    }
-
     Master::Master():connected_clients(),neighbours(){
         
     }
@@ -205,6 +197,9 @@ namespace bemesh{
         RoutingDiscoveryResponse* res = (RoutingDiscoveryResponse*) header_t;
         for(i = 0; i<res->entries(); i++){
             routing_params_t tmp = res->payload()[i];
+
+            //We update the number of hops.
+            tmp.num_hops = tmp.num_hops +1;
             //We add the received routing table entry.
             add_routing_table_entry(tmp);
         }
@@ -274,9 +269,9 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing update transmission callback");
-        uint8_t characteristic = IDX_CHAR_VAL_B;
-        write_characteristic(characteristic, buffer,size,internal_client_gatt_if,
-                                internal_client_conn_id);
+        //uint8_t characteristic = IDX_CHAR_VAL_B;
+        //write_characteristic(characteristic, buffer,size,internal_client_gatt_if,
+        //                        internal_client_conn_id);
         return;
     }
                                     
@@ -304,6 +299,31 @@ namespace bemesh{
             }
         }
         return;                     
+    }
+
+
+    void Master::prepare_routing_update(){
+        std::vector<routing_update_t> r_updates = router->getRoutingUpdates();
+        std::size_t num_updates = r_updates.size();
+        std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> arr_updates;
+        std::copy_n(r_updates.begin(),num_updates,arr_updates.begin());
+        
+        dev_addr_t src_addr = get_router_dev_addr();
+        //Send the routing updates to all neighbours.
+        
+        for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
+            dev_addr_t dest_addr = _build_dev_addr(*it);
+            RoutingUpdateMessage routing_update_message(src_addr,dest_addr,arr_updates,num_updates);
+            //Send the message.
+            get_message_handler()->send((MessageHeader*)&routing_update_message);
+        }
+
+        //Then flush the output stream. 
+        //Need to pass arguments to MessageHandler::handle for this message.
+        get_message_handler()->handle();
+
+
+
     }
                         
 
