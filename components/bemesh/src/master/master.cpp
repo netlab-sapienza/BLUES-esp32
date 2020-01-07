@@ -197,11 +197,11 @@ namespace bemesh{
         
         wants_to_discover = false;
         wants_to_send_routing_table = true;
-        //start_internal_client(SERVER_S2);
-        register_internal_client(SERVER_S2);
+        start_internal_client(SERVER_S2);
+        //register_internal_client(SERVER_S2);
 
 
-        //Prepare the routing discovery response message.
+        //Prepare the routing discovery response message in the callback.
         
 
         return;                        
@@ -228,7 +228,23 @@ namespace bemesh{
 
     void Master::routing_update_reception_callback(MessageHeader* header_t, void* args)
     {
-        ESP_LOGE(GATTS_TAG, "Someone has updates for my routing table");
+        ESP_LOGE(GATTS_TAG, "In routing update reception callback");
+
+        //First take the updates and merge.
+        RoutingUpdateMessage* routing_updates = (RoutingUpdateMessage*)header_t;
+        std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> updates = routing_updates->payload();
+        dev_addr_t sender = routing_updates->source();
+        std::vector<routing_update_t> vec_updates;
+        std::copy_n(updates.begin(),ROUTING_UPDATE_ENTRIES_MAX,vec_updates.begin());
+
+        ESP_LOGE(GATTS_TAG,"Merging the updates calling router->mergeUpdates");
+        std::size_t merge_res = router->mergeUpdates(vec_updates,sender);
+        ESP_LOGE(GATTS_TAG,"Merge result is (number of entries updated): %d",merge_res);
+
+
+        //Then propagate the updates until a server can't propagate no longer.
+        send_routing_update(updates);
+
         return;
     }
 
@@ -278,7 +294,7 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery response transmission callback");
-        ESP_LOGE(GATTS_TAG, "BELLAAAAAA A TUTTIIIIIIIIIIIIIIIIIIIII");
+        //ESP_LOGE(GATTS_TAG, "BELLAAAAAA A TUTTIIIIIIIIIIIIIIIIIIIII");
 
         //The order is: gatt_if, conn_id, server_id.
         uint16_t* ptr = (uint16_t*) args;
@@ -309,9 +325,22 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing update transmission callback");
-        //uint8_t characteristic = IDX_CHAR_VAL_B;
-        //write_characteristic(characteristic, buffer,size,internal_client_gatt_if,
-        //                        internal_client_conn_id);
+
+        
+        
+        ESP_LOGE(GATTS_TAG,"In routing update transmission callback. Beginning to parse the arguments");
+        //First: take the arguments from the args buffer.
+        uint16_t* ptr = (uint16_t*) args;
+        uint16_t gatt_if = *ptr;
+        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+        uint8_t conn_id = *_ptr;
+        _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
+        uint8_t server_id = *_ptr;
+        ESP_LOGE(GATTS_TAG,"In routing update transmission callback. Ended to parse the arguments");
+       
+       
+        uint8_t characteristic = IDX_CHAR_VAL_B;
+        write_characteristic(characteristic, buffer,size,gatt_if,conn_id);
         return;
     }
                                     
@@ -341,9 +370,56 @@ namespace bemesh{
         return;                     
     }
 
+    ErrStatus Master::send_routing_update(std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> updates){
+        
+        dev_addr_t src_addr = get_router_dev_addr();
+        ESP_LOGE(GATTS_TAG,"Preparing to send the update packets to all neighbours");
+        for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
+            connected_server_params_t server = *it;
+            //Retrieve the mac address from the data structure
+            dev_addr_t dest_addr = server.server_mac_address;
 
+            //Just for print status (to be commented sonner or later).
+            uint8_t addr[MAC_ADDRESS_SIZE];
+            int i;
+            for(i = 0; i<MAC_ADDRESS_SIZE; ++i){
+                addr[i] = dest_addr[i];
+            }
 
-    void Master::prepare_routing_update(){
+            ESP_LOGE(GATTS_TAG,"Sending to the neighbour: ");
+            esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
+            RoutingUpdateMessage routing_update_message(src_addr,dest_addr,updates,ROUTING_UPDATE_ENTRIES_MAX);
+            
+            //Before sending we have to set the arguments for the transmission callback
+            
+            //Push the server gatt_if (uint16_t)
+            uint16_t* args = (uint16_t*)master_message_extra_args;
+            *args = server.gatt_if;
+            uint8_t* _args = (uint8_t*)(args + sizeof(uint16_t));
+            //Then the corresponding server conn_id
+            *_args = server.conn_id;
+            _args = (uint8_t*)(_args + sizeof(uint8_t));
+            //Then the server_id
+            *_args = server.server_id;
+            
+            
+            //Send the message.
+            ErrStatus ret_val = get_message_handler()->send((MessageHeader*)&routing_update_message);
+            if(ret_val != Success){
+                ESP_LOGE(GATTS_TAG,"Error in sending the routing updates to: %d",server.server_id);
+            }
+            get_message_handler()->handle();
+        }
+        ESP_LOGE(GATTS_TAG,"Ended updating the neighbours");
+
+        //Then flush the output stream. 
+        //Need to pass arguments to MessageHandler::handle for this message.
+
+        return Success;
+
+    }
+
+    ErrStatus Master::send_routing_update(){
         std::vector<routing_update_t> r_updates = router->getRoutingUpdates();
         std::size_t num_updates = r_updates.size();
         std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> arr_updates;
@@ -352,19 +428,49 @@ namespace bemesh{
         dev_addr_t src_addr = get_router_dev_addr();
         //Send the routing updates to all neighbours.
         
+        ESP_LOGE(GATTS_TAG,"Preparing to send the update packets to all neighbours");
         for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
             connected_server_params_t server = *it;
             //Retrieve the mac address from the data structure
             dev_addr_t dest_addr = server.server_mac_address;
+
+            uint8_t addr[MAC_ADDRESS_SIZE];
+            int i;
+            for(i = 0; i<MAC_ADDRESS_SIZE; ++i){
+                addr[i] = dest_addr[i];
+            }
+
+
+            ESP_LOGE(GATTS_TAG,"Sending to the neighbour: ");
+            esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
             RoutingUpdateMessage routing_update_message(src_addr,dest_addr,arr_updates,num_updates);
+            
+            //Before sending we have to set the arguments for the transmission callback
+            
+            //Push the server gatt_if (uint16_t)
+            uint16_t* args = (uint16_t*)master_message_extra_args;
+            *args = server.gatt_if;
+            uint8_t* _args = (uint8_t*)(args + sizeof(uint16_t));
+            //Then the corresponding server conn_id
+            *_args = server.conn_id;
+            _args = (uint8_t*)(_args + sizeof(uint8_t));
+            //Then the server_id
+            *_args = server.server_id;
+            
+            
             //Send the message.
-            get_message_handler()->send((MessageHeader*)&routing_update_message);
+            ErrStatus ret_val = get_message_handler()->send((MessageHeader*)&routing_update_message);
+            if(ret_val != Success){
+                ESP_LOGE(GATTS_TAG,"Error in sending the routing updates to: %d",server.server_id);
+            }
+            get_message_handler()->handle();
         }
+        ESP_LOGE(GATTS_TAG,"Ended updating the neighbours");
 
         //Then flush the output stream. 
         //Need to pass arguments to MessageHandler::handle for this message.
-        get_message_handler()->handle();
 
+        return Success;
 
 
     }
@@ -514,6 +620,10 @@ namespace bemesh{
                 dev_addr_t my_addr = get_router_dev_addr();
                 add_routing_table_entry(addr,my_addr,hops,flags);
                 //std::cout<<"Added an entry to the routing table: "<<std::endl;
+                
+                ESP_LOGE(GATTS_TAG,"Sending routing updates to the neighbour list");
+                send_routing_update();
+
                 return;
             } 
         }
@@ -526,6 +636,9 @@ namespace bemesh{
                 dev_addr_t addr = _build_dev_addr(address);
                 remove_routing_table_entry(addr);
                 //std::cout<<"Removed an entry to the routing table: "<<std::endl;
+
+                ESP_LOGE(GATTS_TAG,"Sending routing updates to the neighbour list");
+                send_routing_update();
                 return;
             }       
         }

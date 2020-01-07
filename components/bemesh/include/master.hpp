@@ -211,8 +211,12 @@ namespace  bemesh{
                 void routing_update_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args);
 
-                //prepare the routing update message whenever a new client connects.
-                void prepare_routing_update();  
+                //Prepare the routing update message whenever a new client connects.
+                ErrStatus send_routing_update(); 
+
+                //Overloaded version of the previous function to propagate the updates.
+                ErrStatus send_routing_update(std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX>updates);
+
 
                 //Send the routing response message whenever requested.
                 
@@ -229,6 +233,8 @@ namespace  bemesh{
 
                 ErrStatus send_routing_table(uint8_t* src,uint8_t* dst, uint16_t gatt_if, 
                                         uint8_t conn_id,uint8_t server_id);
+
+                
 
         };
 
