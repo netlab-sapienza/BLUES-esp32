@@ -1135,7 +1135,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         else if(wants_to_send_routing_table){
                             ESP_LOGE(GATTS_TAG,"I want to send my routing table entries");
                             (*send_routing_table_callback)(get_my_MAC(),get_internal_client_serverMAC(s_id),
-                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id));
+                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id),s_id);
                             wants_to_send_routing_table = false;
                             wants_to_discover = true;
                         }
@@ -1383,6 +1383,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         if (scan_ret){
             ESP_LOGE(GATTC_TAG, "set scan params error, error code = %x", scan_ret);
         }
+
         break;
     /* one device connect successfully, all profiles callback function will get the ESP_GATTC_CONNECT_EVT,
      so must compare the mac address to check which device is connected, so it is a good choice to use ESP_GATTC_OPEN_EVT. */
@@ -1653,6 +1654,28 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
     switch (event) {
     case ESP_GATTC_REG_EVT:
         ESP_LOGI(GATTC_TAG, "REG_EVT");
+
+        uint8_t s_id = 66;
+        if(conn_device_S1)
+            s_id = SERVER_S1;
+        else if(conn_device_S2)
+            s_id = SERVER_S2;
+        else if(conn_device_S3)
+            s_id = SERVER_S3;
+
+        if(wants_to_send_routing_table){
+            
+            ESP_LOGE(GATTS_TAG,"I want to send my routing table entries");
+            (*send_routing_table_callback)(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id),s_id);
+            wants_to_send_routing_table = false;
+            wants_to_discover = true;
+        }
+        else{
+            ESP_LOGE(GATTS_TAG,"I don't want to");
+        }
+
+
         break;
     case ESP_GATTC_CONNECT_EVT:
         break;

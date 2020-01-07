@@ -35,8 +35,13 @@ namespace bemesh{
     }
 
     void Callback::send_routing_table_callback(uint8_t* src, uint8_t* dst, uint16_t gatt_if,
-                                            uint8_t conn_id)
+                                            uint8_t conn_id,uint8_t server_id)
     {
+        master_instance->send_routing_table(src,dst,gatt_if,conn_id,server_id);
+
+        //After we send the routing table we unregister the internal client.
+        unregister_internal_client(SERVER_S2);
+        ESP_LOGE(FUNCTOR_TAG,"Client number: %d unregistered",SERVER_S2);
 
     }
 
@@ -138,6 +143,12 @@ namespace bemesh{
         ret = install_ReceivedPacketCb(received_packet_callback);
         if(ret){
            ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della received_packet_callback"); 
+        }
+        assert(ret == 0);
+
+        ret = install_SendRoutingTableCb(send_routing_table_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della send_routing_table_callback"); 
         }
         assert(ret == 0);
         

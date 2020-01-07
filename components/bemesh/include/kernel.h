@@ -97,7 +97,7 @@ typedef void(*ServerUpdateCb)(uint8_t*,uint8_t,uint16_t,uint8_t,uint8_t);
 //This callback function is triggered whenever two servers meet for the first time so that they
 //can exchange their routing tables.
 typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
-typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
+typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t,uint8_t);
 typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
 
 

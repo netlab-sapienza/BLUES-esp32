@@ -80,7 +80,7 @@ namespace bemesh{
         uint16_t buffer_size = params->buffer_size;
         
         write_CHR(gatt_if, conn_id, charact, data, buffer_size);
-        std::cout<<"I wrote"<<std::endl;
+        //std::cout<<"I wrote"<<std::endl;
     /* uint8_t * test = read_CHR(gatt_if,conn_id, charact);
         int i;
         for(i = 0; i<buffer_size; i++){

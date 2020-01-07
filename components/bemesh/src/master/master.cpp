@@ -183,6 +183,9 @@ namespace bemesh{
         internal_client_conn_id = conn_id;
     }
 
+    uint16_t* Master::get_master_buffer_extra_args(){
+        return master_message_extra_args;
+    }
     
 
     void Master::routing_discovery_request_reception_callback(MessageHeader* header_t,
@@ -191,11 +194,11 @@ namespace bemesh{
         ESP_LOGE(GATTS_TAG, "Someone wants to discover my routing table and I prepare a routing discovery response");
         //I must connect to the server that has requested the routing table and then exchange with it.
        
-        /* Commented for test reasons.
+        
         wants_to_discover = false;
         wants_to_send_routing_table = true;
-        start_internal_client(SERVER_S2);
-        */
+        //start_internal_client(SERVER_S2);
+        register_internal_client(SERVER_S2);
 
 
         //Prepare the routing discovery response message.
@@ -268,14 +271,36 @@ namespace bemesh{
         return;
     }
 
+
+    //Take the serialized message contained in buffer, parse the arguments contained in args,
+    //then write to the characteristic.
     void Master::routing_discovery_response_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery response transmission callback");
-        //Write to some characteristic
+        ESP_LOGE(GATTS_TAG, "BELLAAAAAA A TUTTIIIIIIIIIIIIIIIIIIIII");
+
+        //The order is: gatt_if, conn_id, server_id.
+        uint16_t* ptr = (uint16_t*) args;
+        uint16_t gatt_if = *ptr;
+        uint8_t * _ptr = (uint8_t*) (ptr + sizeof(uint16_t));
+        uint8_t conn_id = *(_ptr);
+        _ptr = _ptr + sizeof(uint8_t);
+        uint8_t server_id = *(_ptr);
+        ESP_LOGE(GATTS_TAG,"Parsed message arguments: gatt_if: %d, conn_id: %d, server_id: %d",
+                        gatt_if, conn_id, server_id);
+
         uint8_t characteristic = IDX_CHAR_VAL_B;
-        write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
-                                internal_client_conn_id);
+
+        //Write to some characteristic
+        ErrStatus ret_val = write_characteristic(characteristic,buffer,size,gatt_if,
+                            conn_id);
+        
+        if(ret_val){
+            
+            ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: error in writing the: %d characteristic. Error status: %d",
+                                characteristic,ret_val);
+        }
 
         return;
     }
@@ -317,13 +342,6 @@ namespace bemesh{
     }
 
 
-    void Master::prepare_routing_response_message(uint8_t* src, uint8_t* dst, uint16_t gatt_if,
-                                        uint8_t conn_id)
-    {
-        dev_addr_t src_addr = _build_dev_addr(src);
-        dev_addr_t dest_addr = _build_dev_addr(dst);
-
-    }
 
     void Master::prepare_routing_update(){
         std::vector<routing_update_t> r_updates = router->getRoutingUpdates();
@@ -386,11 +404,11 @@ namespace bemesh{
         ret = mes_handler.installTxCb(&master_transmission_callback);
         assert(ret == Success);
         //Install reception callback for messages. Extra arguments to be added.
-        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,nullptr);
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,master_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_RES_ID,nullptr);
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_RES_ID,master_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,nullptr);
+        ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,master_message_extra_args);
         assert(ret == Success);
         ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,&master_reception_callback,nullptr);
         assert(ret == Success);
@@ -533,10 +551,20 @@ namespace bemesh{
     }
 
     ErrStatus Master::send_routing_table(uint8_t* src, uint8_t* dst, uint16_t gatt_if,
-                                        uint8_t conn_id)
+                                        uint8_t conn_id,uint8_t server_id)
     {
         dev_addr_t src_address = _build_dev_addr(src);
         dev_addr_t dst_address = _build_dev_addr(dst);
+        
+        //Passing arguments to the message hanlder.
+        ESP_LOGE(GATTS_TAG,"Begin parsing arguments");
+        uint16_t* args = (uint16_t*)master_message_extra_args;
+        *args = gatt_if;
+        uint8_t* _args = (uint8_t*) (args + sizeof(uint16_t));
+        *_args = conn_id;
+        _args = (uint8_t*)(_args+ sizeof(uint8_t));
+        *_args = server_id;
+        ESP_LOGE(GATTS_TAG,"Ended parsing arguments");
 
         std::vector<routing_params_t>rtable = master_instance->get_router()->getRoutingTable();
         std::cout<<"Extracting routing table"<<std::endl;

@@ -56,7 +56,7 @@ namespace bemesh{
         static void received_packet_callback(uint8_t* packet,uint16_t size);  
         static void shutdown_device_callback(uint8_t type);
         static void send_routing_table_callback(uint8_t* src,uint8_t* dst, uint16_t gatt_if,
-                                                uint8_t conn_id);
+                                                uint8_t conn_id,uint8_t server_id);
 
 
         public:

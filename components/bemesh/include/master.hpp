@@ -102,6 +102,8 @@ namespace  bemesh{
             //Server-side buffer for message transmission
             uint8_t master_tx_buffer[MASTER_TX_BUFFER_SIZE];
 
+            //Server-side buffer for message extra args.
+            uint16_t master_message_extra_args[MASTER_EXTRA_ARGS_BUFFER_SIZE];
 
             //Objects to be used by master class
             Router* router;
@@ -192,7 +194,8 @@ namespace  bemesh{
                 dev_addr_t& get_router_dev_addr();
 
                 std::vector<routing_update_t>get_routing_updates();
-                        
+
+                uint16_t* get_master_buffer_extra_args();        
 
                 //Message reception callbacks
                 void routing_discovery_request_reception_callback(MessageHeader* header_t, void*args);
@@ -212,10 +215,7 @@ namespace  bemesh{
                 void prepare_routing_update();  
 
                 //Send the routing response message whenever requested.
-                void prepare_routing_response_message(uint8_t* src,uint8_t* dst,
-                                                uint16_t gatt_if, uint8_t conn_id);
-
-
+                
 
  
                 int16_t read_characteristic(uint8_t characteristic, dev_addr_t address,void* buffer,
@@ -227,7 +227,8 @@ namespace  bemesh{
                                         uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id);
 
 
-                ErrStatus send_routing_table(uint8_t* src,uint8_t* dst, uint16_t gatt_if, uint8_t conn_id);
+                ErrStatus send_routing_table(uint8_t* src,uint8_t* dst, uint16_t gatt_if, 
+                                        uint8_t conn_id,uint8_t server_id);
 
         };
 
