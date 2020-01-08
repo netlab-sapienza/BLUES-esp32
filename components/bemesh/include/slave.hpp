@@ -35,6 +35,8 @@
 #include "common.hpp"
 #include <stdlib.h>
 #include <iostream>
+#include <list>
+#include <assert.h>
 
 
 extern "C"{
@@ -44,6 +46,10 @@ extern "C"{
 
 namespace bemesh{
     static std::string comm_char = "Hello everyone";
+
+    void reception_callback(MessageHeader* header_t,void* args);
+    void transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,void*args);
+
 
     class Slave{
         uint8_t* address;
@@ -61,6 +67,10 @@ namespace bemesh{
 
         //Buffer for message send/receive
         uint8_t slave_tx_buffer[SLAVE_TX_BUFFER_SIZE];
+
+        //256 bytes for message extra arguments.
+        uint8_t slave_message_extra_args[SLAVE_EXTRA_ARGS_BUFFER_SIZE];
+
         
      
 
@@ -103,10 +113,23 @@ namespace bemesh{
 
             void remove_routing_table_entry(dev_addr_t addr);
             dev_addr_t& get_next_hop(dev_addr_t target_addr);
-                
 
+            uint8_t* get_slave_message_extra_args();
+
+
+
+            //The client will be interested only in routing update packets.
+            void routing_update_reception_callback(MessageHeader* header_t, void* args);
+
+            void routing_update_transmission_callback(uint8_t* message, uint8_t size,
+                                                MessageHeader* header_t,void* args);
+
+            //To be implemented once we have the enhanced versions of the scanning functions.
+            ErrStatus connect(uint8_t* address);
+            ErrStatus disconnect(uint8_t* address);            
 
             uint8_t* read_characteristic(uint8_t characteristic,uint16_t gattc_if, uint16_t conn_id);
+
 
             
             ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, uint8_t* buffer,
@@ -118,12 +141,17 @@ namespace bemesh{
             }
 
             //This primitive directly interact with the communication characteristic (IDX_CHAR_A)
-            ErrStatus send_message(uint16_t gattc_if, uint16_t conn_id, char* message,
-                                    uint8_t message_size);
+            ErrStatus send_message(uint16_t gattc_if, uint8_t conn_id, uint8_t* address,MessageHeader* message,
+                                    uint16_t message_size);
+
+            ErrStatus recv_message(uint16_t gatt_fi, uint8_t conn_id, uint8_t* address);
+
+
 
 
             //Util to print slave status and to verify correct data initialization.
             void print_status();
+
 
 
             

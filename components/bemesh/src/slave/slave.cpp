@@ -93,6 +93,10 @@ namespace bemesh{
         return slave_tx_buffer;
     }
 
+    uint8_t* Slave::get_slave_message_extra_args(){
+        return slave_message_extra_args;
+    }
+
     void Slave::add_routing_table_entry(dev_addr_t target_addr, dev_addr_t hop_addr,
                             uint8_t num_hops, uint8_t t_flags)
     {
@@ -107,9 +111,51 @@ namespace bemesh{
         return router->nextHop(addr);
     }
 
+    void transmission_callback(uint8_t* message, uint8_t size, MessageHeader* header_t,
+                                    void* args)
+    {
+        switch(header_t->id()){
+            case ROUTING_UPDATE_ID:{
+                if(slave_instance)
+                    slave_instance->routing_update_transmission_callback(message,size,header_t, args);
+                break;
+            }
+            default:{
+                break;
+            }
+        }
+        return;                            
+    }   
+
+    void Slave::routing_update_transmission_callback(uint8_t* message,uint8_t size, MessageHeader* header_t,
+                                            void* args)
+    {
+        ESP_LOGE(GATTC_TAG, "In routing update transmission callback");
+        return;
+    }
 
 
 
+
+    void reception_callback(MessageHeader* header_t, void* args){
+        switch(header_t->id()){
+            case ROUTING_UPDATE_ID: {
+                if(slave_instance)
+                    slave_instance->routing_update_reception_callback(header_t,args);
+                break;
+            }
+            default:{
+                break;
+            }
+        }
+        return;
+    }
+
+
+    void Slave::routing_update_reception_callback(MessageHeader* header_t, void* args){
+        ESP_LOGE(GATTC_TAG,"In routing update reception callback");
+        return;
+    }
 
    
 
@@ -135,10 +181,10 @@ namespace bemesh{
     }
 
 
-    ErrStatus Slave::send_message(uint16_t gattc_if,uint16_t conn_id,char* message,
-                                        uint8_t message_size)
+    ErrStatus Slave::send_message(uint16_t gattc_if,uint8_t conn_id,uint8_t* address,MessageHeader* header_t,
+                                        uint16_t message_size)
     {
-        if(message == NULL || message_size == 0){
+        if(header_t == NULL || message_size == 0){
             return WrongPayload;
         }
         if(conn_id != this->server_conn_id)
@@ -178,38 +224,7 @@ namespace bemesh{
     }
 
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+   
 
 
     
@@ -237,10 +252,16 @@ namespace bemesh{
             router = new Router(converted_address);
         }
 
-        mes_handler.installTxBuffer(slave_tx_buffer);
-        //Read e write vanno fatte con dei task.
-        //xTaskCreate(my_task2, "TASK", 2048, NULL, 2, NULL);
-
+        ErrStatus ret = mes_handler.installTxBuffer(slave_tx_buffer);
+        assert(ret == Success);
+        ret = mes_handler.installTxCb(&transmission_callback);
+        assert(ret == Success);
+        ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,slave_message_extra_args);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&reception_callback,nullptr);
+        assert(ret == Success);
+        
+        ESP_LOGE(GATTC_TAG,"Finished installing all things");
     }
 
    

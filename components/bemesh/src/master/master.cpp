@@ -234,8 +234,9 @@ namespace bemesh{
         RoutingUpdateMessage* routing_updates = (RoutingUpdateMessage*)header_t;
         std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> updates = routing_updates->payload();
         dev_addr_t sender = routing_updates->source();
-        std::vector<routing_update_t> vec_updates;
-        std::copy_n(updates.begin(),ROUTING_UPDATE_ENTRIES_MAX,vec_updates.begin());
+        std::vector<routing_update_t> vec_updates(routing_updates->entries());
+        ESP_LOGE(GATTS_TAG, "Before std::copy_n");
+        std::copy_n(updates.begin(),routing_updates->entries(),vec_updates.begin());
 
         ESP_LOGE(GATTS_TAG,"Merging the updates calling router->mergeUpdates");
         std::size_t merge_res = router->mergeUpdates(vec_updates,sender);
@@ -243,7 +244,7 @@ namespace bemesh{
 
 
         //Then propagate the updates until a server can't propagate no longer.
-        send_routing_update(updates);
+        send_routing_update(updates,routing_updates->entries());
 
         return;
     }
@@ -370,7 +371,9 @@ namespace bemesh{
         return;                     
     }
 
-    ErrStatus Master::send_routing_update(std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> updates){
+    ErrStatus Master::send_routing_update(std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> updates,
+                                        uint8_t size)
+    {
         
         dev_addr_t src_addr = get_router_dev_addr();
         ESP_LOGE(GATTS_TAG,"Preparing to send the update packets to all neighbours");
@@ -389,7 +392,7 @@ namespace bemesh{
             ESP_LOGE(GATTS_TAG,"Sending to the neighbour: ");
             esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
             RoutingUpdateMessage routing_update_message(src_addr,dest_addr,updates,ROUTING_UPDATE_ENTRIES_MAX);
-            
+            ESP_LOGE(GATTS_TAG,"Ended preparing the message: now I transmit");
             //Before sending we have to set the arguments for the transmission callback
             
             //Push the server gatt_if (uint16_t)
@@ -404,6 +407,7 @@ namespace bemesh{
             
             
             //Send the message.
+            ESP_LOGE(GATTS_TAG,"Before send");
             ErrStatus ret_val = get_message_handler()->send((MessageHeader*)&routing_update_message);
             if(ret_val != Success){
                 ESP_LOGE(GATTS_TAG,"Error in sending the routing updates to: %d",server.server_id);
@@ -573,8 +577,8 @@ namespace bemesh{
             write_params.characteristic = characteristic;
             write_params.buffer = buffer;
             write_params.buffer_size = buffer_size;
-            std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
-            std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
+            //std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
+            //std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
             //Spara un task per scrivere su una caratteristica.
             xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)&write_params,TASK_PRIORITY,NULL);
 

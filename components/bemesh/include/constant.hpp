@@ -10,3 +10,4 @@
 #define WRITE_TASK_STACK_SIZE 20480 //20 bytes stack allocated for the task.
 #define TASK_PRIORITY 5 //See https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/freertos.html
 #define MASTER_EXTRA_ARGS_BUFFER_SIZE 256
+#define SLAVE_EXTRA_ARGS_BUFFER_SIZE 256

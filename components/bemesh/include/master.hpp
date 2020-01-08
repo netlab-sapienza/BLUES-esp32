@@ -215,7 +215,8 @@ namespace  bemesh{
                 ErrStatus send_routing_update(); 
 
                 //Overloaded version of the previous function to propagate the updates.
-                ErrStatus send_routing_update(std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX>updates);
+                ErrStatus send_routing_update(std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX>updates,
+                                            uint8_t len);
 
 
                 //Send the routing response message whenever requested.
@@ -233,6 +234,17 @@ namespace  bemesh{
 
                 ErrStatus send_routing_table(uint8_t* src,uint8_t* dst, uint16_t gatt_if, 
                                         uint8_t conn_id,uint8_t server_id);
+
+                ErrStatus connect(uint8_t * mac_address);
+                ErrStatus disconnect(uint8_t* mac_address);
+
+
+
+                //This will be implemented with a check if the message is correctly sent.
+                ErrStatus send_message(uint16_t gatt_if, uint8_t conn_id,uint8_t* address,
+                                    MessageHeader* header_t, uint16_t message_size);
+
+                ErrStatus recv_message(uint16_t gatt_if, uint8_t conn_id, uint8_t* address);
 
                 
 
