@@ -5,6 +5,8 @@
 #include "routing.hpp"
 #include <memory>
 #include <cstring>
+#include <algorithm>
+#include "bemesh_messages_v2.hpp"
 
 namespace bemesh {
   routing_update_t::routing_update_t(void):params(), update_state() {}
@@ -181,6 +183,25 @@ namespace bemesh {
     return update_vect_copy;
   }
 
+  // Returns the neighbours from the routing table
+  std::vector<dev_addr_t> Router::getNeighbours(void) {
+    std::vector<dev_addr_t> dev_vect;
+    std::vector<dev_addr_t>::iterator dev_vect_it;
+    std::vector<routing_params_t> vectorized_table=m_rtable.exportTable();
+    
+    for(auto &it : vectorized_table) {
+      dev_addr_t neighbour=it.hop_addr;
+      dev_vect_it=std::find(dev_vect.begin(), dev_vect.end(), neighbour);
+      if(dev_vect_it==dev_vect.end()) {
+	dev_vect.push_back(neighbour);
+      }
+    }
+    return dev_vect;
+  }
+
+  bool isBroadcast(dev_addr_t& t_addr) {
+    return (t_addr==BROADCAST_ADDR);
+  }
   
 }
 

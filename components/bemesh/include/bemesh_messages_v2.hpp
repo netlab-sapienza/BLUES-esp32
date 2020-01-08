@@ -10,7 +10,11 @@
 #include <ostream>
 #include <istream>
 
+
 namespace bemesh {
+
+  extern dev_addr_t const BROADCAST_ADDR;
+  
 #define MESSAGE_TYPE_MAX 4
   class MessageHeader {
 #define MESSAGE_HEADER_DATA_SIZE 16
@@ -36,6 +40,8 @@ namespace bemesh {
     void setHops(uint8_t t_hops);
     uint8_t size(void) const;
 
+    void setBroadcast(void);
+
     // Serialization
     virtual void serialize(std::ostream&) const;
     // Unserialization
@@ -55,7 +61,7 @@ namespace bemesh {
     // Serialization
     virtual void serialize(std::ostream&) const;
   };
-
+  
 #define ROUTING_DISCOVERY_REQ_ID 0x00
   class RoutingDiscoveryRequest : public MessageHeader {
   public:
@@ -99,5 +105,40 @@ namespace bemesh {
     // Serialization
     void serialize(std::ostream&) const;
     RoutingUpdateMessage* create(std::istream&);
+  };
+
+  // TODO: Complete Sync Message for vector clock passing.
+
+  #define ROUTING_SYNC_ID 0x03
+  #define ROUTING_SYNC_ENTRIES_MAX 15
+  class RoutingSyncMessage : public IndexedMessage {
+    std::array<uint8_t, ROUTING_SYNC_ENTRIES_MAX> m_payload;
+  public:
+    RoutingSyncMessage();
+    RoutingSyncMessage(dev_addr_t t_dest, dev_addr_t t_src,
+		       std::array<uint8_t,
+		       ROUTING_SYNC_ENTRIES_MAX> t_payload,
+		       std::size_t t_pentries);
+
+    std::array<uint8_t, ROUTING_SYNC_ENTRIES_MAX> payload(void);
+    
+    // Serialization
+    void serialize(std::ostream&) const;
+    RoutingSyncMessage* create(std::istream&);
+  };
+
+  
+  #define ROUTING_PING_ID 0x04
+  class RoutingPingMessage : public MessageHeader {
+    uint8_t m_pong_flag;
+  public:
+    RoutingPingMessage();
+    RoutingPingMessage(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_pong);
+
+    uint8_t pong_flag(void) const;
+
+    // Serialization
+    void serialize(std::ostream&) const;
+    RoutingPingMessage* create(std::istream&);
   };
 }
