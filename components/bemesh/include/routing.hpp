@@ -81,6 +81,10 @@ namespace bemesh {
     // Returns a copy of update_vect update vector. This will clear the internal
     // update_vect in order not to store previously committed updates.
     std::vector<routing_update_t> getRoutingUpdates(void);
+
+    // Returns the neighbours from the routing table
+    std::vector<dev_addr_t> getNeighbours(void);
   };
 
+  bool isBroadcast(dev_addr_t& t_addr);
 }
