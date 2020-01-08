@@ -1167,7 +1167,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 					indicate_data[1] = char_handle_table[IDX_CHAR_VAL_A];
 
 					for(i=0; i<TOTAL_NUMBER_LIMIT; ++i) {
-						if(ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) {
+						if((ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) && i != param->write.conn_id) {
 							esp_ble_gatts_send_indicate(gatts_if, i, char_handle_table[IDX_CHAR_VAL_A],
 												sizeof(indicate_data), indicate_data, true);
 						}
@@ -1191,7 +1191,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                     
 
 					for(i=0; i<TOTAL_NUMBER_LIMIT; ++i) {
-						if(ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) {
+						if((ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) && i != param->write.conn_id) {
 							esp_ble_gatts_send_indicate(gatts_if, i, char_handle_table[IDX_CHAR_VAL_B],
 												sizeof(indicate_data), indicate_data, true);
 						}
@@ -1207,7 +1207,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 					indicate_data[1] = char_handle_table[IDX_CHAR_VAL_C];
 
 					for(i=0; i<TOTAL_NUMBER_LIMIT; ++i) {
-						if(ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) {
+						if((ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) && i != param->write.conn_id) {
 							esp_ble_gatts_send_indicate(gatts_if, i, char_handle_table[IDX_CHAR_VAL_C],
 												sizeof(indicate_data), indicate_data, true);
 						}
@@ -1261,6 +1261,20 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			change_name(1, CLIENTS_IDX);
 			ID_TABLE[param->connect.conn_id] = CLIENT;
 			
+			// SEND NOTIFICATION TO CLIENTS EXCEPT THE NEW ONE
+			uint8_t indicate_data[2];
+			indicate_data[0] = 0xaa;
+			indicate_data[1] = char_handle_table[IDX_CHAR_VAL_C];
+			
+			uint8_t j;
+			for(j=0; j<TOTAL_NUMBER_LIMIT; ++j) {
+				if((ID_TABLE[j] == SERVER || ID_TABLE[j] == CLIENT) && j != param->connect.conn_id) {
+					esp_ble_gatts_send_indicate(gatts_if, j, char_handle_table[IDX_CHAR_VAL_C],
+										sizeof(indicate_data), indicate_data, true);
+				}
+			}
+			
+			
 			//Restart the advs to be avaiable --> MULTIPLE CLIENTS
 			esp_ble_gap_start_advertising(&adv_params);
 			advertising = 1;
@@ -1287,7 +1301,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
             
 
-            int i;
+            uint8_t i;
 			for(i=0; i<6; i++) {
 				MACS[param->disconnect.conn_id][i] = 0;
 			}
@@ -3175,6 +3189,17 @@ void scan(uint8_t duration, uint8_t num_internal_client) {
 	}
     esp_ble_gap_start_scanning(duration);
 }
+
+uint8_t notify_client(uint8_t conn_id, uint8_t chr, uint8_t* data, uint8_t data_size) {
+	esp_err_t ret;
+	
+	ret= esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_A_APP_ID].gatts_if, conn_id, char_handle_table[chr], data_size, data, true);
+	if(ret != ESP_OK) {
+		return 1;
+	}
+	return 0;
+}
+
 
 /* 
 // Main, used for debug

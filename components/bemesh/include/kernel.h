@@ -153,6 +153,8 @@ void unregister_server();
 void start_internal_client(uint8_t client); // internal clients are SERVER_S1, SERVER_S2, SERVER_S3. This includes the registration
 void change_name(uint8_t flag, uint8_t idx); // Flag: 1 -> +, 0 -> -
 
+uint8_t notify_client(uint8_t conn_id, uint8_t chr, uint8_t* data, uint8_t data_size); // Send notification to a client (conn_id) using a characteristic channel
+
 
 //Trasferite in characteristic.h
 
