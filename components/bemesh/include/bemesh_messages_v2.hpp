@@ -10,7 +10,6 @@
 #include <ostream>
 #include <istream>
 
-
 namespace bemesh {
 
   extern dev_addr_t const BROADCAST_ADDR;
@@ -72,7 +71,7 @@ namespace bemesh {
     void serialize(std::ostream&) const;
     RoutingDiscoveryRequest* create(std::istream&);
   };
-
+  
 #define ROUTING_DISCOVERY_RES_ID 0x01
 #define ROUTING_DISCOVERY_RES_ENTRIES_MAX 16
   class RoutingDiscoveryResponse : public IndexedMessage {

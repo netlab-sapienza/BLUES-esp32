@@ -6,18 +6,20 @@
  
 
 
-/*
- *  	CALLBACKS
- */
-// Callback when a client receive a notification from a server
-NotifyCb ntf_cb;
-
 
 /*
  *  	CALLBACKS
  */
 // Callback when a client receive a notification from a server
+
+//TO-DO. Levare sta schifezza e fare un array di callback.
 NotifyCb ntf_cb;
+ServerUpdateCb server_update_cb;
+InitCb init_cb;
+ExchangeRoutingTableCb exchange_routing_table_cb;
+SendRoutingTableCb send_routing_table_callback;
+ReceivedPacketCb received_packet_cb;
+ShutDownCb shutdown_cb;
 
 
 /*
@@ -31,11 +33,6 @@ uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
 uint8_t n_connections = 0;
 
 
-// Characteristics
-uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
-uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX] = { 0 }; // Characteristic's values
-uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characteristic's values in CHR_VALUES
-
 // Scan parameters
 uint32_t base_scan = 2;
 uint32_t scan_dividend = 10;
@@ -47,16 +44,14 @@ uint8_t advertising = 0; // Server is advertising?
 uint8_t server_scanning = 0; // Server is scanning?
 
 
+bool wants_to_discover = true;
+bool wants_to_send_routing_table = false;
+
+
 /*
  *  	CLIENT
  */
  
-#define GATTC_TAG "GATT_CLIENT"
-#define REMOTE_SERVICE_UUID        0x00FF
-#define REMOTE_NOTIFY_CHAR_UUID    0xFF01
-#define PROFILE_NUM      1
-#define PROFILE_A_APP_ID 0
-#define INVALID_HANDLE   0
 
 
 esp_bt_uuid_t remote_filter_service_uuid = {
@@ -83,16 +78,6 @@ esp_ble_scan_params_t ble_scan_params = {
     .scan_duplicate         = BLE_SCAN_DUPLICATE_DISABLE
 };
 
-struct gattc_profile_inst {
-    esp_gattc_cb_t gattc_cb;
-    uint16_t gattc_if;
-    uint16_t app_id;
-    uint16_t conn_id;
-    uint16_t service_start_handle;
-    uint16_t service_end_handle;
-    uint16_t char_handle;
-    esp_bd_addr_t remote_bda;
-} ;
 
 #define DEVICE_NAME_LEN 6
 const char remote_device_name[] = "SERVER";
@@ -115,12 +100,6 @@ struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM] = {
  *  	INTERNAL CLIENTS
  */
 
-#define SERVERS_NUM 3
-#define SERVER_S1 0
-#define SERVER_S2 1
-#define SERVER_S3 2
-#define INVALID_HANDLE   0
-
 bool conn_device_S1   = false;
 bool conn_device_S2   = false;
 bool conn_device_S3   = false;
@@ -128,6 +107,8 @@ bool conn_device_S3   = false;
 bool get_service_S1   = false;
 bool get_service_S2   = false;
 bool get_service_S3   = false;
+
+
 
 bool Isconnecting    = false;
 bool stop_scan_done  = false;
@@ -166,7 +147,7 @@ struct gattc_profile_inst gl_internal_clients_tab[SERVERS_NUM] = {
  
 bool server_is_busy = false;
 
-#define GATTS_TAG "GATT_SERVER"
+
 #define GATTS_SERVICE_UUID_TEST_A   0x00FF
 //#define GATTS_CHAR_UUID_TEST_A      0xFF01
 #define GATTS_DESCR_UUID_TEST_A     0x3333
@@ -201,6 +182,7 @@ static esp_attr_value_t gatts_demo_char1_val =
     .attr_value   = char1_str,
 };
 */
+
 uint8_t adv_config_done = 0;
 #define adv_config_flag      (1 << 0)
 #define scan_rsp_config_flag (1 << 1)
@@ -352,6 +334,10 @@ uint16_t max_length;       !< Maximum length of the element
 uint16_t length;           !< Current length of the element    
 uint8_t  *value;           !< Element value array
 */
+uint16_t CHR_HANDLES[HRS_IDX_NB] = { 0 }; // Characteristic's handles, used for write and read
+uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX] = { 0 }; // Characteristic's values
+uint8_t CHR_ACT_LEN[HRS_IDX_NB] = { 0 }; // Actual lenght of characteristic's values in CHR_VALUES
+
 
 ///
 const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
@@ -363,7 +349,7 @@ const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 
     /* Characteristic Declaration */
     [IDX_CHAR_A]     =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
     /* Characteristic Value */
@@ -657,7 +643,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
 				if(ret) {
 					ESP_LOGE(GATTC_TAG, "Error reading the char: %x", ret);
 				}
-				(*ntf_cb)();
+				(*ntf_cb)(gattc_if,get_client_connid(),p_data->notify.value[1]);
 			}
 			
 			
@@ -674,7 +660,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         }
         ESP_LOGI(GATTC_TAG, "write descr success ");
         
-        
+        becoming_client = true;
+        (*init_cb)(CLIENT);
         //xTaskCreate(my_task2, "TASK", 2048, NULL, 2, NULL);
         
         /*
@@ -782,10 +769,10 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6); 
-            ESP_LOGI(GATTC_TAG, "searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
 
 #if CONFIG_EXAMPLE_DUMP_ADV_DATA_AND_SCAN_RESP
@@ -1100,6 +1087,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                     // Used for the exchange of characteristics handles
                     if (descr_value == 0x0001){
                         ESP_LOGI(GATTS_TAG, "notify enable");
+                       
                         uint8_t notify_data[HRS_IDX_NB+1];
                         for (int i = 0; i < sizeof(notify_data); ++i) {
 							if(!i) notify_data[i] = 0xaa;
@@ -1122,6 +1110,35 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 						ESP_LOGE(GATTS_TAG, "A new server is connected");
 
 						ID_TABLE[param->connect.conn_id] = SERVER;
+                        int k;
+                        for(k=0; k<6; k++) {
+                            MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
+                        }
+
+                        //If something's wrong we'll see 66 in the logs.
+                        uint8_t s_id = 66;
+                        if(conn_device_S1)
+                            s_id = SERVER_S1;
+                        else if(conn_device_S2)
+                            s_id = SERVER_S2;
+                        else if(conn_device_S3)
+                            s_id = SERVER_S3;
+
+                        (*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                                            get_internal_client_connid(s_id),s_id);
+                        if(wants_to_discover){
+                            ESP_LOGE(GATTS_TAG,"I want to discover some routing table");
+                            (*exchange_routing_table_cb)(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id));       
+                        }
+
+                        else if(wants_to_send_routing_table){
+                            ESP_LOGE(GATTS_TAG,"I want to send my routing table entries");
+                            (*send_routing_table_callback)(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id),s_id);
+                            wants_to_send_routing_table = false;
+                            wants_to_discover = true;
+                        }
 
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
@@ -1154,11 +1171,19 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 				
 				// CHAR B: Someone is changing the value of the characteristic
                 if (heart_rate_handle_table[IDX_CHAR_VAL_B] == param->write.handle) {
+
+                    //Spostarlo sotto GATTS_WRITE_EVT per reagire a tutti i messaggi.
+                    (*received_packet_cb)(param->write.value,param->write.len);
+                    
+
+
 					// The value has been changed, I'm going to notify my neighbors
 					int i;
 					uint8_t indicate_data[2];
 					indicate_data[0] = 0xaa;
 					indicate_data[1] = heart_rate_handle_table[IDX_CHAR_VAL_B];
+
+                    
 
 					for(i=0; i<TOTAL_NUMBER_LIMIT; ++i) {
 						if(ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) {
@@ -1207,6 +1232,10 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             break;
         case ESP_GATTS_START_EVT:
             ESP_LOGI(GATTS_TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
+            
+            (*init_cb)(SERVER);
+            becoming_server = true;
+        
             break;
         case ESP_GATTS_CONNECT_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_CONNECT_EVT, conn_id = %d", param->connect.conn_id);
@@ -1230,6 +1259,16 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			//Restart the advs to be avaiable --> MULTIPLE CLIENTS
 			esp_ble_gap_start_advertising(&adv_params);
 			advertising = 1;
+			
+			// Updating MACs table
+			int k;
+			for(k=0; k<6; k++) {
+				MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
+			}
+			
+            //Send the new mac_address to the server.
+            (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
+
             break;
         case ESP_GATTS_DISCONNECT_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_DISCONNECT_EVT, reason = 0x%x", param->disconnect.reason);
@@ -1240,11 +1279,17 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 							MACS[param->disconnect.conn_id][0], MACS[param->disconnect.conn_id][1], MACS[param->disconnect.conn_id][2],
 								MACS[param->disconnect.conn_id][3], MACS[param->disconnect.conn_id][4], MACS[param->disconnect.conn_id][5]);
             
+            (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
+            
+
             int i;
 			for(i=0; i<6; i++) {
 				MACS[param->disconnect.conn_id][i] = 0;
 			}
+            
+            //Update the serer istance to track disconnection.
 			
+
 			if(ID_TABLE[param->disconnect.conn_id] == SERVER) {
 				change_name(0, SERVERS_IDX);
 			} else if (ID_TABLE[param->disconnect.conn_id] == CLIENT) {
@@ -1338,6 +1383,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         if (scan_ret){
             ESP_LOGE(GATTC_TAG, "set scan params error, error code = %x", scan_ret);
         }
+
         break;
     /* one device connect successfully, all profiles callback function will get the ESP_GATTC_CONNECT_EVT,
      so must compare the mac address to check which device is connected, so it is a good choice to use ESP_GATTC_OPEN_EVT. */
@@ -1608,6 +1654,28 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
     switch (event) {
     case ESP_GATTC_REG_EVT:
         ESP_LOGI(GATTC_TAG, "REG_EVT");
+
+        uint8_t s_id = 66;
+        if(conn_device_S1)
+            s_id = SERVER_S1;
+        else if(conn_device_S2)
+            s_id = SERVER_S2;
+        else if(conn_device_S3)
+            s_id = SERVER_S3;
+
+        if(wants_to_send_routing_table){
+            
+            ESP_LOGE(GATTS_TAG,"I want to send my routing table entries");
+            (*send_routing_table_callback)(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id),s_id);
+            wants_to_send_routing_table = false;
+            wants_to_discover = true;
+        }
+        else{
+            ESP_LOGE(GATTS_TAG,"I don't want to");
+        }
+
+
         break;
     case ESP_GATTC_CONNECT_EVT:
         break;
@@ -2149,12 +2217,12 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
-            ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
-            ESP_LOGI(GATTC_TAG, "\n");
+            //ESP_LOGI(GATTC_TAG, "\n");
             if (Isconnecting){
                 break;
             }
@@ -2277,12 +2345,12 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
        case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
-            ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
-            ESP_LOGI(GATTC_TAG, "\n");
+            //ESP_LOGI(GATTC_TAG, "\n");
             if (Isconnecting){
                 break;
             }
@@ -2404,12 +2472,12 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
             esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
-            ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
+            //ESP_LOGI(GATTC_TAG, "Searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
-            ESP_LOGI(GATTC_TAG, "\n");
+            //ESP_LOGI(GATTC_TAG, "\n");
             if (Isconnecting){
                 break;
             }
@@ -2573,6 +2641,9 @@ void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array,
 		if(ret) {
 			ESP_LOGE(GATTC_TAG, "Error writing the char: %x", ret);
 		}
+        else{
+            ESP_LOGE(GATTC_TAG,"Success writing the char: %x",ret);
+        }
 		vTaskDelay(200);
 }
 
@@ -2599,6 +2670,7 @@ uint8_t find_CHR(uint16_t handle) {
 	}
 	return NOID;
 }
+
 
 void change_name(uint8_t flag, uint8_t idx) {
 	int i = device_name[idx] - '0';
@@ -2925,6 +2997,43 @@ uint8_t install_NotifyCb(NotifyCb cb) {
 	if(!cb) return 1;
 	ntf_cb = cb;
 	return 0;
+}
+
+uint8_t install_InitCb(InitCb cb){
+    if(!cb)return 1;
+    init_cb = cb;
+    return 0;
+}
+
+uint8_t install_ServerUpdateCb(ServerUpdateCb cb){
+    if(!cb) return 1;
+    server_update_cb = cb;
+    return 0;
+}
+
+uint8_t install_ExchangeRoutingTableCb(ExchangeRoutingTableCb cb){
+    if(!cb) return 1;
+    exchange_routing_table_cb = cb;
+    return 0;
+}
+
+uint8_t install_ReceivedPacketCb(ReceivedPacketCb cb)
+{
+    if(!cb) return 1;
+    received_packet_cb = cb;
+    return 0;
+}
+
+uint8_t install_ShutDownCb(ShutDownCb cb){
+    if(!cb) return 1;
+    shutdown_cb = cb;
+    return 0;
+}
+
+uint8_t install_SendRoutingTableCb(SendRoutingTableCb cb){
+    if(!cb) return 1;
+    send_routing_table_callback = cb;
+    return 0;
 }
 
 uint8_t get_internal_client_connid(uint8_t client_id) {
