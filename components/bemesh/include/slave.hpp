@@ -152,6 +152,7 @@ namespace bemesh{
             //Util to print slave status and to verify correct data initialization.
             void print_status();
 
+            ErrStatus ping_server(uint16_t gatt_if, uint8_t conn_id, uint8_t* mac_address);
 
 
             

@@ -246,6 +246,13 @@ namespace  bemesh{
 
                 ErrStatus recv_message(uint16_t gatt_if, uint8_t conn_id, uint8_t* address);
 
+                //Wrapper function for MessageHandler::read and MessageHandler::handle
+                void parse_message_receive(uint8_t* packet, uint16_t size);
+
+                //Wrapper function for MessageHandler::send and MessageHandler::handle
+                void parse_message_send(MessageHeader* header_t);
+                
+
                 
 
         };

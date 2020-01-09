@@ -99,11 +99,7 @@ namespace bemesh{
         std::cout<<"Received a packet"<<std::endl;
         esp_log_buffer_hex(FUNCTOR_TAG,packet,size);
         //Read the packet.
-        master_instance->get_message_handler()->read(packet);
-        
-        //Then call the handle function.
-        master_instance->get_message_handler()->handle();
-        //then see what happens.
+        master_instance->parse_message_receive(packet,size);
 
     }
 

@@ -705,5 +705,24 @@ namespace bemesh{
         return ret_val;
     }
 
-   
+    void Master::parse_message_receive(uint8_t* packet, uint16_t size){
+        std::size_t bytes_read = mes_handler.read(packet);
+        if(bytes_read != size){
+            ESP_LOGE(GATTS_TAG,"In Master::parse_message_receive. Expected to read: %d bytes but %d actually read",size, bytes_read);
+        }
+
+        mes_handler.handle();
+        return;
+    }
+
+    void Master::parse_message_send(MessageHeader* handler_t){
+        ErrStatus ret = mes_handler.send(handler_t);
+        if(ret != Success){
+            ESP_LOGE(GATTS_TAG,"In Master::parse_message_send. Error. status: %d",ret);    
+        }
+        mes_handler.handle();
+        return;
+    }
+
 }
+
