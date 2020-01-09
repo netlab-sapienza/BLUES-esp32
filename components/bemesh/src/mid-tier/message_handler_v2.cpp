@@ -77,6 +77,7 @@ namespace bemesh {
     
     // Execute readings
     while(m_rx_entries>0) {
+      --m_rx_entries;
       MessageHeader* recv_msg=MessageHeader::unserialize(m_rx_strm);
       if(recv_msg==nullptr) {
 	continue;
@@ -90,7 +91,7 @@ namespace bemesh {
 	  (*ops->recv_cb)(recv_msg, ops->args);
 	}
       }
-      m_rx_entries--;
+      
     }
     
     // Execute writings
