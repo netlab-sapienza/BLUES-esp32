@@ -208,3 +208,4 @@ uint8_t install_ServerLost(ServerLost cb); // Triggered when the client is conne
 
 
 bool has_ended_scanning();
+

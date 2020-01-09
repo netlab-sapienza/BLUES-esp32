@@ -59,7 +59,9 @@ namespace bemesh{
         bool esp;
         bool connected_to_internet;
         std::string name;
-
+        
+        //Delete it if it is not necessary
+        std::list<ping_data_t> ping_response_list;
 
         //Objects used by the slave istance.
         Router* router;
@@ -90,7 +92,7 @@ namespace bemesh{
             bool is_esp();
             void set_esp(bool is_esp);
 
-            uint8_t* get_dev_addr();
+            dev_addr_t& get_dev_addr();
             void set_dev_addr(uint8_t* new_dev_addr);
 
             uint16_t get_server_connection_id();
@@ -120,9 +122,18 @@ namespace bemesh{
 
             //The client will be interested only in routing update packets.
             void routing_update_reception_callback(MessageHeader* header_t, void* args);
-
+            void ping_reception_callback(MessageHeader* header_t, void* args);
+            
             void routing_update_transmission_callback(uint8_t* message, uint8_t size,
                                                 MessageHeader* header_t,void* args);
+
+            void ping_transmission_callback(uint8_t* message, uint8_t size, 
+                                                MessageHeader* header_t,void * args);
+
+            void add_ping_response(ping_data_t rsp);
+            void remove_ping_response(ping_data_t rsp);
+            std::list<ping_data_t> get_ping_response();
+            
 
             //To be implemented once we have the enhanced versions of the scanning functions.
             ErrStatus connect(uint8_t* address);
@@ -132,17 +143,16 @@ namespace bemesh{
 
 
             
-            ErrStatus write_characteristic(uint8_t characteristic, dev_addr_t address, uint8_t* buffer,
-                                        uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id);
+            ErrStatus write_characteristic(uint8_t characteristic, uint8_t* buffer,
+                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id);
             
 
             void sayHello(){
                 std::cout<<"Hello"<<std::endl;
             }
 
-            //This primitive directly interact with the communication characteristic (IDX_CHAR_A)
-            ErrStatus send_message(uint16_t gattc_if, uint8_t conn_id, uint8_t* address,MessageHeader* message,
-                                    uint16_t message_size);
+            //The characteristic argument is used to send the message on the correct characteristic interface.
+            ErrStatus send_message(uint16_t gattc_if, uint8_t conn_id, uint8_t* address,MessageHeader* message, uint8_t characteristic);
 
             ErrStatus recv_message(uint16_t gatt_fi, uint8_t conn_id, uint8_t* address);
 
@@ -152,6 +162,7 @@ namespace bemesh{
             //Util to print slave status and to verify correct data initialization.
             void print_status();
 
+            //ping_server is defined to print 
             ErrStatus ping_server(uint16_t gatt_if, uint8_t conn_id, uint8_t* mac_address);
 
 

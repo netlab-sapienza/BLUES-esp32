@@ -5,9 +5,14 @@
 namespace bemesh{
     Master* master_instance;
     Slave* slave_instance;
+    bool discarded[SCAN_LIMIT] = {false};
 
-
-    Callback::Callback(){}
+    Callback::Callback(){
+            int i;
+            //Set the discarded devices to false in principle.
+            for(i = 0; i<SCAN_LIMIT; ++i)
+                discarded[i] = false;
+    }
 
     void Callback::init_callback(uint8_t type){
         switch(type){
@@ -113,6 +118,139 @@ namespace bemesh{
 
     }
 
+    //Choose a server to connect to according to the policy "policy"
+    int Callback::choose_server(device* device_list,int device_list_size,connection_policy_t policy){
+        
+        //Check if the buffer exists.
+        if(device_list == NULL)
+            return -1;
+
+        //Error: illegal device list size.
+        if(device_list_size > SCAN_LIMIT)
+            return -1;
+        
+        //Then choose the server according to the policy.
+        switch(policy){
+            case Minimum_rssi_value_policy: {
+                int i;
+                uint8_t rssi_min = device_list[0].rssi;
+                int server_pos = 0; 
+                for( i = 1; i< device_list_size; i++){
+                    if(discarded[i] == false){
+                        if(device_list[i].rssi < rssi_min){
+                            rssi_min = device_list[i].rssi;
+                            server_pos = i;
+                        }
+                    }
+                }
+                return server_pos;
+            }
+            case Maximum_rssi_value_policy:{
+                int i;
+                uint8_t rssi_max = device_list[0].rssi;
+                int server_pos = 0;
+                for(i = 0; i< device_list_size; ++i){
+                    if(discarded[i] == false){
+                        if(device_list[i].rssi > rssi_max){
+                            rssi_max = device_list[i].rssi;
+                            server_pos = i;
+                        }
+                    }
+                }
+                return server_pos;
+            }
+            case Random_policy:{
+                break;
+            }
+            case Fcfs_policy:{
+                break;
+            }
+            default:{
+                ESP_LOGE(GATTC_TAG, "Unknown policy value in choosing the server");
+                break;
+            }
+        }
+        return -1;
+    }
+
+    bool Callback::check_all_discarded(){
+        int i;
+        bool ret = true;
+        for(i = 0; i<SCAN_LIMIT; i++){
+            if(discarded[i] == false)
+                return false;
+        }
+        return ret;
+    }
+
+    void Callback::reset_discarded(){
+        int i;
+        for(i = 0; i<SCAN_LIMIT;++i)
+            discarded[i] = false;
+    }
+    int Callback::connect_to_server(device* device_list, int device_list_size,connection_policy_t policy){
+        bool all_discarded = check_all_discarded();
+        //ESP_LOGE(GATTC_TAG,"I checked");
+        if(all_discarded)
+            return -1;
+        else{
+            int server_pos = choose_server(device_list,device_list_size,policy);
+            uint8_t connection_ret = connectTo(device_list[server_pos],device_list[server_pos].clients_num);
+            if(connection_ret){
+                discarded[server_pos] = true;
+                //We recursively look for another server keeping track of the discarded one.
+                int conn_ret = connect_to_server(device_list,device_list_size,policy);
+                return conn_ret;
+            }
+            else{
+                reset_discarded();
+                return 0;
+            }
+        }
+    }
+
+    void Callback::endscanning_callback(device* device_list){
+        int i;
+        int count = 0;
+        for(i = 0; i<SCAN_LIMIT; i++){
+            if(device_list[i].mac == 0)
+                break;
+            uint8_t* addr = device_list[i].mac;
+            uint8_t type = device_list[i].addr_type;
+            uint8_t num_clients = device_list[i].clients_num;
+            uint8_t signal_strength = device_list[i].rssi;
+            ESP_LOGE(GATTC_TAG,"Found this server at the end of scanning: address:");
+            esp_log_buffer_hex(GATTC_TAG,addr, MAC_ADDRESS_SIZE);
+            ESP_LOGE(GATTC_TAG,"type: %d num_clients: %d signal strength: %d",type,num_clients,signal_strength);
+            count++;
+        }
+        ESP_LOGE(GATTC_TAG, "Out of the loop: we have collected a device list of: %d elements",count);
+        connection_policy_t policy = Maximum_rssi_value_policy;
+        if (count == 0){
+            //If no server is found we become a server ourselves
+            becomeServer();
+            //ESP_LOGE(GATTC_TAG,"I become a server");
+            return;
+        }
+        else{
+            int server_pos = connect_to_server(device_list,count,policy);
+            if(server_pos == -1){
+                ESP_LOGE(GATTC_TAG, "Unable to connect to any server");
+                return;
+            }
+            else{
+                ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
+                //We initialize client object.
+                init_callback(CLIENT);
+                return;
+            }
+        }
+    }
+
+    void Callback::server_lost_callback(void){
+
+        return;
+    }
 
     //In ASSERT we trust!!
     void Callback::operator ()(){
@@ -154,6 +292,19 @@ namespace bemesh{
         }
         assert(ret == 0);
 
+         
+        ret = install_EndScanning(endscanning_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della endscanning_callback"); 
+        }
+        assert(ret == 0);
+    
+        ret = install_ServerLost(server_lost_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della server_lost_callback"); 
+        }
+        assert(ret == 0);
+        
 
 
         ESP_LOGE(FUNCTOR_TAG,"HO FINITO DI INSTALLARE LE CALLBACKS");

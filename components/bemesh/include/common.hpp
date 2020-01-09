@@ -36,6 +36,25 @@ extern "C"{
 }
 
 namespace bemesh{
+    enum connection_policy_t{
+        Minimum_rssi_value_policy = 0,
+        Maximum_rssi_value_policy = 1,
+        Random_policy = 2,
+        Fcfs_policy = 3,
+    };
+
+
+    //Other fields to be added
+    struct ping_data_t{
+        dev_addr_t sender;
+        uint8_t pong_flag;
+        ping_data_t();
+        ping_data_t(dev_addr_t s, uint8_t pflag);
+        bool operator ==(const ping_data_t & cc) ;
+        bool operator !=(const ping_data_t & cc) ;
+    };
+
+
     struct task_param_write_t{
         uint8_t conn_id;
         uint16_t gatt_if;

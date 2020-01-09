@@ -47,8 +47,8 @@ namespace bemesh{
         return;
     }
 
-    uint8_t* Slave::get_dev_addr(){
-        return address;
+    dev_addr_t& Slave::get_dev_addr(){
+        return router->addr();
     }
 
     void Slave::set_dev_addr(uint8_t* dev_addr){
@@ -111,6 +111,21 @@ namespace bemesh{
         return router->nextHop(addr);
     }
 
+    void Slave::add_ping_response(ping_data_t rsp){
+        ping_response_list.push_back(rsp);
+        return;
+    }
+
+    void Slave::remove_ping_response(ping_data_t rsp){
+        ping_response_list.remove(rsp);
+        return;
+    }
+
+    std::list<ping_data_t> Slave::get_ping_response(){
+        std::list<ping_data_t> ret(ping_response_list);
+        return ret;
+    }
+
     void transmission_callback(uint8_t* message, uint8_t size, MessageHeader* header_t,
                                     void* args)
     {
@@ -120,12 +135,44 @@ namespace bemesh{
                     slave_instance->routing_update_transmission_callback(message,size,header_t, args);
                 break;
             }
+            case ROUTING_PING_ID:{
+                if(slave_instance)
+                    slave_instance->ping_transmission_callback(message,size,header_t,args);
+            }
             default:{
                 break;
             }
         }
         return;                            
     }   
+
+    void Slave::ping_transmission_callback(uint8_t* message, uint8_t size, MessageHeader* header_t,
+                                            void * args)
+    {
+        //Check argument integrity
+        if(message == NULL || header_t == NULL)
+            return;
+        if(size == 0)
+            return;
+        
+        ESP_LOGE(GATTC_TAG,"In ping transmission callback: we begin to retrieve the arguments");
+        //Begin to parse the arguments
+        uint16_t* ptr = (uint16_t*) args;
+        uint16_t gattc_if = *ptr;
+        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+        uint8_t conn_id = *(_ptr);
+        _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
+        uint8_t characteristic = *(_ptr);
+        ESP_LOGE(GATTC_TAG,"In ping transmission callback: we ended to retrieve the arguments");
+        
+        ErrStatus ret_status = write_characteristic(characteristic,message,size,gattc_if,conn_id);
+        if(ret_status != Success){
+            ESP_LOGE(GATTC_TAG,"In ping transmission callback: %d",ret_status);
+        }
+        return;
+
+
+    }
 
     void Slave::routing_update_transmission_callback(uint8_t* message,uint8_t size, MessageHeader* header_t,
                                             void* args)
@@ -135,6 +182,28 @@ namespace bemesh{
     }
 
 
+    void Slave::ping_reception_callback(MessageHeader* header_t, void* args){
+        ESP_LOGE(GATTC_TAG, "In ping reception callback");
+
+        ESP_LOGE(GATTC_TAG,"In ping reception callback. Beginning to parse the arguments.");
+        uint16_t* ptr = (uint16_t*)args;
+        uint16_t gatt_if = *ptr;
+        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+        uint8_t conn_id = *(_ptr);
+        _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
+        uint8_t characteristic = *(_ptr);
+
+        ESP_LOGE(GATTC_TAG,"In ping reception callback. Ended to parse all the arguments.");
+
+
+        //Propagate the ping.
+
+        
+
+
+        return;
+    }
+
 
 
     void reception_callback(MessageHeader* header_t, void* args){
@@ -142,6 +211,11 @@ namespace bemesh{
             case ROUTING_UPDATE_ID: {
                 if(slave_instance)
                     slave_instance->routing_update_reception_callback(header_t,args);
+                break;
+            }
+            case ROUTING_PING_ID:{
+                if(slave_instance)
+                    slave_instance->ping_reception_callback(header_t,args);
                 break;
             }
             default:{
@@ -182,16 +256,32 @@ namespace bemesh{
 
 
     ErrStatus Slave::send_message(uint16_t gattc_if,uint8_t conn_id,uint8_t* address,MessageHeader* header_t,
-                                        uint16_t message_size)
+                            uint8_t characteristic)
     {
-        if(header_t == NULL || message_size == 0){
+        if(header_t == NULL){
             return WrongPayload;
         }
-        if(conn_id != this->server_conn_id)
-            return WrongAddress;
         else
         {
-            //write_CHR(gattc_if,conn_id,IDX_CHAR_A,(uint8_t *)message,message_size);
+            //Begin to parse the argument for the message handler. The order in this case is:
+            //gatt_if conn_id characteristic
+            uint16_t* args = (uint16_t*)slave_message_extra_args;
+            *args = gattc_if;
+            uint8_t* _args = (uint8_t*)(args + sizeof(uint16_t));
+            *_args = conn_id;
+            _args = (uint8_t*)(_args + sizeof(uint8_t));
+            *_args = characteristic;
+            
+
+            //First send the message into the buffer.
+            ErrStatus  status = mes_handler.send(header_t);
+            if(status != Success){
+                ESP_LOGE(GATTC_TAG,"In Slave::send_message. Error in MessageHandler::send");
+                return status;
+            }
+
+            //Flush the output
+            mes_handler.handle();
             return Success;
         }
         //Implementare una sorta di meccanismo di acknowledgement se possibile.
@@ -202,8 +292,8 @@ namespace bemesh{
 
 
 
-    ErrStatus Slave::write_characteristic(uint8_t characteristic, dev_addr_t address,uint8_t* buffer,
-                                        uint8_t buffer_size, uint16_t gattc_if,uint16_t conn_id)
+    ErrStatus Slave::write_characteristic(uint8_t characteristic,uint8_t* buffer,
+                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id)
     {
         if(buffer == NULL)
             return WrongPayload;
@@ -212,7 +302,16 @@ namespace bemesh{
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B ||
             characteristic == IDX_CHAR_VAL_C )
         {
-            write_CHR(gattc_if,conn_id,characteristic,(uint8_t*)buffer,buffer_size);
+            task_param_write_t write_params;
+            write_params.conn_id = conn_id;
+            write_params.gatt_if = gattc_if;
+            write_params.characteristic = characteristic;
+            write_params.buffer = buffer;
+            write_params.buffer_size = buffer_size;
+            //std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
+            //std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
+            //Spara un task per scrivere su una caratteristica.
+            xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)&write_params,TASK_PRIORITY,NULL);
             return Success;
         }        
         
@@ -262,6 +361,13 @@ namespace bemesh{
         assert(ret == Success);
         
         ESP_LOGE(GATTC_TAG,"Finished installing all things");
+        uint8_t characteristic = IDX_CHAR_VAL_A;
+        int BUFFER_SIZE = 6;
+        uint8_t buffer[BUFFER_SIZE] = {1,2,3,4,5,6};
+        ESP_LOGE(GATTC_TAG,"I'm about to write something on the server");
+        int i;
+        for(i = 0; i<5; i++)
+            write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id);
     }
 
    
@@ -276,6 +382,29 @@ namespace bemesh{
         std::cout<<"Device gatt if: "<<this->device_gatt_if<<std::endl;
 
         return;
+    }
+
+    
+
+
+    ErrStatus Slave::ping_server(uint16_t gatt_if,uint8_t conn_id, uint8_t* mac_address){
+        
+        if(address == NULL)
+            return GenericError;
+
+        //Check if the mac address is in the routing table (robustness check).
+
+        //Start pinging the server
+        dev_addr_t src_addr = get_dev_addr();
+        dev_addr_t dest_addr = _build_dev_addr(mac_address);
+        uint8_t pong_flag = 0;
+        RoutingPingMessage routing_ping_message(src_addr,dest_addr,pong_flag);
+        uint8_t characteristic = IDX_CHAR_VAL_B;
+        ErrStatus ret = send_message(gatt_if,conn_id,mac_address,(MessageHeader*)&routing_ping_message,characteristic);
+        if(ret != Success){
+            ESP_LOGE(GATTC_TAG,"Error in sending the ping to the connected server");
+        }
+        return Success;
 
 
     }
