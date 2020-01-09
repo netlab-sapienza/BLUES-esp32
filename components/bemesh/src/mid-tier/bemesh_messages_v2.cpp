@@ -8,6 +8,11 @@
 #include <map>
 
 namespace bemesh {
+
+
+  dev_addr_t const BROADCAST_ADDR = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+  
   MessageHeader::MessageHeader():
     m_dest_addr(),
     m_src_addr(),
@@ -60,6 +65,11 @@ namespace bemesh {
   uint8_t MessageHeader::size(void) const{
     return MESSAGE_HEADER_DATA_SIZE+m_psize;
   }
+
+  
+  void MessageHeader::setBroadcast(void) {
+    m_dest_addr=(dev_addr_t)BROADCAST_ADDR;
+  }
   
   IndexedMessage::IndexedMessage():
     MessageHeader(),m_entries() {}
@@ -111,6 +121,31 @@ namespace bemesh {
     return m_payload;
   }
 
+  RoutingSyncMessage::RoutingSyncMessage():IndexedMessage(), m_payload() {}
+  RoutingSyncMessage::RoutingSyncMessage(dev_addr_t t_dest, dev_addr_t t_src,
+					 std::array<uint8_t,
+					 ROUTING_SYNC_ENTRIES_MAX> t_payload,
+					 std::size_t t_pentries):
+    IndexedMessage(t_pentries, t_dest, t_src, ROUTING_SYNC_ID, 0, 0, 0), m_payload(t_payload) {
+    m_psize+=sizeof(uint8_t)*t_pentries;
+  }
+
+  std::array<uint8_t, ROUTING_SYNC_ENTRIES_MAX> RoutingSyncMessage::payload(void) {
+    return m_payload;
+  }
+  
+  RoutingPingMessage::RoutingPingMessage() : MessageHeader(), m_pong_flag(0) {}
+  RoutingPingMessage::RoutingPingMessage(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_pong):
+    MessageHeader(t_dest, t_src, ROUTING_PING_ID, 0, 0, 0), m_pong_flag(t_pong){
+    m_psize+=sizeof(m_pong_flag);
+  }
+
+  uint8_t RoutingPingMessage::pong_flag(void) const {
+    return m_pong_flag;
+  }
+
+  
+
   void MessageHeader::serialize(std::ostream& out) const {
     // Place ID first
     out.write(reinterpret_cast<const char*>(&m_id), sizeof(m_id));
@@ -151,12 +186,26 @@ namespace bemesh {
     }
   }
 
+  void RoutingSyncMessage::serialize(std::ostream&out) const {
+    IndexedMessage::serialize(out);
+    for(int i=0;i<m_entries;++i) {
+      out.write(reinterpret_cast<const char*>(&m_payload[i]), sizeof(uint8_t));
+    }
+  }
+
+  void RoutingPingMessage::serialize(std::ostream&out) const {
+    MessageHeader::serialize(out);
+    out.write(reinterpret_cast<const char*>(&m_pong_flag), sizeof(m_pong_flag));
+  }
+  
   //typedef MessageHeader* (*msg_ctor_t)(std::istream&);
   static std::map<uint8_t, MessageHeader*> _serial_ctor_map =
     {
       {ROUTING_DISCOVERY_REQ_ID, new RoutingDiscoveryRequest()},
       {ROUTING_DISCOVERY_RES_ID, new RoutingDiscoveryResponse()},
       {ROUTING_UPDATE_ID, new RoutingUpdateMessage()},
+      {ROUTING_SYNC_ID, new RoutingSyncMessage()},
+      {ROUTING_PING_ID, new RoutingPingMessage()},
     };
   
   MessageHeader* MessageHeader::unserialize(std::istream& istr) {
@@ -213,6 +262,37 @@ namespace bemesh {
       istr.read(reinterpret_cast<char*>(&temp_entry), sizeof(routing_update_t));
       m_payload[i]=temp_entry;
     }
+    return this;
+  }
+
+  RoutingSyncMessage* RoutingSyncMessage::create(std::istream& istr) {
+    // Read header
+    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
+    istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
+    istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));
+    istr.read(reinterpret_cast<char*>(&m_psize), sizeof(m_psize));
+    // Read the payload
+    istr.read(reinterpret_cast<char*>(&m_entries), sizeof(m_entries));
+    for(int i=0;i<m_entries;++i) {
+      uint8_t temp_entry;
+      istr.read(reinterpret_cast<char*>(&temp_entry), sizeof(uint8_t));
+      m_payload[i]=temp_entry;
+    }
+    return this;
+  }
+
+  RoutingPingMessage* RoutingPingMessage::create(std::istream& istr) {
+    // Read header
+    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
+    istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
+    istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));
+    istr.read(reinterpret_cast<char*>(&m_psize), sizeof(m_psize));
+    // Read payload
+    istr.read(reinterpret_cast<char*>(&m_pong_flag), sizeof(uint8_t));
     return this;
   }
     

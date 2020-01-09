@@ -77,6 +77,7 @@ namespace bemesh {
     
     // Execute readings
     while(m_rx_entries>0) {
+      printf("Ho un totale di m_rx_entries: %d",m_rx_entries);
       --m_rx_entries;
       MessageHeader* recv_msg=MessageHeader::unserialize(m_rx_strm);
       if(recv_msg==nullptr) {

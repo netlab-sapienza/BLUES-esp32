@@ -32,26 +32,98 @@
 #include <stdlib.h>
 #include "freertos/event_groups.h"
 #include "esp_system.h"
+#include "constant.hpp"
+#include <stdio.h>
 
 #define GATTS_CHAR_VAL_LEN_MAX 255 //was 0x40
+#define MAC_LEN 6
+#define SCAN_LIMIT 20 // Scan is limited up to 100 different devices
 
 #define TOTAL_NUMBER_LIMIT 7 // Total of incoming and outgoing edges is 7
 #define CLIENTS_NUMBER_LIMIT 4 // Incoming links of clients
 #define SERVERS_NUMBER_LIMIT 3 // Outgoing or incoming connections with servers
-
+#define PROFILE_NUM      1
 // Macros for the ID_TABLE
 
 #define CLIENT 0
 #define SERVER 1
+#define GATTC_TAG "GATT_CLIENT"
+#define GATTS_TAG "GATT_SERVER"
+#define REMOTE_SERVICE_UUID        0x00FF
+#define REMOTE_NOTIFY_CHAR_UUID    0xFF01
+#define PROFILE_A_APP_ID 0
+#define INVALID_HANDLE   0
 
-typedef void(*NotifyCb)();
+
+#define SERVERS_NUM 3
+#define SERVER_S1 0
+#define SERVER_S2 1
+#define SERVER_S3 2
+#define INVALID_HANDLE   0
+
+struct gattc_profile_inst {
+    esp_gattc_cb_t gattc_cb;
+    uint16_t gattc_if;
+    uint16_t app_id;
+    uint16_t conn_id;
+    uint16_t service_start_handle;
+    uint16_t service_end_handle;
+    uint16_t char_handle;
+    esp_bd_addr_t remote_bda;
+} ;
 
 
-typedef void(*NotifyCb)();
+struct device {
+	uint8_t* mac; // Mac address of the device
+	uint8_t addr_type; // BLE addr type
+	uint8_t clients_num; // Number of clients connected to that device
+	uint8_t rssi; // Received signal strength indication
+};
 
+extern uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX];
+extern uint16_t CHR_HANDLES[HRS_IDX_NB];
+extern struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM];
+extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
+extern struct device scan_res[SCAN_LIMIT];
+
+
+extern bool becoming_client;
+extern bool becoming_server;
+
+extern bool wants_to_discover;
+extern bool wants_to_send_routing_table;
+
+typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t);
+typedef void(*InitCb)(uint8_t);
+typedef void(*ShutDownCb)(uint8_t);
+//This callback function pass the newly updated MAC table entry to the master object.
+typedef void(*ServerUpdateCb)(uint8_t*,uint8_t,uint16_t,uint8_t,uint8_t);
+//This callback function is triggered whenever two servers meet for the first time so that they
+//can exchange their routing tables.
+typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
+typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t,uint8_t);
+typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
+
+typedef void(*EndScanning)(struct device* list); // Returns details of nearby devices
+typedef void(*ServerLost)();
+
+
+
+//
 /*
  *  	FUNCTIONS DECLARATION
  */
+
+// Scanning functions
+void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name); // Add or update the device in the array of scanned devices
+uint8_t connectTo(struct device dev, uint8_t num_internal_client); // Establish a connection with dev and returns 1 if an error eccurs, 0 otherwise.
+// connectTo can be used in a server (as internal_client) with the internal_client number. Otherwise leave it to 0.
+void scan(uint8_t duration, uint8_t num_internal_client); // Start scanning with duration in seconds. Eventually add internal_client or leave it to 0.
+
+
+// Mutation functions
+void becomeServer(); // If no servers were found during the scanning let the client become a server.
+
 
 // Internal clients for a server
 void esp_gattc_internal_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param);
@@ -81,8 +153,13 @@ void unregister_server();
 void start_internal_client(uint8_t client); // internal clients are SERVER_S1, SERVER_S2, SERVER_S3. This includes the registration
 void change_name(uint8_t flag, uint8_t idx); // Flag: 1 -> +, 0 -> -
 
+uint8_t notify_client(uint8_t conn_id, uint8_t chr, uint8_t* data, uint8_t data_size); // Send notification to a client (conn_id) using a characteristic channel
+
+
+//Trasferite in characteristic.h
+
 uint8_t find_CHR(uint16_t handle); // Given an handle find the characteristic it refers to
-void write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array, uint8_t len);
+uint8_t write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* array, uint8_t len); // Returns 1 if an error occurs, 0 otherwise
 uint8_t* read_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr);
 uint8_t get_CHR_value_len(uint8_t chr); // Get the lenght of the last read value of a characteristic
 
@@ -119,8 +196,15 @@ uint8_t* get_internal_client_serverMAC(uint8_t client_id); // Returns the MAC ad
 
 // CALLBACKS
 uint8_t install_NotifyCb(NotifyCb cb); // Returns 0 on succes, 1 otherwise
+uint8_t install_InitCb(InitCb cb); //Same as above.
+uint8_t install_ServerUpdateCb(ServerUpdateCb cb); //Same as above
+uint8_t install_ExchangeRoutingTableCb(ExchangeRoutingTableCb cb); //Same as above
+uint8_t install_ReceivedPacketCb(ReceivedPacketCb cb); //Same as above
+uint8_t install_ShutDownCb(ShutDownCb cb); //Same as above
+uint8_t install_SendRoutingTableCb(SendRoutingTableCb cb); //Same as above.
 
-
+uint8_t install_EndScanning(EndScanning cb); // Triggered when the scan process of a client is over (including an internal_client)
+uint8_t install_ServerLost(ServerLost cb); // Triggered when the client is connected to a server and the connection is lost
 
 
 bool has_ended_scanning();

@@ -47,7 +47,6 @@ namespace bemesh {
     // will do exactly the same things as the one before
     // except that it is used by other internal functions.
     ErrStatus add(routing_params_t& t_target_params);
-
     // Remove an entry from the routing table. If the removal
     // action goes succesful, a new entry in the update_vect
     // will be added.
@@ -82,6 +81,10 @@ namespace bemesh {
     // Returns a copy of update_vect update vector. This will clear the internal
     // update_vect in order not to store previously committed updates.
     std::vector<routing_update_t> getRoutingUpdates(void);
+
+    // Returns the neighbours from the routing table
+    std::vector<dev_addr_t> getNeighbours(void);
   };
 
+  bool isBroadcast(dev_addr_t& t_addr);
 }
