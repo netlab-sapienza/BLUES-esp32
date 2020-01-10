@@ -60,7 +60,7 @@ namespace bemesh{
         static void send_routing_table_callback(uint8_t* src,uint8_t* dst, uint16_t gatt_if,
                                                 uint8_t conn_id,uint8_t server_id);
 
-        static void endscanning_callback(device * device_list);
+        static void endscanning_callback(device * device_list,uint8_t scan_seq);
         static void server_lost_callback(void);
 
 

@@ -187,6 +187,15 @@ namespace bemesh{
         return master_message_extra_args;
     }
     
+    void Master::ping_reception_callback(MessageHeader* header_t,void * args){
+        ESP_LOGE(GATTS_TAG,"In ping reception callback");
+        
+        //Write something into a characteristic and notify a client.
+        
+
+
+        return;
+    }
 
     void Master::routing_discovery_request_reception_callback(MessageHeader* header_t,
                             void* args)
@@ -256,15 +265,23 @@ namespace bemesh{
         
         switch(header_t->id()){
             case ROUTING_DISCOVERY_REQ_ID:{
-                master_instance->routing_discovery_request_reception_callback(header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_request_reception_callback(header_t,args);
                 break;
             }
             case ROUTING_DISCOVERY_RES_ID:{
-                master_instance->routing_discovery_response_reception_callback(header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_response_reception_callback(header_t,args);
                 break;
             }
             case ROUTING_UPDATE_ID:{
-                master_instance->routing_update_reception_callback(header_t,args);
+                if(master_instance)
+                    master_instance->routing_update_reception_callback(header_t,args);
+                break;
+            }
+            case ROUTING_PING_ID:{
+                if(master_instance)
+                    master_instance->ping_reception_callback(header_t,args);
                 break;
             }
             default:{
@@ -274,6 +291,14 @@ namespace bemesh{
         }
         return;
     }
+
+    void Master::ping_transmission_callback(uint8_t* buffer,uint8_t size, MessageHeader* header_t,
+                                    void* args)
+    {
+        ESP_LOGE(GATTS_TAG,"In ping transmission callback");
+        return;
+    }
+
 
     void Master::routing_discovery_request_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args)
@@ -352,15 +377,23 @@ namespace bemesh{
             return;
         switch(header_t->id()){
             case ROUTING_DISCOVERY_REQ_ID:{
-                master_instance->routing_discovery_request_transmission_callback(buffer,size,header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_request_transmission_callback(buffer,size,header_t,args);
                 break;
             }
             case ROUTING_DISCOVERY_RES_ID:{
-                master_instance->routing_discovery_response_transmission_callback(buffer,size,header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_response_transmission_callback(buffer,size,header_t,args);
                 break;
             }
             case ROUTING_UPDATE_ID:{
-                master_instance->routing_update_transmission_callback(buffer,size,header_t,args);
+                if(master_instance)
+                    master_instance->routing_update_transmission_callback(buffer,size,header_t,args);
+                break;
+            }
+            case ROUTING_PING_ID:{
+                if(master_instance)
+                    master_instance->ping_transmission_callback(buffer,size,header_t,args);
                 break;
             }
             default:{

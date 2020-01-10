@@ -201,7 +201,7 @@ namespace  bemesh{
                 void routing_discovery_request_reception_callback(MessageHeader* header_t, void*args);
                 void routing_discovery_response_reception_callback(MessageHeader* header_t, void* args);
                 void routing_update_reception_callback(MessageHeader* header_t, void* args);
-
+                void ping_reception_callback(MessageHeader* header_t, void* args);
 
                 //Message transmission callbacks
                 void routing_discovery_request_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
@@ -209,6 +209,8 @@ namespace  bemesh{
                 void routing_discovery_response_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args);
                 void routing_update_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args);
+                void ping_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args);
 
                 //Prepare the routing update message whenever a new client connects.
