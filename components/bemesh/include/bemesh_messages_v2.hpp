@@ -14,7 +14,7 @@ namespace bemesh {
 
   extern dev_addr_t const BROADCAST_ADDR;
   
-#define MESSAGE_TYPE_MAX 4
+#define MESSAGE_TYPE_MAX 16
   class MessageHeader {
 #define MESSAGE_HEADER_DATA_SIZE 16
   protected:
