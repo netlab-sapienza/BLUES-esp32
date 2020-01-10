@@ -28,7 +28,8 @@ namespace bemesh{
 
     ping_data_t::ping_data_t(){}
 
-    ping_data_t::ping_data_t(dev_addr_t addr, uint8_t flag):sender(addr),pong_flag(flag){}
+    ping_data_t::ping_data_t(dev_addr_t addr, uint8_t flag,uint8_t c, uint16_t g):sender(addr),pong_flag(flag),
+                                        conn_id(c),gatt_if(g){}
 
     bool  ping_data_t::operator ==(const ping_data_t& cc){
         return cc.pong_flag == pong_flag && same_addresses(sender,cc.sender,MAC_ADDRESS_SIZE);

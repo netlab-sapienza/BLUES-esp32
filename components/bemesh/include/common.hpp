@@ -48,8 +48,10 @@ namespace bemesh{
     struct ping_data_t{
         dev_addr_t sender;
         uint8_t pong_flag;
+        uint8_t conn_id;
+        uint16_t gatt_if;
         ping_data_t();
-        ping_data_t(dev_addr_t s, uint8_t pflag);
+        ping_data_t(dev_addr_t s, uint8_t pflag,uint8_t c_id, uint16_t g_if);
         bool operator ==(const ping_data_t & cc) ;
         bool operator !=(const ping_data_t & cc) ;
     };

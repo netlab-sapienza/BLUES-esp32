@@ -4,7 +4,7 @@
 
 
 namespace bemesh{
-    Slave::Slave(){
+    Slave::Slave():ping_response_list(){
 
         //Toglierle(?)
         esp = true;
@@ -126,6 +126,18 @@ namespace bemesh{
         return ret;
     }
 
+
+    uint8_t* Slave::get_server_dev_addr(){
+        return server_dev_addr;
+    }
+
+    void Slave::set_server_dev_addr(uint8_t* dev_addr){
+        server_dev_addr = dev_addr;
+        return;
+    }
+
+
+
     void transmission_callback(uint8_t* message, uint8_t size, MessageHeader* header_t,
                                     void* args)
     {
@@ -192,15 +204,24 @@ namespace bemesh{
         uint8_t conn_id = *(_ptr);
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t characteristic = *(_ptr);
+        RoutingPingMessage* routing_ping_message = (RoutingPingMessage*)header_t;
 
         ESP_LOGE(GATTC_TAG,"In ping reception callback. Ended to parse all the arguments.");
+        
+    
+        uint8_t resend_pong_flag = routing_ping_message->pong_flag() +1;
+        ping_data_t p_data(routing_ping_message->source(),routing_ping_message->pong_flag(),conn_id,
+                                                gatt_if);
+        
+        ESP_LOGE(GATTC_TAG, "Adding ping_data_t element toe the ping response list");
+        add_ping_response(p_data);
 
-
-        //Propagate the ping.
-
+        
         
 
 
+        //Send the pong to the server.
+        ping_server(get_device_gatt_if(),get_server_connection_id(),server_dev_addr,resend_pong_flag);
         return;
     }
 
@@ -340,11 +361,13 @@ namespace bemesh{
         uint16_t gatt_if = get_gatt_if();
         uint8_t* mac_address = get_my_MAC();
         uint8_t conn_id = get_client_connid();
+        uint8_t * server_mac_address = get_connid_MAC(conn_id);
         _print_mac_address(mac_address);
 
         set_device_gatt_if(gatt_if);
         set_device_connection_id(conn_id);
         set_dev_addr(mac_address);
+        set_server_dev_addr(server_mac_address);
 
         dev_addr_t converted_address = _build_dev_addr(mac_address);  
         if(mac_address != NULL){
@@ -387,7 +410,8 @@ namespace bemesh{
     
 
 
-    ErrStatus Slave::ping_server(uint16_t gatt_if,uint8_t conn_id, uint8_t* mac_address){
+    ErrStatus Slave::ping_server(uint16_t gatt_if,uint8_t conn_id, uint8_t* mac_address,
+                                uint8_t pong_flag){
         
         if(address == NULL)
             return GenericError;
@@ -397,7 +421,7 @@ namespace bemesh{
         //Start pinging the server
         dev_addr_t src_addr = get_dev_addr();
         dev_addr_t dest_addr = _build_dev_addr(mac_address);
-        uint8_t pong_flag = 0;
+        
         RoutingPingMessage routing_ping_message(src_addr,dest_addr,pong_flag);
         uint8_t characteristic = IDX_CHAR_VAL_B;
         ErrStatus ret = send_message(gatt_if,conn_id,mac_address,(MessageHeader*)&routing_ping_message,characteristic);

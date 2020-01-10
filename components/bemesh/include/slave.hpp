@@ -53,6 +53,7 @@ namespace bemesh{
 
     class Slave{
         uint8_t* address;
+        uint8_t* server_dev_addr;
         uint16_t server_conn_id;
         uint16_t device_conn_id; // also for android compatibility mode.
         uint8_t device_gatt_if;
@@ -108,6 +109,9 @@ namespace bemesh{
             MessageHandler* get_message_handler();
             uint8_t * get_slave_tx_buffer();
 
+            uint8_t* get_server_dev_addr();
+            void set_server_dev_addr(uint8_t* addr);
+            
             
 
             void add_routing_table_entry(dev_addr_t target_addr,
@@ -163,7 +167,8 @@ namespace bemesh{
             void print_status();
 
             //ping_server is defined to print 
-            ErrStatus ping_server(uint16_t gatt_if, uint8_t conn_id, uint8_t* mac_address);
+            ErrStatus ping_server(uint16_t gatt_if, uint8_t conn_id, uint8_t* mac_address,
+                                uint8_t pong_flag);
 
 
             
