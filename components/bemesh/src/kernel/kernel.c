@@ -489,7 +489,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             ESP_LOGE(GATTC_TAG, "open failed, status %d", p_data->open.status);
             break;
         }
-        scan_seq = 0;
+        //scan_seq = 0;
         ESP_LOGI(GATTC_TAG, "open success");
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -793,8 +793,8 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             ESP_LOGI(GATTC_TAG, "\n");
 			
             if (adv_name != NULL) {
-				adv_name_len = DEVICE_NAME_LEN;
-                if (strlen(remote_device_name) == adv_name_len && strncmp((char *)adv_name, remote_device_name, adv_name_len) == 0) {
+				//adv_name_len = DEVICE_NAME_LEN;
+                if (strlen(remote_device_name) == DEVICE_NAME_LEN && strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
 					/*
 					int c = adv_name[CLIENTS_IDX] - '0';
 					
@@ -813,7 +813,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
                         esp_ble_gattc_open(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, scan_result->scan_rst.bda, scan_result->scan_rst.ble_addr_type, true);
                     }
 					*/
-					processDevice(scan_result, adv_name);
+					processDevice(scan_result, adv_name, adv_name_len);
                 }
                 
             }
@@ -821,7 +821,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			//ESP_LOGE(GATTC_TAG, "I didn't find a server! I'm going to be a server...");
 			ESP_LOGE(GATTC_TAG, "End of scanning!");
-			scan_seq = 0;
+			//scan_seq = 0;
 			(*endscanning_cb)(scan_res, scan_seq);
 			//unregister_client();
 			//gatt_server_main();
@@ -2258,8 +2258,8 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
                 break;
             }
             if (adv_name != NULL) {
-				adv_name_len = DEVICE_NAME_LEN;
-                if (strlen(remote_device_name) == adv_name_len && strncmp((char *)adv_name, remote_device_name, adv_name_len) == 0) {
+				//adv_name_len = DEVICE_NAME_LEN;
+                if (strlen(remote_device_name) == DEVICE_NAME_LEN && strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
 					int s = adv_name[SERVERS_IDX] - '0';
 					if(s == SERVERS_NUMBER_LIMIT) {
 						// The number of clients is over the limit
@@ -2289,7 +2289,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						esp_ble_gap_start_advertising(&adv_params);
                     }
                     */
-                    processDevice(scan_result, adv_name);
+                    processDevice(scan_result, adv_name, adv_name_len);
 				}
 			}
 
@@ -2390,8 +2390,8 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
                 break;
             }
             if (adv_name != NULL) {
-				adv_name_len = DEVICE_NAME_LEN;
-                if (strlen(remote_device_name) == adv_name_len && strncmp((char *)adv_name, remote_device_name, adv_name_len) == 0) {
+				//adv_name_len = DEVICE_NAME_LEN;
+                if (strlen(remote_device_name) == DEVICE_NAME_LEN && strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
 					int s = adv_name[SERVERS_IDX] - '0';
 					if(s == SERVERS_NUMBER_LIMIT) {
 						// The number of clients is over the limit
@@ -2420,7 +2420,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						esp_ble_gap_start_advertising(&adv_params);
                     }
                     */
-                    processDevice(scan_result, adv_name);
+                    processDevice(scan_result, adv_name, adv_name_len);
 				}
 			}
 
@@ -2521,8 +2521,8 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
                 break;
             }
             if (adv_name != NULL) {
-				adv_name_len = DEVICE_NAME_LEN;
-                if (strlen(remote_device_name) == adv_name_len && strncmp((char *)adv_name, remote_device_name, adv_name_len) == 0) {
+				//adv_name_len = DEVICE_NAME_LEN;
+                if (strlen(remote_device_name) == DEVICE_NAME_LEN && strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
 					int s = adv_name[SERVERS_IDX] - '0';
 					if(s == SERVERS_NUMBER_LIMIT) {
 						// The number of clients is over the limit
@@ -2551,7 +2551,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						esp_ble_gap_start_advertising(&adv_params);
                     }
                     */
-                    processDevice(scan_result, adv_name);
+                    processDevice(scan_result, adv_name, adv_name_len);
 				}
 			}
 
@@ -3137,25 +3137,60 @@ uint8_t* get_internal_client_serverMAC(uint8_t client_id) {
 	}	
 }
 
-void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name) {
+uint8_t MAC_check(uint8_t* mac1, uint8_t* mac2) {
+	ESP_LOGE(GATTC_TAG, "Check args:");
+	esp_log_buffer_hex(GATTC_TAG, mac1, MAC_LEN);
+	esp_log_buffer_hex(GATTC_TAG, mac2, MAC_LEN);
+		
+	uint8_t check = 1, i;
+	for(i=0; i<MAC_LEN; ++i) if(mac1[i]!=mac2[i]) check=0;
+	ESP_LOGE(GATTC_TAG,"Result is -> %d", check);
+	return check;
+}
+
+
+void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8_t adv_len) {
 	uint8_t i;
+	esp_ble_gap_cb_param_t * dest= malloc(sizeof(esp_ble_gap_cb_param_t));
+	memcpy(dest, scan_result, sizeof(esp_ble_gap_cb_param_t));
+	uint8_t* new_mac = dest->scan_rst.bda;
+	uint8_t new_addr_type = dest->scan_rst.ble_addr_type;
+	uint8_t new_rssi = dest->scan_rst.rssi;
+	
+	
+	if(!scan_result || !adv_name) return;
+	ESP_LOGE(GATTC_TAG,"---------------------------------------------");
+	ESP_LOGE(GATTC_TAG,"Number of devs %d", scan_seq);
+	
+	ESP_LOGE(GATTC_TAG,"Actual device:");
+	esp_log_buffer_char(GATTC_TAG, adv_name, adv_len);
+	esp_log_buffer_hex(GATTC_TAG, new_mac, MAC_LEN);
+	
 	for(i=0; i<SCAN_LIMIT; ++i) {
-		if(scan_res[i].mac == scan_result->scan_rst.bda) {
+		if(i >= scan_seq) break;
+			
+		
+		ESP_LOGE(GATTC_TAG,"Iter. n. %d", i);
+		esp_log_buffer_hex(GATTC_TAG, scan_res[i].mac, MAC_LEN);
+		if(MAC_check(new_mac, scan_res[i].mac)) {
+			ESP_LOGE(GATTC_TAG,"Already known device!");
 			scan_res[i].dev_name = adv_name;
-			scan_res[i].addr_type = scan_result->scan_rst.ble_addr_type;
+			scan_res[i].addr_type = new_addr_type;
 			scan_res[i].clients_num = adv_name[CLIENTS_IDX] - '0';
-			scan_res[i].rssi = scan_result->scan_rst.rssi;
+			scan_res[i].rssi = new_rssi;
 			return;
 		}
+		
 	}
-	
+	ESP_LOGE(GATTC_TAG,"New device discovered");
 	scan_res[scan_seq].dev_name = adv_name;
-	scan_res[scan_seq].mac = scan_result->scan_rst.bda;
-	scan_res[scan_seq].addr_type = scan_result->scan_rst.ble_addr_type;
+	scan_res[scan_seq].mac = new_mac;
+	scan_res[scan_seq].addr_type = new_addr_type;
 	scan_res[scan_seq].clients_num = adv_name[CLIENTS_IDX] - '0';
-	scan_res[scan_seq].rssi = scan_result->scan_rst.rssi;
+	scan_res[scan_seq].rssi = new_rssi;
 	scan_seq++;
-	
+	ESP_LOGE(GATTC_TAG,"---------------------------------------------");
+	free(dest);
 }
 
 uint8_t connectTo(struct device server, uint8_t num_internal_client) {

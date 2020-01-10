@@ -24,19 +24,21 @@
 #include <stdlib.h>
 
 #include "rtable.hpp" //For dev_addr_t data type.
-#include <stdint.h>
-#include <string>
-
-
 #include "bemesh_status.hpp"
 #include "message_handler_v2.hpp"
 #include "routing.hpp"
 #include "constant.hpp"
 #include "common.hpp"
+#include "bemesh_error.hpp"
+
+
+
 #include <stdlib.h>
 #include <iostream>
 #include <list>
 #include <assert.h>
+#include <stdint.h>
+#include <string>
 
 
 extern "C"{
@@ -148,7 +150,8 @@ namespace bemesh{
 
             
             ErrStatus write_characteristic(uint8_t characteristic, uint8_t* buffer,
-                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id);
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint8_t conn_id,write_policy_t policy);
             
 
             void sayHello(){

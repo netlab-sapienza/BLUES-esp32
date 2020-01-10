@@ -2,7 +2,6 @@
 
 //TO-DO. complete stuff.
 
-
 namespace bemesh{
     Slave::Slave():ping_response_list(){
 
@@ -176,8 +175,10 @@ namespace bemesh{
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t characteristic = *(_ptr);
         ESP_LOGE(GATTC_TAG,"In ping transmission callback: we ended to retrieve the arguments");
-        
-        ErrStatus ret_status = write_characteristic(characteristic,message,size,gattc_if,conn_id);
+       
+        write_policy_t policy  = Standard;
+        ErrStatus ret_status = write_characteristic(characteristic,message,size,gattc_if,
+                                conn_id, policy);
         if(ret_status != Success){
             ESP_LOGE(GATTC_TAG,"In ping transmission callback: %d",ret_status);
         }
@@ -314,7 +315,8 @@ namespace bemesh{
 
 
     ErrStatus Slave::write_characteristic(uint8_t characteristic,uint8_t* buffer,
-                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id)
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint8_t conn_id, write_policy_t policy)
     {
         if(buffer == NULL)
             return WrongPayload;
@@ -329,6 +331,7 @@ namespace bemesh{
             write_params.characteristic = characteristic;
             write_params.buffer = buffer;
             write_params.buffer_size = buffer_size;
+            write_params.policy = policy;
             //std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
             //std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
             //Spara un task per scrivere su una caratteristica.
@@ -361,8 +364,9 @@ namespace bemesh{
         uint16_t gatt_if = get_gatt_if();
         uint8_t* mac_address = get_my_MAC();
         uint8_t conn_id = get_client_connid();
-        uint8_t * server_mac_address = get_connid_MAC(conn_id);
-        _print_mac_address(mac_address);
+        uint8_t* server_mac_address = get_connid_MAC(conn_id);
+        esp_log_buffer_hex(GATTC_TAG,mac_address,MAC_ADDRESS_SIZE);
+
 
         set_device_gatt_if(gatt_if);
         set_device_connection_id(conn_id);
@@ -374,11 +378,36 @@ namespace bemesh{
             router = new Router(converted_address);
         }
 
-        ErrStatus ret = mes_handler.installTxBuffer(slave_tx_buffer);
+
+        //Since this is a client, its next hop is always a server. We add the entry in
+        //the routing table.
+        dev_addr_t converted_server_mac_address = _build_dev_addr(server_mac_address);
+        uint8_t server_hops = 1;
+        uint8_t server_flags = 0;
+        add_routing_table_entry(converted_address,converted_server_mac_address,server_hops,
+                            server_flags);
+
+            
+
+
+
+
+        ErrStatus ret;
+        //Buffer to send/receive messages.
+        ret =  mes_handler.installTxBuffer(slave_tx_buffer);
         assert(ret == Success);
         ret = mes_handler.installTxCb(&transmission_callback);
         assert(ret == Success);
+        //Install reception callback for messages. Extra arguments to be added.
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,slave_message_extra_args);
+        assert(ret == Success);
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_RES_ID,slave_message_extra_args);
+        assert(ret == Success);
         ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,slave_message_extra_args);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,reception_callback,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&reception_callback,nullptr);
         assert(ret == Success);
         ret = mes_handler.installOps(ROUTING_UPDATE_ID,&reception_callback,nullptr);
         assert(ret == Success);
@@ -389,8 +418,9 @@ namespace bemesh{
         uint8_t buffer[BUFFER_SIZE] = {1,2,3,4,5,6};
         ESP_LOGE(GATTC_TAG,"I'm about to write something on the server");
         int i;
+        write_policy_t policy = Standard;
         for(i = 0; i<5; i++)
-            write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id);
+            write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
     }
 
    

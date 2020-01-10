@@ -22,6 +22,7 @@ namespace bemesh{
                 
                 //Inizializzazione e start del server.
                 master_instance->start();
+                esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
                 register_internal_client(SERVER_S1);
@@ -209,12 +210,22 @@ namespace bemesh{
         }
     }
 
-    void Callback::endscanning_callback(device* device_list){
+    void Callback::endscanning_callback(device* device_list,uint8_t count){
         int i;
-        int count = 0;
-        for(i = 0; i<SCAN_LIMIT; i++){
-            if(device_list[i].mac == 0)
-                break;
+        
+
+        //We perform some integrity check.
+        if(device_list == NULL)
+            return;
+
+        if(count > SCAN_LIMIT){
+            ESP_LOGE(GATTC_TAG,"Error in endscanning_callback. Device number: %d exceed the SCAN_LIMIT: %d",
+                                count,SCAN_LIMIT);
+            return;
+        }
+
+        for(i = 0; i<count; i++){
+            
             uint8_t* addr = device_list[i].mac;
             uint8_t type = device_list[i].addr_type;
             uint8_t num_clients = device_list[i].clients_num;
@@ -222,7 +233,7 @@ namespace bemesh{
             ESP_LOGE(GATTC_TAG,"Found this server at the end of scanning: address:");
             esp_log_buffer_hex(GATTC_TAG,addr, MAC_ADDRESS_SIZE);
             ESP_LOGE(GATTC_TAG,"type: %d num_clients: %d signal strength: %d",type,num_clients,signal_strength);
-            count++;
+        
         }
         ESP_LOGE(GATTC_TAG, "Out of the loop: we have collected a device list of: %d elements",count);
         connection_policy_t policy = Maximum_rssi_value_policy;

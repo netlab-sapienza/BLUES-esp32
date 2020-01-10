@@ -2,6 +2,7 @@
 
 #include "common.hpp"
 
+
 namespace bemesh{
     task_param_write_t::task_param_write_t(){}
 
@@ -95,15 +96,33 @@ namespace bemesh{
         uint8_t charact = params->characteristic;
         uint8_t * data = params->buffer;
         uint16_t buffer_size = params->buffer_size;
-        
-        write_CHR(gatt_if, conn_id, charact, data, buffer_size);
-        //std::cout<<"I wrote"<<std::endl;
-    /* uint8_t * test = read_CHR(gatt_if,conn_id, charact);
-        int i;
-        for(i = 0; i<buffer_size; i++){
-            ESP_LOGE(GATTS_TAG,"Found: %d",test[i]);
+        write_policy_t  policy = params->policy;
+        switch (policy){
+            case Standard:{
+                int i;
+                uint8_t write_ret;
+                for(i = 0; i<MAX_NUMBER_WRITING_ATTEMPTS; i++){
+                    ESP_LOGE(GATTC_TAG,"Writing attempt number: %d",i);
+                    write_ret =  write_CHR(gatt_if, conn_id, charact, data, buffer_size);
+                    if(write_ret == 0){
+                        //I succeded. So i break the trial loop.
+                        break;
+                    }
+                }
+                break;
+            }
+            case Mandatory:{
+                //Try to write until you succeed.
+                while(! write_CHR(gatt_if, conn_id, charact, data, buffer_size));
+                break;
+            }
+            default:{
+                ESP_LOGE(GATTC_TAG,"Unknown write policy");
+                break;
+            }
         }
-    */
+        
+       
         vTaskDelete(NULL);
 
     }

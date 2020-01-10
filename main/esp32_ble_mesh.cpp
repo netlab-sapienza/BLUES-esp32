@@ -40,6 +40,9 @@
 #include "slave.hpp"
 #include "master.hpp"
 #include "callbacks.hpp"
+#include "bemesh_error.hpp"
+
+
 
 extern "C" {
   #include "kernel.h"
@@ -50,6 +53,7 @@ extern "C" {
 
 bool becoming_client;
 bool becoming_server;
+int bemesh_errno;
 
 #define LOG_TAG "be_mesh_demo"
 
@@ -58,6 +62,8 @@ int main(void) {
   becoming_client = false;
   becoming_server = false;
 
+  //Set the global error variable to a default value.
+  bemesh_errno = SUCCESS;
 
   ESP_LOGE(LOG_TAG, "Initializing project");
   ble_esp_startup();

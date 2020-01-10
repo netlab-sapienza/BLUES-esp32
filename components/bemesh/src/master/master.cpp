@@ -187,6 +187,15 @@ namespace bemesh{
         return master_message_extra_args;
     }
     
+    void Master::ping_reception_callback(MessageHeader* header_t,void * args){
+        ESP_LOGE(GATTS_TAG,"In ping reception callback");
+        
+        //Write something into a characteristic and notify a client.
+
+
+
+        return;
+    }
 
     void Master::routing_discovery_request_reception_callback(MessageHeader* header_t,
                             void* args)
@@ -256,15 +265,23 @@ namespace bemesh{
         
         switch(header_t->id()){
             case ROUTING_DISCOVERY_REQ_ID:{
-                master_instance->routing_discovery_request_reception_callback(header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_request_reception_callback(header_t,args);
                 break;
             }
             case ROUTING_DISCOVERY_RES_ID:{
-                master_instance->routing_discovery_response_reception_callback(header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_response_reception_callback(header_t,args);
                 break;
             }
             case ROUTING_UPDATE_ID:{
-                master_instance->routing_update_reception_callback(header_t,args);
+                if(master_instance)
+                    master_instance->routing_update_reception_callback(header_t,args);
+                break;
+            }
+            case ROUTING_PING_ID:{
+                if(master_instance)
+                    master_instance->ping_reception_callback(header_t,args);
                 break;
             }
             default:{
@@ -275,6 +292,14 @@ namespace bemesh{
         return;
     }
 
+    void Master::ping_transmission_callback(uint8_t* buffer,uint8_t size, MessageHeader* header_t,
+                                    void* args)
+    {
+        ESP_LOGE(GATTS_TAG,"In ping transmission callback");
+        return;
+    }
+
+
     void Master::routing_discovery_request_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args)
     {
@@ -282,8 +307,9 @@ namespace bemesh{
        
         uint8_t characteristic = IDX_CHAR_VAL_B;
         //Writing the packet to the characteristic
+        write_policy_t policy = Standard;
         write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
-                                    internal_client_conn_id);
+                                    internal_client_conn_id,policy);
                 
         return;
     }
@@ -310,8 +336,9 @@ namespace bemesh{
         uint8_t characteristic = IDX_CHAR_VAL_B;
 
         //Write to some characteristic
+        write_policy_t policy = Standard;
         ErrStatus ret_val = write_characteristic(characteristic,buffer,size,gatt_if,
-                            conn_id);
+                            conn_id,policy);
         
         if(ret_val){
             
@@ -341,7 +368,8 @@ namespace bemesh{
        
        
         uint8_t characteristic = IDX_CHAR_VAL_B;
-        write_characteristic(characteristic, buffer,size,gatt_if,conn_id);
+        write_policy_t policy = Standard;
+        write_characteristic(characteristic, buffer,size,gatt_if,conn_id,policy);
         return;
     }
                                     
@@ -352,15 +380,23 @@ namespace bemesh{
             return;
         switch(header_t->id()){
             case ROUTING_DISCOVERY_REQ_ID:{
-                master_instance->routing_discovery_request_transmission_callback(buffer,size,header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_request_transmission_callback(buffer,size,header_t,args);
                 break;
             }
             case ROUTING_DISCOVERY_RES_ID:{
-                master_instance->routing_discovery_response_transmission_callback(buffer,size,header_t,args);
+                if(master_instance)
+                    master_instance->routing_discovery_response_transmission_callback(buffer,size,header_t,args);
                 break;
             }
             case ROUTING_UPDATE_ID:{
-                master_instance->routing_update_transmission_callback(buffer,size,header_t,args);
+                if(master_instance)
+                    master_instance->routing_update_transmission_callback(buffer,size,header_t,args);
+                break;
+            }
+            case ROUTING_PING_ID:{
+                if(master_instance)
+                    master_instance->ping_transmission_callback(buffer,size,header_t,args);
                 break;
             }
             default:{
@@ -563,7 +599,8 @@ namespace bemesh{
 
 
     ErrStatus Master::write_characteristic(uint8_t characteristic, uint8_t* buffer,
-                                        uint16_t buffer_size, uint16_t gatts_if,uint8_t conn_id)
+                                        uint16_t buffer_size, uint16_t gatts_if,
+                                        uint8_t conn_id, write_policy_t policy)
     {
         if(buffer == NULL)
             return WrongPayload;
@@ -577,6 +614,7 @@ namespace bemesh{
             write_params.characteristic = characteristic;
             write_params.buffer = buffer;
             write_params.buffer_size = buffer_size;
+            write_params.policy = policy;
             //std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
             //std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
             //Spara un task per scrivere su una caratteristica.

@@ -33,6 +33,7 @@
 #include "services.hpp"
 #include "constant.hpp"
 #include "common.hpp"
+#include "bemesh_error.hpp"
 
 
 //Mid-tier.
@@ -201,7 +202,7 @@ namespace  bemesh{
                 void routing_discovery_request_reception_callback(MessageHeader* header_t, void*args);
                 void routing_discovery_response_reception_callback(MessageHeader* header_t, void* args);
                 void routing_update_reception_callback(MessageHeader* header_t, void* args);
-
+                void ping_reception_callback(MessageHeader* header_t, void* args);
 
                 //Message transmission callbacks
                 void routing_discovery_request_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
@@ -209,6 +210,8 @@ namespace  bemesh{
                 void routing_discovery_response_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args);
                 void routing_update_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
+                                    void* args);
+                void ping_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
                                     void* args);
 
                 //Prepare the routing update message whenever a new client connects.
@@ -229,7 +232,8 @@ namespace  bemesh{
 
             
                 ErrStatus write_characteristic(uint8_t characteristic, uint8_t* buffer,
-                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id);
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint8_t conn_id, write_policy_t policy);
 
 
                 ErrStatus send_routing_table(uint8_t* src,uint8_t* dst, uint16_t gatt_if, 
