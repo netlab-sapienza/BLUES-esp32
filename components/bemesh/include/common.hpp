@@ -30,6 +30,8 @@
 #include <iostream>
 #include <algorithm>
 
+#define MAX_NUMBER_WRITING_ATTEMPTS 20
+
 
 extern "C"{
     #include "kernel.h"
@@ -42,6 +44,11 @@ namespace bemesh{
         Maximum_rssi_value_policy = 1,
         Random_policy = 2,
         Fcfs_policy = 3,
+    };
+
+    enum write_policy_t{
+        Standard = 0,
+        Mandatory = 1,
     };
 
 
@@ -64,6 +71,7 @@ namespace bemesh{
         uint8_t characteristic;
         uint8_t* buffer;
         uint16_t buffer_size;
+        write_policy_t policy;
         task_param_write_t();
     };
 

@@ -175,8 +175,10 @@ namespace bemesh{
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t characteristic = *(_ptr);
         ESP_LOGE(GATTC_TAG,"In ping transmission callback: we ended to retrieve the arguments");
-        
-        ErrStatus ret_status = write_characteristic(characteristic,message,size,gattc_if,conn_id);
+       
+        write_policy_t policy  = Standard;
+        ErrStatus ret_status = write_characteristic(characteristic,message,size,gattc_if,
+                                conn_id, policy);
         if(ret_status != Success){
             ESP_LOGE(GATTC_TAG,"In ping transmission callback: %d",ret_status);
         }
@@ -313,7 +315,8 @@ namespace bemesh{
 
 
     ErrStatus Slave::write_characteristic(uint8_t characteristic,uint8_t* buffer,
-                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id)
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint8_t conn_id, write_policy_t policy)
     {
         if(buffer == NULL)
             return WrongPayload;
@@ -328,6 +331,7 @@ namespace bemesh{
             write_params.characteristic = characteristic;
             write_params.buffer = buffer;
             write_params.buffer_size = buffer_size;
+            write_params.policy = policy;
             //std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
             //std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
             //Spara un task per scrivere su una caratteristica.
@@ -414,8 +418,9 @@ namespace bemesh{
         uint8_t buffer[BUFFER_SIZE] = {1,2,3,4,5,6};
         ESP_LOGE(GATTC_TAG,"I'm about to write something on the server");
         int i;
+        write_policy_t policy = Standard;
         for(i = 0; i<5; i++)
-            write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id);
+            write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
     }
 
    

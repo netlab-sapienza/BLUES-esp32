@@ -232,7 +232,8 @@ namespace  bemesh{
 
             
                 ErrStatus write_characteristic(uint8_t characteristic, uint8_t* buffer,
-                                        uint16_t buffer_size, uint16_t gattc_if,uint8_t conn_id);
+                                        uint16_t buffer_size, uint16_t gattc_if,
+                                        uint8_t conn_id, write_policy_t policy);
 
 
                 ErrStatus send_routing_table(uint8_t* src,uint8_t* dst, uint16_t gatt_if, 
