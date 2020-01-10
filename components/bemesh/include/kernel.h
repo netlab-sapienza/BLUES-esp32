@@ -74,6 +74,7 @@ struct gattc_profile_inst {
 
 
 struct device {
+	uint8_t* dev_name; // Name of the device
 	uint8_t* mac; // Mac address of the device
 	uint8_t addr_type; // BLE addr type
 	uint8_t clients_num; // Number of clients connected to that device
@@ -104,7 +105,7 @@ typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
 typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t,uint8_t);
 typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
 
-typedef void(*EndScanning)(struct device* list); // Returns details of nearby devices
+typedef void(*EndScanning)(struct device* list, uint8_t scan_seq); // Returns details of nearby devices
 typedef void(*ServerLost)();
 
 

@@ -471,6 +471,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         server = 0;
         break;
     case ESP_GATTC_CONNECT_EVT:{
+		scan_seq = 0;
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_CONNECT_EVT conn_id %d, if %d", p_data->connect.conn_id, gattc_if);
         gl_profile_tab2[PROFILE_A_APP_ID].conn_id = p_data->connect.conn_id;
         memcpy(gl_profile_tab2[PROFILE_A_APP_ID].remote_bda, p_data->connect.remote_bda, sizeof(esp_bd_addr_t));
@@ -488,6 +489,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             ESP_LOGE(GATTC_TAG, "open failed, status %d", p_data->open.status);
             break;
         }
+        scan_seq = 0;
         ESP_LOGI(GATTC_TAG, "open success");
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -819,7 +821,8 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			//ESP_LOGE(GATTC_TAG, "I didn't find a server! I'm going to be a server...");
 			ESP_LOGE(GATTC_TAG, "End of scanning!");
-			(*endscanning_cb)(scan_res);
+			scan_seq = 0;
+			(*endscanning_cb)(scan_res, scan_seq);
 			//unregister_client();
 			//gatt_server_main();
 			
@@ -1429,6 +1432,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
+        scan_seq = 0;
         server_is_busy = false;
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -1717,6 +1721,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             ESP_LOGE(GATTC_TAG, "config MTU error, error code = %x", mtu_ret);
         }
         
+        scan_seq = 0;
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -1968,6 +1973,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             ESP_LOGE(GATTC_TAG, "config MTU error, error code = %x", mtu_ret);
         }
         
+        scan_seq = 0;
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -2290,10 +2296,11 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
+			scan_seq = 0;
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res);
+			(*endscanning_cb)(scan_res, scan_seq);
             break;
         default:
             break;
@@ -2420,10 +2427,11 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
+			scan_seq = 0;
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S2);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res);
+			(*endscanning_cb)(scan_res, scan_seq);
             break;
         default:
             break;
@@ -2550,10 +2558,11 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
+            scan_seq = 0;
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S3);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res);
+			(*endscanning_cb)(scan_res, scan_seq);
             break;
         default:
             break;
@@ -3132,13 +3141,15 @@ void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name) {
 	uint8_t i;
 	for(i=0; i<SCAN_LIMIT; ++i) {
 		if(scan_res[i].mac == scan_result->scan_rst.bda) {
-			scan_res[scan_seq].addr_type = scan_result->scan_rst.ble_addr_type;
+			scan_res[i].dev_name = adv_name;
+			scan_res[i].addr_type = scan_result->scan_rst.ble_addr_type;
 			scan_res[i].clients_num = adv_name[CLIENTS_IDX] - '0';
 			scan_res[i].rssi = scan_result->scan_rst.rssi;
 			return;
 		}
 	}
-
+	
+	scan_res[scan_seq].dev_name = adv_name;
 	scan_res[scan_seq].mac = scan_result->scan_rst.bda;
 	scan_res[scan_seq].addr_type = scan_result->scan_rst.ble_addr_type;
 	scan_res[scan_seq].clients_num = adv_name[CLIENTS_IDX] - '0';
@@ -3184,6 +3195,7 @@ void becomeServer() {
 }
 
 void scan(uint8_t duration, uint8_t num_internal_client) {
+	scan_seq = 0;
     if(num_internal_client) {
 		esp_ble_gap_stop_advertising();
 		stop_scan_done = false;
