@@ -116,7 +116,7 @@ typedef void(*ServerLost)();
  */
 
 // Scanning functions
-void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name); // Add or update the device in the array of scanned devices
+void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8_t adv_len); // Add or update the device in the array of scanned devices
 uint8_t connectTo(struct device dev, uint8_t num_internal_client); // Establish a connection with dev and returns 1 if an error eccurs, 0 otherwise.
 // connectTo can be used in a server (as internal_client) with the internal_client number. Otherwise leave it to 0.
 void scan(uint8_t duration, uint8_t num_internal_client); // Start scanning with duration in seconds. Eventually add internal_client or leave it to 0.
@@ -173,6 +173,7 @@ uint8_t get_type_connection(uint8_t conn_id); // Returns CLIENT or SERVER depend
 uint8_t* get_connid_MAC(uint8_t conn_id); // Returns the MAC of a connected device conn_id
 uint8_t get_MAC_connid(uint8_t* mac_addr); // Returns the conn_id from a MAC of a connected device
 uint8_t* get_my_MAC(); // Returns the MAC address of the device calling the function
+uint8_t MAC_check(uint8_t* mac1, uint8_t* mac2); // 1 if mac1==mac2, 0 otherwise
 
 uint8_t get_node_type(); // Returns CLIENT/SERVER
 bool is_advertising(); // If the device is a server, returns true if it is advertising, false otherwise
