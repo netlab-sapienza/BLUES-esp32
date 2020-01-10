@@ -361,8 +361,9 @@ namespace bemesh{
         uint16_t gatt_if = get_gatt_if();
         uint8_t* mac_address = get_my_MAC();
         uint8_t conn_id = get_client_connid();
-        uint8_t * server_mac_address = get_connid_MAC(conn_id);
-        _print_mac_address(mac_address);
+        uint8_t* server_mac_address = get_connid_MAC(conn_id);
+        esp_log_buffer_hex(GATTC_TAG,mac_address,MAC_ADDRESS_SIZE);
+
 
         set_device_gatt_if(gatt_if);
         set_device_connection_id(conn_id);
@@ -374,11 +375,36 @@ namespace bemesh{
             router = new Router(converted_address);
         }
 
-        ErrStatus ret = mes_handler.installTxBuffer(slave_tx_buffer);
+
+        //Since this is a client, its next hop is always a server. We add the entry in
+        //the routing table.
+        dev_addr_t converted_server_mac_address = _build_dev_addr(server_mac_address);
+        uint8_t server_hops = 1;
+        uint8_t server_flags = 0;
+        add_routing_table_entry(converted_address,converted_server_mac_address,server_hops,
+                            server_flags);
+
+            
+
+
+
+
+        ErrStatus ret;
+        //Buffer to send/receive messages.
+        ret =  mes_handler.installTxBuffer(slave_tx_buffer);
         assert(ret == Success);
         ret = mes_handler.installTxCb(&transmission_callback);
         assert(ret == Success);
+        //Install reception callback for messages. Extra arguments to be added.
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,slave_message_extra_args);
+        assert(ret == Success);
+        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_RES_ID,slave_message_extra_args);
+        assert(ret == Success);
         ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,slave_message_extra_args);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,reception_callback,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&reception_callback,nullptr);
         assert(ret == Success);
         ret = mes_handler.installOps(ROUTING_UPDATE_ID,&reception_callback,nullptr);
         assert(ret == Success);
