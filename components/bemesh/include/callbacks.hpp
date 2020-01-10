@@ -45,8 +45,10 @@ extern "C"{
 }
 
 namespace bemesh{
+    extern bool discarded[SCAN_LIMIT];
     class Callback{
         
+
         static void init_callback(uint8_t type);
         static void notify_callback(uint16_t gattc_if,uint8_t conn_id,uint8_t charact);
         static void server_update_callback(uint8_t* macs,uint8_t flag,uint16_t gatt_if,
@@ -58,6 +60,15 @@ namespace bemesh{
         static void send_routing_table_callback(uint8_t* src,uint8_t* dst, uint16_t gatt_if,
                                                 uint8_t conn_id,uint8_t server_id);
 
+        static void endscanning_callback(device * device_list);
+        static void server_lost_callback(void);
+
+
+
+        static int choose_server(device* device_list, int device_list_size, connection_policy_t policy);
+        static int connect_to_server(device* device_list, int device_list_size,connection_policy_t policy);
+        static bool check_all_discarded();
+        static void reset_discarded();
 
         public:
             void operator()(void);
