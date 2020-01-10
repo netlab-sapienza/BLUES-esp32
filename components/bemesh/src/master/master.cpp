@@ -191,7 +191,7 @@ namespace bemesh{
         ESP_LOGE(GATTS_TAG,"In ping reception callback");
         
         //Write something into a characteristic and notify a client.
-        
+
 
 
         return;

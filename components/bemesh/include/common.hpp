@@ -20,11 +20,12 @@
 #include "sdkconfig.h"
 
 
+#include "constant.hpp"
+#include "rtable.hpp"
+#include "bemesh_error.hpp"
 
 #include <list>
 #include <stdint.h>
-#include "constant.hpp"
-#include "rtable.hpp"
 #include <memory>
 #include <iostream>
 #include <algorithm>

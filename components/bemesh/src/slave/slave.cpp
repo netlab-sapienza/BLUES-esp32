@@ -2,7 +2,6 @@
 
 //TO-DO. complete stuff.
 
-
 namespace bemesh{
     Slave::Slave():ping_response_list(){
 

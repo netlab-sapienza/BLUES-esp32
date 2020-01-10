@@ -33,6 +33,7 @@
 #include "services.hpp"
 #include "constant.hpp"
 #include "common.hpp"
+#include "bemesh_error.hpp"
 
 
 //Mid-tier.
