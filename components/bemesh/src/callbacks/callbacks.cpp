@@ -210,7 +210,7 @@ namespace bemesh{
         }
     }
 
-    void Callback::endscanning_callback(device* device_list,uint8_t count){
+    void Callback::endscanning_callback(device* device_list,uint8_t count,uint8_t type){
         int i;
         
 
@@ -251,8 +251,36 @@ namespace bemesh{
             }
             else{
                 ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
-                //We initialize client object.
-                init_callback(CLIENT);
+                if(type == CLIENT_SERVER){
+                    //We initialize client object if it is a client_server connection.
+                    init_callback(CLIENT);
+                }
+                else if(type == SERVER_SERVER){
+                    //If something's wrong we'll see 66 in the logs.
+                        uint8_t s_id = 66;
+                        if(conn_device_S1)
+                            s_id = SERVER_S1;
+                        else if(conn_device_S2)
+                            s_id = SERVER_S2;
+                        else if(conn_device_S3)
+                            s_id = SERVER_S3;
+
+                        //(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                        //                   get_internal_client_connid(s_id),s_id);
+                        if(wants_to_discover){
+                            ESP_LOGE(GATTS_TAG,"I want to discover some routing table");
+                            exchange_routing_table_callback(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id));       
+                        }
+
+                        else if(wants_to_send_routing_table){
+                            ESP_LOGE(GATTS_TAG,"I want to send my routing table entries");
+                            send_routing_table_callback(get_my_MAC(),get_internal_client_serverMAC(s_id),
+                                                        get_internal_client_gattif(s_id),get_internal_client_connid(s_id),s_id);
+                            wants_to_send_routing_table = false;
+                            wants_to_discover = true;
+                        }
+                }
                 return;
             }
         }

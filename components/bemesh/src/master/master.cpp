@@ -762,5 +762,12 @@ namespace bemesh{
         return;
     }
 
+    uint8_t Master::send_notification(uint8_t conn_id,uint8_t characteristic,uint8_t* data,
+                                    uint8_t data_size)
+    {
+        ESP_LOGE(GATTS_TAG,"In sen notification");
+        return 0;
+    }
+
 }
 

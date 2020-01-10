@@ -109,6 +109,7 @@ namespace bemesh{
                         break;
                     }
                 }
+                bemesh_errno = E_WRITE_CHR;
                 break;
             }
             case Mandatory:{

@@ -93,6 +93,14 @@ extern bool becoming_server;
 
 extern bool wants_to_discover;
 extern bool wants_to_send_routing_table;
+extern bool conn_device_S1;
+extern bool conn_device_S2;
+extern bool conn_device_S3;
+
+extern bool get_service_S1;
+extern bool get_service_S2;
+extern bool get_service_S3;
+
 
 typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t);
 typedef void(*InitCb)(uint8_t);
@@ -105,7 +113,7 @@ typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
 typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t,uint8_t);
 typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
 
-typedef void(*EndScanning)(struct device* list, uint8_t scan_seq); // Returns details of nearby devices
+typedef void(*EndScanning)(struct device* list, uint8_t scan_seq,uint8_t type); // Returns details of nearby devices
 typedef void(*ServerLost)();
 
 

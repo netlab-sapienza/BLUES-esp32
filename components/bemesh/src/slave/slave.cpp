@@ -399,28 +399,45 @@ namespace bemesh{
         ret = mes_handler.installTxCb(&transmission_callback);
         assert(ret == Success);
         //Install reception callback for messages. Extra arguments to be added.
-        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,slave_message_extra_args);
-        assert(ret == Success);
-        ret = mes_handler.installTxOps(ROUTING_DISCOVERY_RES_ID,slave_message_extra_args);
-        assert(ret == Success);
+        //ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,slave_message_extra_args);
+        //assert(ret == Success);
+        //ret = mes_handler.installTxOps(ROUTING_DISCOVERY_RES_ID,slave_message_extra_args);
+        //assert(ret == Success);
         ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,slave_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,reception_callback,nullptr);
+        ret = mes_handler.installTxOps(ROUTING_PING_ID,slave_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&reception_callback,nullptr);
-        assert(ret == Success);
+        
+
+        //ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,reception_callback,nullptr);
+        //assert(ret == Success);
+        //ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&reception_callback,nullptr);
+        //assert(ret == Success);
         ret = mes_handler.installOps(ROUTING_UPDATE_ID,&reception_callback,nullptr);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_PING_ID,&reception_callback,nullptr);
         assert(ret == Success);
         
         ESP_LOGE(GATTC_TAG,"Finished installing all things");
         uint8_t characteristic = IDX_CHAR_VAL_A;
         int BUFFER_SIZE = 6;
         uint8_t buffer[BUFFER_SIZE] = {1,2,3,4,5,6};
+
+        //We try to write something.
         ESP_LOGE(GATTC_TAG,"I'm about to write something on the server");
         int i;
         write_policy_t policy = Standard;
-        for(i = 0; i<5; i++)
-            write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
+        
+        //It should be thread safe by the way.
+        int old_errno = bemesh_errno;
+        ErrStatus write_ret = write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
+        if(write_ret != Success)
+            ESP_LOGE(GATTC_TAG,"Errore in write characteristic: %d",write_ret);
+        if(bemesh_errno == E_WRITE_CHR){
+            ESP_LOGE(GATTC_TAG, "Errore nella write: E_WRITE_CHR");
+        }
+        bemesh_errno = old_errno;
+
     }
 
    
