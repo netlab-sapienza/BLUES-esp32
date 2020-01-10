@@ -471,7 +471,6 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         server = 0;
         break;
     case ESP_GATTC_CONNECT_EVT:{
-		scan_seq = 0;
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_CONNECT_EVT conn_id %d, if %d", p_data->connect.conn_id, gattc_if);
         gl_profile_tab2[PROFILE_A_APP_ID].conn_id = p_data->connect.conn_id;
         memcpy(gl_profile_tab2[PROFILE_A_APP_ID].remote_bda, p_data->connect.remote_bda, sizeof(esp_bd_addr_t));
@@ -489,7 +488,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             ESP_LOGE(GATTC_TAG, "open failed, status %d", p_data->open.status);
             break;
         }
-        //scan_seq = 0;
+        scan_seq = 0;
         ESP_LOGI(GATTC_TAG, "open success");
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -821,8 +820,8 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			//ESP_LOGE(GATTC_TAG, "I didn't find a server! I'm going to be a server...");
 			ESP_LOGE(GATTC_TAG, "End of scanning!");
-			//scan_seq = 0;
 			(*endscanning_cb)(scan_res, scan_seq);
+			scan_seq = 0;
 			//unregister_client();
 			//gatt_server_main();
 			
@@ -2296,11 +2295,11 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-			scan_seq = 0;
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
 			(*endscanning_cb)(scan_res, scan_seq);
+			scan_seq = 0;
             break;
         default:
             break;
@@ -2427,11 +2426,11 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-			scan_seq = 0;
-            //esp_ble_gap_stop_scanning();
+			//esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S2);
 			esp_ble_gap_start_advertising(&adv_params);
 			(*endscanning_cb)(scan_res, scan_seq);
+			scan_seq = 0;
             break;
         default:
             break;
@@ -2558,11 +2557,11 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-            scan_seq = 0;
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S3);
 			esp_ble_gap_start_advertising(&adv_params);
 			(*endscanning_cb)(scan_res, scan_seq);
+			scan_seq = 0;
             break;
         default:
             break;
