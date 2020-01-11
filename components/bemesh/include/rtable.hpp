@@ -17,7 +17,7 @@ namespace bemesh {
 
   enum RoutingFlags {
     Reachable=0x01,
-    Client=0x02,
+    Passive=0x02,
     Internet=0x04,
     Gps=0x08,
     //... TODO
