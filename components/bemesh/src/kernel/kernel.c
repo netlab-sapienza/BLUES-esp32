@@ -24,6 +24,10 @@ ShutDownCb shutdown_cb;
 EndScanning endscanning_cb;
 ServerLost serverlost_cb;
 
+SSC_Active ssc_active;
+SSC_Passive ssc_passive;
+
+
 
 /*
  *  	SETTINGS
@@ -471,7 +475,6 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         server = 0;
         break;
     case ESP_GATTC_CONNECT_EVT:{
-		scan_seq = 0;
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_CONNECT_EVT conn_id %d, if %d", p_data->connect.conn_id, gattc_if);
         gl_profile_tab2[PROFILE_A_APP_ID].conn_id = p_data->connect.conn_id;
         memcpy(gl_profile_tab2[PROFILE_A_APP_ID].remote_bda, p_data->connect.remote_bda, sizeof(esp_bd_addr_t));
@@ -489,7 +492,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             ESP_LOGE(GATTC_TAG, "open failed, status %d", p_data->open.status);
             break;
         }
-        //scan_seq = 0;
+        scan_seq = 0;
         ESP_LOGI(GATTC_TAG, "open success");
         break;
     case ESP_GATTC_CFG_MTU_EVT:
@@ -821,8 +824,8 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			//ESP_LOGE(GATTC_TAG, "I didn't find a server! I'm going to be a server...");
 			ESP_LOGE(GATTC_TAG, "End of scanning!");
-			//scan_seq = 0;
-			(*endscanning_cb)(scan_res, scan_seq);
+			(*endscanning_cb)(scan_res, scan_seq,CLIENT_SERVER);
+			scan_seq = 0;
 			//unregister_client();
 			//gatt_server_main();
 			
@@ -1124,7 +1127,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         for(k=0; k<6; k++) {
                             MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
                         }
-
+						/*
                         //If something's wrong we'll see 66 in the logs.
                         uint8_t s_id = 66;
                         if(conn_device_S1)
@@ -1149,7 +1152,9 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                             wants_to_send_routing_table = false;
                             wants_to_discover = true;
                         }
-
+						*/
+						
+						(*ssc_passive)(param->connect.conn_id);
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
 						esp_ble_gap_start_advertising(&adv_params);
@@ -1430,6 +1435,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             ESP_LOGE(GATTC_TAG, "config MTU error, error code = %x", mtu_ret);
         }
         
+        (*ssc_active)(SERVER_S1, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         scan_seq = 0;
@@ -1722,6 +1728,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
+        (*ssc_active)(SERVER_S2, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -1974,6 +1981,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
+        (*ssc_active)(SERVER_S3, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -2266,7 +2274,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						ESP_LOGE(GATTC_TAG, "Too many servers here!");
 						break;
 					}
-						
+					/*	
 					int i,k;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 						uint8_t check = 1;
@@ -2275,7 +2283,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						}
 						if(check) break; // This MAC is already in the list of connected devices
 					}			
-					
+					*/
 					/*
 					ESP_LOGI(GATTC_TAG, "searched device %s, connect is %d\n", remote_device_name,conn_device_S1);
                     if (conn_device_S1 == false) {
@@ -2296,11 +2304,11 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-			scan_seq = 0;
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res, scan_seq);
+			(*endscanning_cb)(scan_res, scan_seq,SERVER_SERVER);
+			scan_seq = 0;
             break;
         default:
             break;
@@ -2398,6 +2406,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						ESP_LOGE(GATTC_TAG, "Too many servers here!");
 						break;
 					}	
+					/*
 					int i,k;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 						uint8_t check = 1;
@@ -2406,7 +2415,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						}
 						if(check) break; // This MAC is already in the list of connected devices
 					}			
-					
+					*/
 					/*
 					ESP_LOGI(GATTC_TAG, "searched device %s\n", remote_device_name);
                     if (conn_device_S2 == false) {
@@ -2427,11 +2436,11 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-			scan_seq = 0;
-            //esp_ble_gap_stop_scanning();
+			//esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S2);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res, scan_seq);
+			(*endscanning_cb)(scan_res, scan_seq,SERVER_SERVER);
+			scan_seq = 0;
             break;
         default:
             break;
@@ -2529,6 +2538,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						ESP_LOGE(GATTC_TAG, "Too many servers here!");
 						break;
 					}	
+					/*
 					int i,k;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 						uint8_t check = 1;
@@ -2537,7 +2547,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						}
 						if(check) break; // This MAC is already in the list of connected devices
 					}			
-					
+					*/
 					/*
 					ESP_LOGI(GATTC_TAG, "searched device %s\n", remote_device_name);
                     if (conn_device_S3 == false) {
@@ -2558,11 +2568,11 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-            scan_seq = 0;
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S3);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res, scan_seq);
+			(*endscanning_cb)(scan_res, scan_seq, SERVER_SERVER);
+			scan_seq = 0;
             break;
         default:
             break;
@@ -2709,7 +2719,6 @@ uint8_t find_CHR(uint16_t handle) {
 	}
 	return NOID;
 }
-
 
 void change_name(uint8_t flag, uint8_t idx) {
 	int i = device_name[idx] - '0';
@@ -3081,10 +3090,23 @@ uint8_t install_EndScanning(EndScanning cb) {
 }
 
 uint8_t install_ServerLost(ServerLost cb) {
-	if(!cb)return 1;
+	if(!cb) return 1;
     serverlost_cb = cb;
     return 0;
 }
+
+uint8_t install_SSC_Active(SSC_Active cb) {
+	if(!cb) return 1;
+    ssc_active = cb;
+    return 0;
+}
+
+uint8_t install_SSC_Passive(SSC_Passive cb) {
+	if(!cb) return 1;
+    ssc_passive = cb;
+    return 0;
+}
+
 
 uint8_t get_internal_client_connid(uint8_t client_id) {
 	switch(client_id) {
@@ -3194,9 +3216,8 @@ void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8
 }
 
 uint8_t connectTo(struct device server, uint8_t num_internal_client) {
-	uint8_t dev = get_node_type();
 	esp_err_t ret;
-	if(dev == CLIENT && connect == false) {
+	if(num_internal_client!=0 && connect == false) {
         connect = true;
 		ret = esp_ble_gattc_open(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, server.mac, server.addr_type, true);
 		if(ret != ESP_OK) {

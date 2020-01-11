@@ -93,6 +93,14 @@ extern bool becoming_server;
 
 extern bool wants_to_discover;
 extern bool wants_to_send_routing_table;
+extern bool conn_device_S1;
+extern bool conn_device_S2;
+extern bool conn_device_S3;
+
+extern bool get_service_S1;
+extern bool get_service_S2;
+extern bool get_service_S3;
+
 
 typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t);
 typedef void(*InitCb)(uint8_t);
@@ -105,9 +113,16 @@ typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
 typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t,uint8_t);
 typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
 
-typedef void(*EndScanning)(struct device* list, uint8_t scan_seq); // Returns details of nearby devices
+typedef void(*EndScanning)(struct device* list, uint8_t scan_seq,uint8_t type); // Returns details of nearby devices
 typedef void(*ServerLost)();
 
+/****** SERVER - SERVER COMMUNICATION [SSC]
+ * 	ACTIVE: internal_client connects to a server: can perform a write_chr / read_chr
+ *  PASSIVE: server has a new internal_client connected: can only perform a notification
+*******/
+
+typedef void(*SSC_Active)(uint8_t internal_client_id, uint8_t conn_id); // internal_client_id is the client calling the cb, can be SERVER_S1 / S2 / S3. conn_id is the connection id given by the internal_client to the new server
+typedef void(*SSC_Passive)(uint8_t conn_id); // conn_id is the connection id given by the server to the new internal_client
 
 
 //
@@ -208,6 +223,8 @@ uint8_t install_SendRoutingTableCb(SendRoutingTableCb cb); //Same as above.
 uint8_t install_EndScanning(EndScanning cb); // Triggered when the scan process of a client is over (including an internal_client)
 uint8_t install_ServerLost(ServerLost cb); // Triggered when the client is connected to a server and the connection is lost
 
+uint8_t install_SSC_Active(SSC_Active cb);
+uint8_t install_SSC_Passive(SSC_Passive cb);
 
 bool has_ended_scanning();
 

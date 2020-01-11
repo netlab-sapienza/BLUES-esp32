@@ -255,6 +255,11 @@ namespace  bemesh{
 
                 //Wrapper function for MessageHandler::send and MessageHandler::handle
                 void parse_message_send(MessageHeader* header_t);
+
+
+                //Wrapper function for notify client. It will be used to "answer a client" and send message to it
+                uint8_t send_notification(uint8_t conn_id, uint8_t charcteristic,uint8_t* data,
+                                        uint8_t data_size);
                 
 
                 
