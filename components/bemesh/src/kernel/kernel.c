@@ -1127,7 +1127,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         for(k=0; k<6; k++) {
                             MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
                         }
-						/*
+						
                         //If something's wrong we'll see 66 in the logs.
                         uint8_t s_id = 66;
                         if(conn_device_S1)
@@ -1137,8 +1137,11 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         else if(conn_device_S3)
                             s_id = SERVER_S3;
 
-                        //(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
-                        //                   get_internal_client_connid(s_id),s_id);
+                        
+                        (*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                                          get_internal_client_connid(s_id),s_id);
+                        
+                        /*
                         if(wants_to_discover){
                             ESP_LOGE(GATTS_TAG,"I want to discover some routing table");
                             (*exchange_routing_table_cb)(get_my_MAC(),get_internal_client_serverMAC(s_id),
@@ -1296,7 +1299,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			}
 			
             //Send the new mac_address to the server.
-            //(*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
+            (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
 
             break;
         case ESP_GATTS_DISCONNECT_EVT:
@@ -1308,7 +1311,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 							MACS[param->disconnect.conn_id][0], MACS[param->disconnect.conn_id][1], MACS[param->disconnect.conn_id][2],
 								MACS[param->disconnect.conn_id][3], MACS[param->disconnect.conn_id][4], MACS[param->disconnect.conn_id][5]);
             
-            //(*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
+            (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
             
 
             uint8_t i;

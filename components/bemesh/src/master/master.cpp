@@ -662,6 +662,7 @@ namespace bemesh{
                 uint8_t flags = 0;
                 dev_addr_t my_addr = get_router_dev_addr();
                 add_routing_table_entry(addr,my_addr,hops,flags);
+                ESP_LOGE(GATTS_TAG,"Added an entry to the routing table: ");
                 //std::cout<<"Added an entry to the routing table: "<<std::endl;
                 
                 ESP_LOGE(GATTS_TAG,"Sending routing updates to the neighbour list");
@@ -692,6 +693,7 @@ namespace bemesh{
                 dev_addr_t addr = _build_dev_addr(address);
                 connected_server_params_t new_server(server_id,gatt_if,conn_id,addr);
                 add_neighbour(new_server);
+                ESP_LOGE(GATTS_TAG,"Adding a new neighbour ");
 
                 //std::cout<<"New address is: "<<std::endl;
                 /*
