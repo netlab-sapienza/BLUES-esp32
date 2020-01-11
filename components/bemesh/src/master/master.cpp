@@ -192,7 +192,6 @@ namespace bemesh{
         
         //Write something into a characteristic and notify a client.
         char data[PING_RESPONSE_NTF_SIZE] = {'P','i','n','g'};
-
         
 
 
@@ -208,7 +207,7 @@ namespace bemesh{
         
         wants_to_discover = false;
         wants_to_send_routing_table = true;
-        //start_internal_client(SERVER_S2);
+        start_internal_client(SERVER_S2);
         //register_internal_client(SERVER_S2);
 
 
@@ -679,6 +678,7 @@ namespace bemesh{
                 //_print_mac_address(address);
                 dev_addr_t addr = _build_dev_addr(address);
                 remove_routing_table_entry(addr);
+                ESP_LOGE(GATTS_TAG,"Removed an entry to the routing table: ");
                 //std::cout<<"Removed an entry to the routing table: "<<std::endl;
 
                 ESP_LOGE(GATTS_TAG,"Sending routing updates to the neighbour list");
@@ -767,8 +767,10 @@ namespace bemesh{
     uint8_t Master::send_notification(uint8_t conn_id,uint8_t characteristic,uint8_t* data,
                                     uint8_t data_size)
     {
-        ESP_LOGE(GATTS_TAG,"In sen notification");
-        return 0;
+        ESP_LOGE(GATTS_TAG,"In send notification conn_id: %d characteristic: %d",
+                            conn_id, characteristic);
+        uint8_t notification_ret = notify_client(conn_id,characteristic,data,data_size);
+        return notification_ret;
     }
 
 }
