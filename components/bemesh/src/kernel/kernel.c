@@ -24,6 +24,10 @@ ShutDownCb shutdown_cb;
 EndScanning endscanning_cb;
 ServerLost serverlost_cb;
 
+SSC_Active ssc_active;
+SSC_Passive ssc_passive;
+
+
 
 /*
  *  	SETTINGS
@@ -1123,7 +1127,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         for(k=0; k<6; k++) {
                             MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
                         }
-
+						/*
                         //If something's wrong we'll see 66 in the logs.
                         uint8_t s_id = 66;
                         if(conn_device_S1)
@@ -1148,7 +1152,9 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                             wants_to_send_routing_table = false;
                             wants_to_discover = true;
                         }
-
+						*/
+						
+						(*ssc_passive)(param->connect.conn_id);
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
 						esp_ble_gap_start_advertising(&adv_params);
@@ -1429,6 +1435,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             ESP_LOGE(GATTC_TAG, "config MTU error, error code = %x", mtu_ret);
         }
         
+        (*ssc_active)(SERVER_S1, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         scan_seq = 0;
@@ -1721,6 +1728,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
+        (*ssc_active)(SERVER_S2, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -1973,6 +1981,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
+        (*ssc_active)(SERVER_S3, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -2711,7 +2720,6 @@ uint8_t find_CHR(uint16_t handle) {
 	return NOID;
 }
 
-
 void change_name(uint8_t flag, uint8_t idx) {
 	int i = device_name[idx] - '0';
 	if(flag) {
@@ -3082,10 +3090,23 @@ uint8_t install_EndScanning(EndScanning cb) {
 }
 
 uint8_t install_ServerLost(ServerLost cb) {
-	if(!cb)return 1;
+	if(!cb) return 1;
     serverlost_cb = cb;
     return 0;
 }
+
+uint8_t install_SSC_Active(SSC_Active cb) {
+	if(!cb) return 1;
+    ssc_active = cb;
+    return 0;
+}
+
+uint8_t install_SSC_Passive(SSC_Passive cb) {
+	if(!cb) return 1;
+    ssc_passive = cb;
+    return 0;
+}
+
 
 uint8_t get_internal_client_connid(uint8_t client_id) {
 	switch(client_id) {
