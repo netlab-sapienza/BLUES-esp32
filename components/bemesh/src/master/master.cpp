@@ -191,7 +191,9 @@ namespace bemesh{
         ESP_LOGE(GATTS_TAG,"In ping reception callback");
         
         //Write something into a characteristic and notify a client.
+        char data[PING_RESPONSE_NTF_SIZE] = {'P','i','n','g'};
 
+        
 
 
         return;
@@ -206,7 +208,7 @@ namespace bemesh{
         
         wants_to_discover = false;
         wants_to_send_routing_table = true;
-        start_internal_client(SERVER_S2);
+        //start_internal_client(SERVER_S2);
         //register_internal_client(SERVER_S2);
 
 
