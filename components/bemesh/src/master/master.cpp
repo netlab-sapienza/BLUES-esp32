@@ -189,9 +189,100 @@ namespace bemesh{
     
     void Master::ping_reception_callback(MessageHeader* header_t,void * args){
         ESP_LOGE(GATTS_TAG,"In ping reception callback");
+        //Notify to all clients of the ping message.
         
-        //Write something into a characteristic and notify a client.
-        char data[PING_RESPONSE_NTF_SIZE] = {'P','i','n','g'};
+
+        uint8_t pong_flag;
+        RoutingPingMessage* rt_ping_message = (RoutingPingMessage*)header_t;
+        if(rt_ping_message->pong_flag() == PONG_FLAG_VALUE)
+            pong_flag = PONG_FLAG_VALUE;
+        else
+            pong_flag = PING_FLAG_VALUE;
+        uint8_t * server_connids = get_server_connids();
+        int i;
+        for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
+            if(server_connids[i]){
+                if(get_type_connection(server_connids[i]) == CLIENT){
+                    uint8_t * client_address = get_connid_MAC(i);
+                    dev_addr_t cl_addr = _build_dev_addr(client_address);
+                    RoutingPingMessage client_ping_message(cl_addr,rt_ping_message->source(),pong_flag);
+                    uint8_t notify = NOTIFY_YES;
+
+                    ESP_LOGE(GATTS_TAG,"In ping reception callback: beginning to parse all arguments");
+
+                    uint16_t* ptr = (uint16_t*) args;
+                    *ptr = 0;
+                    uint8_t* _ptr = (uint8_t*) (ptr + sizeof(uint16_t));
+                    *_ptr = i;
+                    _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
+                    *_ptr = 0;
+                    _ptr = (uint8_t*)(_ptr + sizeof(uint8_t*));
+                    *_ptr = notify;
+
+                    ESP_LOGE(GATTS_TAG,"In ping reception callback: ended to parse all arguments");
+
+                    ESP_LOGE(GATTS_TAG,"Pinging client: %d ",i);
+
+                    ErrStatus write_ret = mes_handler.send((MessageHeader*)&client_ping_message);
+                    if(write_ret != Success){
+                        ESP_LOGE(GATTS_TAG,"Error in sending the message to notify the client: %d ",i);
+                    }
+                    else{
+                        mes_handler.handle();
+                    }
+
+
+                    }
+                }
+         }
+        
+
+        //Ping all neighbour servers
+        for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
+            connected_server_params_t server = *it;
+            uint16_t  gatt_if = server.gatt_if;
+            uint8_t conn_id = server.conn_id;
+            uint8_t server_id = server.server_id;
+            uint8_t notify = NOTIFY_NO;
+
+            dev_addr_t dest_addr = server.server_mac_address;
+
+            RoutingPingMessage new_routing_ping_message(dest_addr,rt_ping_message->source(),pong_flag);
+
+            ESP_LOGE(GATTS_TAG,"In ping reception callback: beginning to parse all arguments");
+
+            uint16_t* ptr = (uint16_t*) args;
+            *ptr = gatt_if;
+            uint8_t* _ptr = (uint8_t*) (ptr + sizeof(uint16_t));
+            *_ptr = conn_id;
+            _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
+            *_ptr = server_id;
+            _ptr = (uint8_t*)(_ptr + sizeof(uint8_t*));
+            *_ptr = notify;
+
+            ESP_LOGE(GATTS_TAG,"In ping reception callback: ended to parse all arguments");
+            
+            ESP_LOGE(GATTS_TAG, "Sending ping to the neighbour: ");
+            uint8_t _addr[MAC_ADDRESS_SIZE];
+            int i;
+            for(i =0; i<MAC_ADDRESS_SIZE; i++){
+                _addr[i] = dest_addr[i];
+            }
+            esp_log_buffer_hex(GATTS_TAG,_addr,MAC_ADDRESS_SIZE);
+            if(server_id == SERVER_S1 || server_id == SERVER_S2 || server_id == SERVER_S3){
+                ErrStatus status = mes_handler.send((MessageHeader*)&new_routing_ping_message);
+                if(status != Success){
+                    ESP_LOGE(GATTS_TAG,"Error in sending ping to server: %d",server_id);
+                    esp_log_buffer_hex(GATTS_TAG,_addr,MAC_ADDRESS_SIZE);
+                }
+                else{
+                    mes_handler.handle();
+                }
+            }
+
+        }
+        
+        
         
 
 
@@ -296,7 +387,39 @@ namespace bemesh{
     void Master::ping_transmission_callback(uint8_t* buffer,uint8_t size, MessageHeader* header_t,
                                     void* args)
     {
-        ESP_LOGE(GATTS_TAG,"In ping transmission callback");
+        ESP_LOGE(GATTS_TAG,"In ping transmission callback: beginning to parse all arguments");
+
+        uint16_t * ptr = (uint16_t*) args;
+        uint16_t gatt_if = *ptr;
+        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+        uint8_t conn_id = *_ptr;
+        _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
+        uint8_t server_id = *_ptr;
+        _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
+        uint8_t notify = *_ptr;
+
+        ESP_LOGE(GATTS_TAG,"In ping transmission callback: ended to parse all arguments");
+
+        uint8_t characteristic = IDX_CHAR_VAL_A;
+
+        if(notify == NOTIFY_NO){
+            write_policy_t policy = Standard;
+            ErrStatus write_ret = write_characteristic(characteristic,buffer,size,gatt_if,conn_id,
+                                                        policy);
+            if(write_ret != Success){
+                ESP_LOGE(GATTS_TAG,"In ping transmission callback: Error in writing the characteristic: %d",characteristic);
+            }
+        }
+        else{
+            uint8_t notification_ret = send_notification(conn_id,characteristic,buffer,size);
+                                                    
+            if(notification_ret){
+                ESP_LOGE(GATTS_TAG,"In ping transmission callback: Error in notifying the client: %d on the characteristic: %d",conn_id,characteristic);
+            }
+        }
+
+
+
         return;
     }
 

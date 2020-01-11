@@ -135,7 +135,7 @@ namespace bemesh {
     RoutingPingMessage(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_pong);
 
     uint8_t pong_flag(void) const;
-
+    
     // Serialization
     void serialize(std::ostream&) const;
     RoutingPingMessage* create(std::istream&);

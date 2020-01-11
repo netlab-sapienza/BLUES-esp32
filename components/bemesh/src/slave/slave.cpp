@@ -169,7 +169,8 @@ namespace bemesh{
         ESP_LOGE(GATTC_TAG,"In ping transmission callback: we begin to retrieve the arguments");
         //Begin to parse the arguments
         uint16_t* ptr = (uint16_t*) args;
-        uint16_t gattc_if = *ptr;
+        uint16_t gattc_if = *
+        ptr;
         uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
         uint8_t conn_id = *(_ptr);
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
@@ -210,19 +211,31 @@ namespace bemesh{
         ESP_LOGE(GATTC_TAG,"In ping reception callback. Ended to parse all the arguments.");
         
     
-        uint8_t resend_pong_flag = routing_ping_message->pong_flag() +1;
-        ping_data_t p_data(routing_ping_message->source(),routing_ping_message->pong_flag(),conn_id,
+        uint8_t _pong_flag = routing_ping_message->pong_flag();
+        ping_data_t p_data(routing_ping_message->source(),_pong_flag,conn_id,
                                                 gatt_if);
         
-        ESP_LOGE(GATTC_TAG, "Adding ping_data_t element toe the ping response list");
-        add_ping_response(p_data);
+        if(routing_ping_message->pong_flag() == PONG_FLAG_VALUE && same_addresses(routing_ping_message->source(),get_dev_addr(),MAC_ADDRESS_SIZE)){
+            ESP_LOGE(GATTC_TAG,"I received pong from the server. But I sent it");
+
+        }
+        else{
+            ESP_LOGE(GATTC_TAG, "Adding ping_data_t element to the ping response list");
+            add_ping_response(p_data);
+        }
+
+        //Preparing a pong message and rewrite it to the server.
+        characteristic = IDX_CHAR_VAL_A;
+        RoutingPingMessage new_ping_message(routing_ping_message->source(),get_dev_addr(),PONG_FLAG_VALUE);
+        send_message(get_device_gatt_if(),get_device_connection_id(),NULL,
+                        (MessageHeader*)&new_ping_message, characteristic);
 
         
         
 
 
         //Send the pong to the server.
-        ping_server(get_device_gatt_if(),get_server_connection_id(),server_dev_addr,resend_pong_flag);
+        ping_server(get_device_gatt_if(),get_server_connection_id(),server_dev_addr,_pong_flag);
         return;
     }
 
@@ -470,7 +483,7 @@ namespace bemesh{
         dev_addr_t dest_addr = _build_dev_addr(mac_address);
         
         RoutingPingMessage routing_ping_message(src_addr,dest_addr,pong_flag);
-        uint8_t characteristic = IDX_CHAR_VAL_B;
+        uint8_t characteristic = IDX_CHAR_VAL_A;
         ErrStatus ret = send_message(gatt_if,conn_id,mac_address,(MessageHeader*)&routing_ping_message,characteristic);
         if(ret != Success){
             ESP_LOGE(GATTC_TAG,"Error in sending the ping to the connected server");
