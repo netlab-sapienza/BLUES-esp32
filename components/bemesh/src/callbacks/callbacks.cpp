@@ -16,13 +16,16 @@ namespace bemesh{
     }
 
     void Callback::ssc_active_callback(uint8_t internal_client_id){
-        uint8_t BUF_SIZE = 6;
-        uint8_t buffer[BUF_SIZE]={1,1,1,1,1,1};
-        uint8_t other_buff[BUF_SIZE]={5,5,5,5,5,5};
+        uint8_t BUF_SIZE = 10, i;
+        uint8_t* buf = new uint8_t[BUF_SIZE];
+        for(i=0; i<BUF_SIZE; ++i) buf[i] = i;
+        
+        //uint8_t buffer[BUF_SIZE]={1,2,3,4};
+        //uint8_t other_buff[BUF_SIZE]={5,5,5,5,5,5};
         write_policy_t policy = Standard;
         if(master_instance){
             ESP_LOGE(GATTS_TAG,"In ssc_active_callback. writing");
-            master_instance->write_characteristic(IDX_CHAR_VAL_A,buffer,BUF_SIZE,get_internal_client_gattif(internal_client_id),
+            master_instance->write_characteristic(IDX_CHAR_VAL_A,buf,BUF_SIZE,get_internal_client_gattif(internal_client_id),
                                                 get_internal_client_connid(internal_client_id),policy);
 
             
@@ -30,7 +33,7 @@ namespace bemesh{
         }
         else if(slave_instance){
             ESP_LOGE(GATTC_TAG,"In ssc_active_callback. Sending a notification");
-            slave_instance->write_characteristic(IDX_CHAR_VAL_A,buffer,BUF_SIZE,get_gatt_if(),
+            slave_instance->write_characteristic(IDX_CHAR_VAL_A,buf,BUF_SIZE,get_gatt_if(),
                             get_internal_client_connid(internal_client_id),Standard);
         }
         return;

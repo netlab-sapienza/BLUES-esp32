@@ -753,8 +753,10 @@ namespace bemesh{
             write_params->buffer = buffer;
             write_params->buffer_size = buffer_size;
             write_params->policy = policy;
+            ESP_LOGE(GATTC_TAG, "BUFFER THAT INT_CLIENT IS GOING TO WRITE IS:");
+			esp_log_buffer_hex(GATTC_TAG, write_params->buffer, write_params->buffer_size);
             
-            xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)write_params,TASK_PRIORITY,NULL);
+            xTaskCreate(write_characteristic_task,"write_server",WRITE_TASK_STACK_SIZE,write_params,TASK_PRIORITY,NULL);
             
             return Success;
         }        

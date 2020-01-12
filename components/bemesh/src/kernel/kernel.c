@@ -1398,7 +1398,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 void start_scan(void) {
     stop_scan_done = false;
     Isconnecting = false;
-    uint32_t duration = 15;
+    uint32_t duration = 6;
     esp_ble_gap_start_scanning(duration);
 }
 
@@ -2227,7 +2227,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         break;
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
         //the unit of the duration is second
-        uint32_t duration = 15;
+        uint32_t duration = 10;
         esp_ble_gap_start_scanning(duration);
         server_scanning = 1;
         break;
@@ -2279,6 +2279,13 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						ESP_LOGE(GATTC_TAG, "Too many servers here!");
 						break;
 					}
+					uint8_t i;
+					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
+						if(MAC_check(scan_result->scan_rst.bda, MACS[i])) {
+							ESP_LOGI(GATTC_TAG, "I know this server!! It's already connected to me");
+							break;
+						}
+					}
 					/*	
 					int i,k;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
@@ -2309,7 +2316,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-            //esp_ble_gap_stop_scanning();
+            esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
 			(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
@@ -2359,7 +2366,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         break;
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
         //the unit of the duration is second
-        uint32_t duration = 15;
+        uint32_t duration = 10;
         esp_ble_gap_start_scanning(duration);
         server_scanning = 1;
         break;
@@ -2410,6 +2417,14 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						// The number of clients is over the limit
 						ESP_LOGE(GATTC_TAG, "Too many servers here!");
 						break;
+					}
+					
+					uint8_t i;
+					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
+						if(MAC_check(scan_result->scan_rst.bda, MACS[i])) {
+							ESP_LOGI(GATTC_TAG, "I know this server!! It's already connected to me");
+							break;
+						}
 					}	
 					/*
 					int i,k;
@@ -2441,7 +2456,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-			//esp_ble_gap_stop_scanning();
+			esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S2);
 			esp_ble_gap_start_advertising(&adv_params);
 			(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S2);
@@ -2491,7 +2506,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         break;
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
         //the unit of the duration is second
-        uint32_t duration = 15;
+        uint32_t duration = 10;
         esp_ble_gap_start_scanning(duration);
         server_scanning = 1;
         break;
@@ -2543,6 +2558,14 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						ESP_LOGE(GATTC_TAG, "Too many servers here!");
 						break;
 					}	
+					
+					uint8_t i;
+					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
+						if(MAC_check(scan_result->scan_rst.bda, MACS[i])) {
+							ESP_LOGI(GATTC_TAG, "I know this server!! It's already connected to me");
+							break;
+						}
+					}
 					/*
 					int i,k;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
@@ -2573,7 +2596,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			stop_scan_done = true;
-            //esp_ble_gap_stop_scanning();
+            esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S3);
 			esp_ble_gap_start_advertising(&adv_params);
 			(*endscanning_cb)(scan_res, scan_seq, INTERNAL_CLIENT_FLAG,SERVER_S3);

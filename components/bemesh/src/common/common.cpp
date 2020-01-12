@@ -90,16 +90,18 @@ namespace bemesh{
     //A task used to perform writing on charateristics. In esp-idf task ~ thread.
     void write_characteristic_task(void * task_param) {
         task_param_write_t* params = (task_param_write_t*)task_param;
-    
+		ESP_LOGE(GATTC_TAG, "BUFFER THAT TASK IS GOING TO WRITE IS:");
+		esp_log_buffer_hex(GATTC_TAG, params->buffer, params->buffer_size);
+		
         uint8_t conn_id = params->conn_id;
         uint16_t gatt_if = params->gatt_if;
         uint8_t charact = params->characteristic;
         uint8_t * data = params->buffer;
         uint16_t buffer_size = params->buffer_size;
         write_policy_t  policy = params->policy;
-		ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE 3: conn_id %d, gatt_if %d", conn_id, gatt_if);
+		//ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE 3: conn_id %d, gatt_if %d", conn_id, gatt_if);
         ESP_LOGE(GATTS_TAG,"In write characteristic task. policy is: %d ",policy);
-
+        
         switch (policy){
             case Standard:{
                 int i;
@@ -130,6 +132,8 @@ namespace bemesh{
         vTaskDelete(NULL);
 
     }
+    
+    
     
     bool same_addresses(dev_addr_t addr1,dev_addr_t addr2, uint8_t address_size){
         bool ret = true;
