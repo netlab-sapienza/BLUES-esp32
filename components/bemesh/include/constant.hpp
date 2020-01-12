@@ -7,7 +7,7 @@
 #define UPDATE_REMOVE_CLIENT 1
 #define UPDATE_ADD_SERVER 2
 #define UPDATE_REMOVE_SERVER 3
-#define WRITE_TASK_STACK_SIZE 40960 //40 bytes stack allocated for the task.
+#define WRITE_TASK_STACK_SIZE 81920 //80 bytes stack allocated for the task.
 #define TASK_PRIORITY 5 //See https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/freertos.html
 #define MASTER_EXTRA_ARGS_BUFFER_SIZE 256
 #define SLAVE_EXTRA_ARGS_BUFFER_SIZE 256

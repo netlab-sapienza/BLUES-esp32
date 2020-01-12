@@ -17,11 +17,15 @@ namespace bemesh{
     void Callback::ssc_active_callback(uint8_t internal_client_id){
         uint8_t BUF_SIZE = 6;
         uint8_t buffer[BUF_SIZE]={1,1,1,1,1,1};
-        
+        uint8_t other_buff[BUF_SIZE]={5,5,5,5,5,5};
+        write_policy_t policy = Standard;
         if(master_instance){
             ESP_LOGE(GATTS_TAG,"In ssc_active_callback. writing");
             master_instance->write_characteristic(IDX_CHAR_VAL_A,buffer,BUF_SIZE,get_internal_client_gattif(internal_client_id),
-                                            get_internal_client_connid(internal_client_id),Standard);
+                                                get_internal_client_connid(internal_client_id),policy);
+
+            
+            
         }
         else if(slave_instance){
             ESP_LOGE(GATTC_TAG,"In ssc_active_callback. Sending a notification");

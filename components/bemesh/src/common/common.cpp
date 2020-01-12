@@ -97,6 +97,9 @@ namespace bemesh{
         uint8_t * data = params->buffer;
         uint16_t buffer_size = params->buffer_size;
         write_policy_t  policy = params->policy;
+
+        ESP_LOGE(GATTS_TAG,"In write characteristic task. policy is: %d ",policy);
+
         switch (policy){
             case Standard:{
                 int i;

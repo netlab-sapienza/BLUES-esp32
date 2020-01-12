@@ -33,6 +33,7 @@
 #include "master.hpp"
 #include "slave.hpp"
 #include "routing.hpp"
+#include "common.hpp"
 #include <assert.h>
 #include <stdlib.h>
 #include <iostream>
