@@ -10,6 +10,7 @@ namespace bemesh{
     Callback::Callback(){
             int i;
             //Set the discarded devices to false in principle.
+            ESP_LOGE(FUNCTOR_TAG,"In Callback ctor!!");
             for(i = 0; i<SCAN_LIMIT; ++i)
                 discarded[i] = false;
     }
@@ -57,7 +58,7 @@ namespace bemesh{
                 esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                register_internal_client(SERVER_S1);
+                //register_internal_client(SERVER_S1);
                 return;
             }
             case CLIENT:{
