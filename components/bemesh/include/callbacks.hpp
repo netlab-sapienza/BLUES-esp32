@@ -61,7 +61,8 @@ namespace bemesh{
         static void send_routing_table_callback(uint8_t* src,uint8_t* dst, uint16_t gatt_if,
                                                 uint8_t conn_id,uint8_t server_id);
 
-        static void endscanning_callback(device * device_list,uint8_t scan_seq,uint8_t type);
+        static void endscanning_callback(device * device_list,uint8_t scan_seq,uint8_t flag_internal,
+                                        uint8_t server_id);
         static void server_lost_callback(void);
 
 
@@ -72,8 +73,14 @@ namespace bemesh{
         
 
 
-        static int choose_server(device* device_list, int device_list_size, connection_policy_t policy);
-        static int connect_to_server(device* device_list, int device_list_size,connection_policy_t policy);
+        static int choose_server(device* device_list, int device_list_size,
+                             uint8_t internal_flag,uint8_t server_id,
+                             connection_policy_t policy);
+        
+        static int connect_to_server(device* device_list, int device_list_size,
+                                uint8_t internal_flag,uint8_t server_id,
+                                connection_policy_t policy);
+
         static bool check_all_discarded();
         static void reset_discarded();
 

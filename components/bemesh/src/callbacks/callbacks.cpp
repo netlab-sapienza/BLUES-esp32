@@ -58,7 +58,7 @@ namespace bemesh{
                 esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                //register_internal_client(SERVER_S1);
+                register_internal_client(SERVER_S1);
                 return;
             }
             case CLIENT:{
@@ -153,7 +153,8 @@ namespace bemesh{
     }
 
     //Choose a server to connect to according to the policy "policy"
-    int Callback::choose_server(device* device_list,int device_list_size,connection_policy_t policy){
+    int Callback::choose_server(device* device_list,int device_list_size,uint8_t internal_flag,
+                                uint8_t server_id, connection_policy_t policy){
         
         //Check if the buffer exists.
         if(device_list == NULL)
@@ -222,18 +223,21 @@ namespace bemesh{
         for(i = 0; i<SCAN_LIMIT;++i)
             discarded[i] = false;
     }
-    int Callback::connect_to_server(device* device_list, int device_list_size,connection_policy_t policy){
+    int Callback::connect_to_server(device* device_list, int device_list_size,
+                                    uint8_t internal_flag, uint8_t server_id,
+                                    connection_policy_t policy){
         bool all_discarded = check_all_discarded();
         //ESP_LOGE(GATTC_TAG,"I checked");
         if(all_discarded)
             return -1;
         else{
-            int server_pos = choose_server(device_list,device_list_size,policy);
-            uint8_t connection_ret = connectTo(device_list[server_pos],0);
+            int server_pos = choose_server(device_list,device_list_size,internal_flag,server_id,policy);
+            uint8_t connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
             if(connection_ret){
                 discarded[server_pos] = true;
                 //We recursively look for another server keeping track of the discarded one.
-                int conn_ret = connect_to_server(device_list,device_list_size,policy);
+                int conn_ret = connect_to_server(device_list,device_list_size,internal_flag,
+                                        server_id,policy);
                 return conn_ret;
             }
             else{
@@ -243,7 +247,8 @@ namespace bemesh{
         }
     }
 
-    void Callback::endscanning_callback(device* device_list,uint8_t count,uint8_t type){
+    void Callback::endscanning_callback(device* device_list,uint8_t count,
+                                        uint8_t internal_flag,uint8_t server_id){
         int i;
         
 
@@ -277,21 +282,16 @@ namespace bemesh{
             return;
         }
         else{
-            int server_pos = connect_to_server(device_list,count,policy);
+            int server_pos = connect_to_server(device_list,count,internal_flag,server_id,policy);
             if(server_pos == -1){
                 ESP_LOGE(GATTC_TAG, "Unable to connect to any server");
                 return;
             }
             else{
                 ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
-                if(type == CLIENT_SERVER){
-                    //We initialize client object if it is a client_server connection.
+                if(CLIENT_FLAG)
                     init_callback(CLIENT);
-                }
-                else if(type == SERVER_SERVER){
-                    
-                }
-                return;
+                
             }
         }
     }

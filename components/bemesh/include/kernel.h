@@ -113,7 +113,8 @@ typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
 typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t,uint8_t);
 typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
 
-typedef void(*EndScanning)(struct device* list, uint8_t scan_seq,uint8_t type); // Returns details of nearby devices
+typedef void(*EndScanning)(struct device* list, uint8_t scan_seq,uint8_t internal_flag,
+                                uint8_t server_id); // Returns details of nearby devices
 typedef void(*ServerLost)();
 
 /****** SERVER - SERVER COMMUNICATION [SSC]

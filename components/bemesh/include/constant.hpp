@@ -19,6 +19,11 @@
 #define NOTIFY_YES 1
 #define NOTIFY_NO 0
 
+
+#define INTERNAL_CLIENT_FLAG 1
+#define CLIENT_FLAG 0
+
+
 #define CLIENT_SERVER 0
 #define SERVER_SERVER 1
 
