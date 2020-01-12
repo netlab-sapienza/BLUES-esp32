@@ -65,7 +65,7 @@ namespace bemesh{
 
 
         //internal_client_id must be one of SERVER_S1, SERVER_S2 or SERVER_S3
-        static void ssc_active_callback(uint8_t internal_client_id, uint8_t conn_id);
+        static void ssc_active_callback(uint8_t internal_client_id);
 
         static void ssc_passive_callback(uint8_t conn_id);
         

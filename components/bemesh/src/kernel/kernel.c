@@ -1438,7 +1438,6 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             ESP_LOGE(GATTC_TAG, "config MTU error, error code = %x", mtu_ret);
         }
         
-        (*ssc_active)(SERVER_S1, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         scan_seq = 0;
@@ -1591,6 +1590,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 				for(i=1; i<p_data->notify.value_len; i++) {
 					CHR_HANDLES[i-1] = p_data->notify.value[i];
 				}
+				(*ssc_active)(SERVER_S1);
 			}
 			
 			// Notifications on a characteristic => I'm going to read the char
@@ -1731,7 +1731,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
-        (*ssc_active)(SERVER_S2, param->open.conn_id);
+        
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -1886,6 +1886,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 				for(i=1; i<p_data->notify.value_len; i++) {
 					CHR_HANDLES[i-1] = p_data->notify.value[i];
 				}
+				(*ssc_active)(SERVER_S2);
 			}
 			
 			// Notifications on a characteristic => I'm going to read the char
@@ -1984,7 +1985,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
-        (*ssc_active)(SERVER_S3, param->open.conn_id);
+        
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -2139,6 +2140,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 				for(i=1; i<p_data->notify.value_len; i++) {
 					CHR_HANDLES[i-1] = p_data->notify.value[i];
 				}
+				(*ssc_active)(SERVER_S3);
 			}
 			
 			// Notifications on a characteristic => I'm going to read the char
@@ -2690,10 +2692,12 @@ uint8_t write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* arr
 		
 		if(ret) {
 			ESP_LOGE(GATTC_TAG, "Error writing the char: %x", ret);
+			ESP_LOGE(GATTC_TAG, "Conn_id is %d, Gatt_if is %d", conn_id, gattc_if);
 			return 1;
 		}
         else{
             ESP_LOGE(GATTC_TAG,"Success writing the char: %x",ret);
+            ESP_LOGE(GATTC_TAG, "Conn_id is %d, Gatt_if is %d", conn_id, gattc_if);
         }
 		//vTaskDelay(200);
 		return 0;

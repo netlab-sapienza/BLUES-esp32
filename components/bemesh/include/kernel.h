@@ -121,7 +121,7 @@ typedef void(*ServerLost)();
  *  PASSIVE: server has a new internal_client connected: can only perform a notification
 *******/
 
-typedef void(*SSC_Active)(uint8_t internal_client_id, uint8_t conn_id); // internal_client_id is the client calling the cb, can be SERVER_S1 / S2 / S3. conn_id is the connection id given by the internal_client to the new server
+typedef void(*SSC_Active)(uint8_t internal_client_id); // internal_client_id is the client calling the cb, can be SERVER_S1 / S2 / S3
 typedef void(*SSC_Passive)(uint8_t conn_id); // conn_id is the connection id given by the server to the new internal_client
 
 
