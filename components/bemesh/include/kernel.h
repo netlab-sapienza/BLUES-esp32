@@ -113,7 +113,8 @@ typedef void(*ExchangeRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t);
 typedef void (*SendRoutingTableCb)(uint8_t*,uint8_t*,uint16_t,uint8_t,uint8_t);
 typedef void(*ReceivedPacketCb)(uint8_t* packet,uint16_t len);
 
-typedef void(*EndScanning)(struct device* list, uint8_t scan_seq,uint8_t type); // Returns details of nearby devices
+typedef void(*EndScanning)(struct device* list, uint8_t scan_seq,uint8_t internal_flag,
+                                uint8_t server_id); // Returns details of nearby devices
 typedef void(*ServerLost)();
 
 /****** SERVER - SERVER COMMUNICATION [SSC]
@@ -121,7 +122,7 @@ typedef void(*ServerLost)();
  *  PASSIVE: server has a new internal_client connected: can only perform a notification
 *******/
 
-typedef void(*SSC_Active)(uint8_t internal_client_id, uint8_t conn_id); // internal_client_id is the client calling the cb, can be SERVER_S1 / S2 / S3. conn_id is the connection id given by the internal_client to the new server
+typedef void(*SSC_Active)(uint8_t internal_client_id); // internal_client_id is the client calling the cb, can be SERVER_S1 / S2 / S3
 typedef void(*SSC_Passive)(uint8_t conn_id); // conn_id is the connection id given by the server to the new internal_client
 
 
@@ -132,7 +133,7 @@ typedef void(*SSC_Passive)(uint8_t conn_id); // conn_id is the connection id giv
 
 // Scanning functions
 void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8_t adv_len); // Add or update the device in the array of scanned devices
-uint8_t connectTo(struct device dev, uint8_t num_internal_client); // Establish a connection with dev and returns 1 if an error eccurs, 0 otherwise.
+uint8_t connectTo(struct device dev,uint8_t flag_internal, uint8_t num_internal_client); // Establish a connection with dev and returns 1 if an error eccurs, 0 otherwise. flag internal is 1 if an internal_client is calling it => set num_internal client. otherwise both parameters are 0.
 // connectTo can be used in a server (as internal_client) with the internal_client number. Otherwise leave it to 0.
 void scan(uint8_t duration, uint8_t num_internal_client); // Start scanning with duration in seconds. Eventually add internal_client or leave it to 0.
 

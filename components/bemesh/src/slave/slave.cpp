@@ -169,7 +169,8 @@ namespace bemesh{
         ESP_LOGE(GATTC_TAG,"In ping transmission callback: we begin to retrieve the arguments");
         //Begin to parse the arguments
         uint16_t* ptr = (uint16_t*) args;
-        uint16_t gattc_if = *ptr;
+        uint16_t gattc_if = *
+        ptr;
         uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
         uint8_t conn_id = *(_ptr);
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
@@ -210,19 +211,31 @@ namespace bemesh{
         ESP_LOGE(GATTC_TAG,"In ping reception callback. Ended to parse all the arguments.");
         
     
-        uint8_t resend_pong_flag = routing_ping_message->pong_flag() +1;
-        ping_data_t p_data(routing_ping_message->source(),routing_ping_message->pong_flag(),conn_id,
+        uint8_t _pong_flag = routing_ping_message->pong_flag();
+        ping_data_t p_data(routing_ping_message->source(),_pong_flag,conn_id,
                                                 gatt_if);
         
-        ESP_LOGE(GATTC_TAG, "Adding ping_data_t element toe the ping response list");
-        add_ping_response(p_data);
+        if(routing_ping_message->pong_flag() == PONG_FLAG_VALUE && same_addresses(routing_ping_message->source(),get_dev_addr(),MAC_ADDRESS_SIZE)){
+            ESP_LOGE(GATTC_TAG,"I received pong from the server. But I sent it");
+
+        }
+        else{
+            ESP_LOGE(GATTC_TAG, "Adding ping_data_t element to the ping response list");
+            add_ping_response(p_data);
+        }
+
+        //Preparing a pong message and rewrite it to the server.
+        characteristic = IDX_CHAR_VAL_A;
+        RoutingPingMessage new_ping_message(routing_ping_message->source(),get_dev_addr(),PONG_FLAG_VALUE);
+        send_message(get_device_gatt_if(),get_device_connection_id(),NULL,
+                        (MessageHeader*)&new_ping_message, characteristic);
 
         
         
 
 
         //Send the pong to the server.
-        ping_server(get_device_gatt_if(),get_server_connection_id(),server_dev_addr,resend_pong_flag);
+        ping_server(get_device_gatt_if(),get_server_connection_id(),server_dev_addr,_pong_flag);
         return;
     }
 
@@ -324,7 +337,7 @@ namespace bemesh{
 
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B ||
             characteristic == IDX_CHAR_VAL_C )
-        {
+        {	/*
             task_param_write_t write_params;
             write_params.conn_id = conn_id;
             write_params.gatt_if = gattc_if;
@@ -335,7 +348,18 @@ namespace bemesh{
             //std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
             //std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
             //Spara un task per scrivere su una caratteristica.
-            xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)&write_params,TASK_PRIORITY,NULL);
+            
+            ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE 2: conn_id %d, gatt_if %d", write_params.conn_id, write_params.gatt_if);
+            */
+            task_param_write_t* write_params = new task_param_write_t;
+            write_params->conn_id = conn_id;
+            write_params->gatt_if = gattc_if;
+            write_params->characteristic = characteristic;
+            write_params->buffer = buffer;
+            write_params->buffer_size = buffer_size;
+            write_params->policy = policy;
+            
+            xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)write_params,TASK_PRIORITY,NULL);
             return Success;
         }        
         
@@ -430,6 +454,7 @@ namespace bemesh{
         
         //It should be thread safe by the way.
         int old_errno = bemesh_errno;
+        ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE: conn_id %d, gatt_if %d", conn_id, gatt_if);
         ErrStatus write_ret = write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
         if(write_ret != Success)
             ESP_LOGE(GATTC_TAG,"Errore in write characteristic: %d",write_ret);
@@ -470,7 +495,7 @@ namespace bemesh{
         dev_addr_t dest_addr = _build_dev_addr(mac_address);
         
         RoutingPingMessage routing_ping_message(src_addr,dest_addr,pong_flag);
-        uint8_t characteristic = IDX_CHAR_VAL_B;
+        uint8_t characteristic = IDX_CHAR_VAL_A;
         ErrStatus ret = send_message(gatt_if,conn_id,mac_address,(MessageHeader*)&routing_ping_message,characteristic);
         if(ret != Success){
             ESP_LOGE(GATTC_TAG,"Error in sending the ping to the connected server");

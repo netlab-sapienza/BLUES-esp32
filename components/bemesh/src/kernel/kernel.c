@@ -824,7 +824,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			//ESP_LOGE(GATTC_TAG, "I didn't find a server! I'm going to be a server...");
 			ESP_LOGE(GATTC_TAG, "End of scanning!");
-			(*endscanning_cb)(scan_res, scan_seq,CLIENT_SERVER);
+			(*endscanning_cb)(scan_res, scan_seq,CLIENT_FLAG,0);
 			scan_seq = 0;
 			//unregister_client();
 			//gatt_server_main();
@@ -1127,7 +1127,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         for(k=0; k<6; k++) {
                             MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
                         }
-						/*
+						
                         //If something's wrong we'll see 66 in the logs.
                         uint8_t s_id = 66;
                         if(conn_device_S1)
@@ -1137,8 +1137,11 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         else if(conn_device_S3)
                             s_id = SERVER_S3;
 
-                        //(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
-                        //                   get_internal_client_connid(s_id),s_id);
+                        
+                        (*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                                          get_internal_client_connid(s_id),s_id);
+                        
+                        /*
                         if(wants_to_discover){
                             ESP_LOGE(GATTS_TAG,"I want to discover some routing table");
                             (*exchange_routing_table_cb)(get_my_MAC(),get_internal_client_serverMAC(s_id),
@@ -1296,7 +1299,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			}
 			
             //Send the new mac_address to the server.
-            //(*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
+            (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
 
             break;
         case ESP_GATTS_DISCONNECT_EVT:
@@ -1308,7 +1311,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 							MACS[param->disconnect.conn_id][0], MACS[param->disconnect.conn_id][1], MACS[param->disconnect.conn_id][2],
 								MACS[param->disconnect.conn_id][3], MACS[param->disconnect.conn_id][4], MACS[param->disconnect.conn_id][5]);
             
-            //(*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
+            (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
             
 
             uint8_t i;
@@ -1435,7 +1438,6 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             ESP_LOGE(GATTC_TAG, "config MTU error, error code = %x", mtu_ret);
         }
         
-        (*ssc_active)(SERVER_S1, param->open.conn_id);
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         scan_seq = 0;
@@ -1588,6 +1590,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 				for(i=1; i<p_data->notify.value_len; i++) {
 					CHR_HANDLES[i-1] = p_data->notify.value[i];
 				}
+				(*ssc_active)(SERVER_S1);
 			}
 			
 			// Notifications on a characteristic => I'm going to read the char
@@ -1728,7 +1731,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
-        (*ssc_active)(SERVER_S2, param->open.conn_id);
+        
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -1883,6 +1886,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 				for(i=1; i<p_data->notify.value_len; i++) {
 					CHR_HANDLES[i-1] = p_data->notify.value[i];
 				}
+				(*ssc_active)(SERVER_S2);
 			}
 			
 			// Notifications on a characteristic => I'm going to read the char
@@ -1981,7 +1985,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         }
         
         scan_seq = 0;
-        (*ssc_active)(SERVER_S3, param->open.conn_id);
+        
         change_name(1,SERVERS_IDX);
         //ID_TABLE[param->open.conn_id] = SERVER;
         server_is_busy = false;
@@ -2136,6 +2140,7 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 				for(i=1; i<p_data->notify.value_len; i++) {
 					CHR_HANDLES[i-1] = p_data->notify.value[i];
 				}
+				(*ssc_active)(SERVER_S3);
 			}
 			
 			// Notifications on a characteristic => I'm going to read the char
@@ -2307,7 +2312,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res, scan_seq,SERVER_SERVER);
+			(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
 			scan_seq = 0;
             break;
         default:
@@ -2439,7 +2444,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 			//esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S2);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res, scan_seq,SERVER_SERVER);
+			(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S2);
 			scan_seq = 0;
             break;
         default:
@@ -2571,7 +2576,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             //esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S3);
 			esp_ble_gap_start_advertising(&adv_params);
-			(*endscanning_cb)(scan_res, scan_seq, SERVER_SERVER);
+			(*endscanning_cb)(scan_res, scan_seq, INTERNAL_CLIENT_FLAG,SERVER_S3);
 			scan_seq = 0;
             break;
         default:
@@ -2687,10 +2692,12 @@ uint8_t write_CHR(uint16_t gattc_if, uint16_t conn_id, uint8_t chr, uint8_t* arr
 		
 		if(ret) {
 			ESP_LOGE(GATTC_TAG, "Error writing the char: %x", ret);
+			ESP_LOGE(GATTC_TAG, "Conn_id is %d, Gatt_if is %d", conn_id, gattc_if);
 			return 1;
 		}
         else{
             ESP_LOGE(GATTC_TAG,"Success writing the char: %x",ret);
+            ESP_LOGE(GATTC_TAG, "Conn_id is %d, Gatt_if is %d", conn_id, gattc_if);
         }
 		//vTaskDelay(200);
 		return 0;
@@ -3215,13 +3222,15 @@ void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8
 	free(dest);
 }
 
-uint8_t connectTo(struct device server, uint8_t num_internal_client) {
+uint8_t connectTo(struct device server, uint8_t flag_internal, uint8_t num_internal_client) {
 	esp_err_t ret;
-	if(num_internal_client!=0 && connect == false) {
-        connect = true;
-		ret = esp_ble_gattc_open(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, server.mac, server.addr_type, true);
-		if(ret != ESP_OK) {
-			return 1;
+	if(flag_internal==0) {
+		if(connect == false) {
+			connect = true;
+			ret = esp_ble_gattc_open(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, server.mac, server.addr_type, true);
+			if(ret != ESP_OK) {
+				return 1;
+			}
 		}
 	} else { // It's an internal client calling
 		switch(num_internal_client) {

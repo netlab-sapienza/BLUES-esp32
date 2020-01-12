@@ -33,6 +33,7 @@
 #include "master.hpp"
 #include "slave.hpp"
 #include "routing.hpp"
+#include "common.hpp"
 #include <assert.h>
 #include <stdlib.h>
 #include <iostream>
@@ -60,19 +61,26 @@ namespace bemesh{
         static void send_routing_table_callback(uint8_t* src,uint8_t* dst, uint16_t gatt_if,
                                                 uint8_t conn_id,uint8_t server_id);
 
-        static void endscanning_callback(device * device_list,uint8_t scan_seq,uint8_t type);
+        static void endscanning_callback(device * device_list,uint8_t scan_seq,uint8_t flag_internal,
+                                        uint8_t server_id);
         static void server_lost_callback(void);
 
 
         //internal_client_id must be one of SERVER_S1, SERVER_S2 or SERVER_S3
-        static void ssc_active_callback(uint8_t internal_client_id, uint8_t conn_id);
+        static void ssc_active_callback(uint8_t internal_client_id);
 
         static void ssc_passive_callback(uint8_t conn_id);
         
 
 
-        static int choose_server(device* device_list, int device_list_size, connection_policy_t policy);
-        static int connect_to_server(device* device_list, int device_list_size,connection_policy_t policy);
+        static int choose_server(device* device_list, int device_list_size,
+                             uint8_t internal_flag,uint8_t server_id,
+                             connection_policy_t policy);
+        
+        static int connect_to_server(device* device_list, int device_list_size,
+                                uint8_t internal_flag,uint8_t server_id,
+                                connection_policy_t policy);
+
         static bool check_all_discarded();
         static void reset_discarded();
 
