@@ -680,11 +680,13 @@ namespace bemesh{
         assert(ret == Success);
         ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,master_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,&master_reception_callback,nullptr);
+
+        //Passiamo il buffer degli argomenti anche a installOps. Possibile fonte di errori.
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,&master_reception_callback,master_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&master_reception_callback,nullptr);
+        ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&master_reception_callback,master_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&master_reception_callback,nullptr);
+        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&master_reception_callback,master_message_extra_args);
         assert(ret == Success);
         
         ESP_LOGE(GATTS_TAG,"Finished installing all things");
