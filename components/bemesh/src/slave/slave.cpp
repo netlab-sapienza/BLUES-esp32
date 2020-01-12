@@ -437,9 +437,11 @@ namespace bemesh{
         //assert(ret == Success);
         //ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&reception_callback,nullptr);
         //assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&reception_callback,nullptr);
+
+        //Passiamo il buffer degli argomenti anche ad installOps(possibile fonte di bug)
+        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&reception_callback,slave_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_PING_ID,&reception_callback,nullptr);
+        ret = mes_handler.installOps(ROUTING_PING_ID,&reception_callback,slave_message_extra_args);
         assert(ret == Success);
         
         ESP_LOGE(GATTC_TAG,"Finished installing all things");

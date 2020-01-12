@@ -72,8 +72,8 @@ int main(void) {
   bemesh::Callback callback_functor;
   //Installing all callbacks
   callback_functor();
-  gatt_server_main();
-  //gatt_client_main();
+  //gatt_server_main();
+  gatt_client_main();
  
   return 0;
   
