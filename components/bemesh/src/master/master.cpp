@@ -748,7 +748,7 @@ namespace bemesh{
             //Spara un task per scrivere su una caratteristica.
             task_param_write_t* write_params = new task_param_write_t;
             write_params->conn_id = conn_id;
-            write_params->gatt_if = gattc_if;
+            write_params->gatt_if = gatts_if;
             write_params->characteristic = characteristic;
             write_params->buffer = buffer;
             write_params->buffer_size = buffer_size;
