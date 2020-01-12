@@ -67,12 +67,14 @@ int main(void) {
 
   ESP_LOGE(LOG_TAG, "Initializing project");
   ble_esp_startup();
-  //gatt_client_main();
+  
   //The two ESP become server.
-  gatt_server_main();
   bemesh::Callback callback_functor;
   //Installing all callbacks
   callback_functor();
+  gatt_server_main();
+  //gatt_client_main();
+ 
   return 0;
   
   
