@@ -229,7 +229,7 @@ namespace bemesh{
             return -1;
         else{
             int server_pos = choose_server(device_list,device_list_size,policy);
-            uint8_t connection_ret = connectTo(device_list[server_pos],device_list[server_pos].clients_num);
+            uint8_t connection_ret = connectTo(device_list[server_pos],0);
             if(connection_ret){
                 discarded[server_pos] = true;
                 //We recursively look for another server keeping track of the discarded one.

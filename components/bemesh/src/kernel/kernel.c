@@ -3224,7 +3224,7 @@ void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8
 
 uint8_t connectTo(struct device server, uint8_t num_internal_client) {
 	esp_err_t ret;
-	if(num_internal_client!=0 && connect == false) {
+	if(num_internal_client==0 && connect == false) {
         connect = true;
 		ret = esp_ble_gattc_open(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, server.mac, server.addr_type, true);
 		if(ret != ESP_OK) {

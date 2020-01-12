@@ -337,7 +337,7 @@ namespace bemesh{
 
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B ||
             characteristic == IDX_CHAR_VAL_C )
-        {
+        {	/*
             task_param_write_t write_params;
             write_params.conn_id = conn_id;
             write_params.gatt_if = gattc_if;
@@ -348,7 +348,18 @@ namespace bemesh{
             //std::cout<<"I'm about to write: "<<"conn_id: "<<conn_id<<"gatt_if: "<<gatts_if;
             //std::cout<<"charact: "<<characteristic<<"data[0]: "<<buffer[0]<<"buffer_size: "<<buffer_size<<std::endl;
             //Spara un task per scrivere su una caratteristica.
-            xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)&write_params,TASK_PRIORITY,NULL);
+            
+            ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE 2: conn_id %d, gatt_if %d", write_params.conn_id, write_params.gatt_if);
+            */
+            task_param_write_t* write_params = new task_param_write_t;
+            write_params->conn_id = conn_id;
+            write_params->gatt_if = gattc_if;
+            write_params->characteristic = characteristic;
+            write_params->buffer = buffer;
+            write_params->buffer_size = buffer_size;
+            write_params->policy = policy;
+            
+            xTaskCreate(write_characteristic_task,"write task",WRITE_TASK_STACK_SIZE,(void*)write_params,TASK_PRIORITY,NULL);
             return Success;
         }        
         
@@ -443,6 +454,7 @@ namespace bemesh{
         
         //It should be thread safe by the way.
         int old_errno = bemesh_errno;
+        ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE: conn_id %d, gatt_if %d", conn_id, gatt_if);
         ErrStatus write_ret = write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
         if(write_ret != Success)
             ESP_LOGE(GATTC_TAG,"Errore in write characteristic: %d",write_ret);
