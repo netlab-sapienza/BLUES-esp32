@@ -132,7 +132,7 @@ typedef void(*SSC_Passive)(uint8_t conn_id); // conn_id is the connection id giv
 
 // Scanning functions
 void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8_t adv_len); // Add or update the device in the array of scanned devices
-uint8_t connectTo(struct device dev, uint8_t num_internal_client); // Establish a connection with dev and returns 1 if an error eccurs, 0 otherwise.
+uint8_t connectTo(struct device dev,uint8_t flag_internal, uint8_t num_internal_client); // Establish a connection with dev and returns 1 if an error eccurs, 0 otherwise. flag internal is 1 if an internal_client is calling it => set num_internal client. otherwise both parameters are 0.
 // connectTo can be used in a server (as internal_client) with the internal_client number. Otherwise leave it to 0.
 void scan(uint8_t duration, uint8_t num_internal_client); // Start scanning with duration in seconds. Eventually add internal_client or leave it to 0.
 
