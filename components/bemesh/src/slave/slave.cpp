@@ -457,13 +457,18 @@ namespace bemesh{
         //It should be thread safe by the way.
         int old_errno = bemesh_errno;
         ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE: conn_id %d, gatt_if %d", conn_id, gatt_if);
-        ErrStatus write_ret = write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
-        if(write_ret != Success)
-            ESP_LOGE(GATTC_TAG,"Errore in write characteristic: %d",write_ret);
+        //ErrStatus write_ret = write_characteristic(characteristic,buffer,BUFFER_SIZE,gatt_if,conn_id,policy);
+        //if(write_ret != Success)
+            //ESP_LOGE(GATTC_TAG,"Errore in write characteristic: %d",write_ret);
         if(bemesh_errno == E_WRITE_CHR){
             ESP_LOGE(GATTC_TAG, "Errore nella write: E_WRITE_CHR");
         }
         bemesh_errno = old_errno;
+
+
+
+        //Begin testing the ping features
+        ping_server(gatt_if,conn_id,server_mac_address,PING_FLAG_VALUE);
 
     }
 

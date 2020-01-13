@@ -635,8 +635,10 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
 		esp_err_t ret;
         if (p_data->notify.is_notify){
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive notify value:");
+           
         }else{
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
+            (*ntf_cb)(gattc_if,get_client_connid(),p_data->notify.value[1]);
         }
         if(p_data->notify.value[0] == 0xaa) {
 			// Handles for characteristics
@@ -653,7 +655,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
 				if(ret) {
 					ESP_LOGE(GATTC_TAG, "Error reading the char: %x", ret);
 				}
-				(*ntf_cb)(gattc_if,get_client_connid(),p_data->notify.value[1]);
+			
 			}
 			
 		}   
@@ -1095,6 +1097,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                 // the data length of gattc write  must be less than GATTS_CHAR_VAL_LEN_MAX.
                 ESP_LOGI(GATTS_TAG, "GATT_WRITE_EVT, handle = %d, value len = %d, value :", param->write.handle, param->write.len);
                 esp_log_buffer_hex(GATTS_TAG, param->write.value, param->write.len);
+               
                 if (char_handle_table[IDX_CHAR_CFG_A] == param->write.handle && param->write.len == 2){
                     uint16_t descr_value = param->write.value[1]<<8 | param->write.value[0];
                     // Used for the exchange of characteristics handles
@@ -1170,7 +1173,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                     }
 
                 }
-                
+                 
                 // CHAR A: Someone is changing the value of the characteristic
                 if (char_handle_table[IDX_CHAR_VAL_A] == param->write.handle) {
 					// The value has been changed, I'm going to notify my neighbors
@@ -1178,7 +1181,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 					uint8_t indicate_data[2];
 					indicate_data[0] = 0xaa;
 					indicate_data[1] = char_handle_table[IDX_CHAR_VAL_A];
-
+                    (*received_packet_cb)(param->write.value,param->write.len);
+                    
 					for(i=0; i<TOTAL_NUMBER_LIMIT; ++i) {
 						if((ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) && i != param->write.conn_id) {
 							esp_ble_gatts_send_indicate(gatts_if, i, char_handle_table[IDX_CHAR_VAL_A],
@@ -1218,7 +1222,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 					uint8_t indicate_data[2];
 					indicate_data[0] = 0xaa;
 					indicate_data[1] = char_handle_table[IDX_CHAR_VAL_C];
-
+                    (*received_packet_cb)(param->write.value,param->write.len);
+                    
 					for(i=0; i<TOTAL_NUMBER_LIMIT; ++i) {
 						if((ID_TABLE[i] == SERVER || ID_TABLE[i] == CLIENT) && i != param->write.conn_id) {
 							esp_ble_gatts_send_indicate(gatts_if, i, char_handle_table[IDX_CHAR_VAL_C],

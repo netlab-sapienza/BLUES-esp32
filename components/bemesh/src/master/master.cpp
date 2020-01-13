@@ -201,8 +201,8 @@ namespace bemesh{
         uint8_t * server_connids = get_server_connids();
         int i;
         for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
-            if(server_connids[i]){
-                if(get_type_connection(server_connids[i]) == CLIENT){
+            if(server_connids[i] == 1){
+                if(get_type_connection(i) == CLIENT){
                     uint8_t * client_address = get_connid_MAC(i);
                     dev_addr_t cl_addr = _build_dev_addr(client_address);
                     RoutingPingMessage client_ping_message(cl_addr,rt_ping_message->source(),pong_flag);
@@ -680,6 +680,8 @@ namespace bemesh{
         assert(ret == Success);
         ret = mes_handler.installTxOps(ROUTING_UPDATE_ID,master_message_extra_args);
         assert(ret == Success);
+        ret = mes_handler.installTxOps(ROUTING_PING_ID,master_message_extra_args);
+        assert(ret == Success);
 
         //Passiamo il buffer degli argomenti anche a installOps. Possibile fonte di errori.
         ret = mes_handler.installOps(ROUTING_DISCOVERY_REQ_ID,&master_reception_callback,master_message_extra_args);
@@ -687,6 +689,8 @@ namespace bemesh{
         ret = mes_handler.installOps(ROUTING_DISCOVERY_RES_ID,&master_reception_callback,master_message_extra_args);
         assert(ret == Success);
         ret = mes_handler.installOps(ROUTING_UPDATE_ID,&master_reception_callback,master_message_extra_args);
+        assert(ret == Success);
+        ret = mes_handler.installOps(ROUTING_PING_ID,&master_reception_callback,master_message_extra_args);
         assert(ret == Success);
         
         ESP_LOGE(GATTS_TAG,"Finished installing all things");
