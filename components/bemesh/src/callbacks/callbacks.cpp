@@ -148,7 +148,8 @@ namespace bemesh{
 
     //This callback will be called by clients and internal clients.
     //It will only works with messages. No further "clumsy notifications" are allowed.
-    void Callback::notify_callback(uint16_t gatt_if,uint8_t conn_id,uint8_t characteristic){
+    void Callback::notify_callback(uint16_t gatt_if,uint8_t conn_id,uint8_t characteristic,
+                                    uint8_t* notify_data,uint8_t ntf_data_size){
         //Triggered when a client is notified. The client can now read the characteristic
         
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B || characteristic == IDX_CHAR_VAL_C){
@@ -165,19 +166,19 @@ namespace bemesh{
 
         if (slave_instance){  
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Attempting to read the characteristic");  
-        
-            uint8_t* received_bytes =  slave_instance->read_characteristic(chr,gatt_if, conn_id);
-            if( received_bytes == NULL)
-                return;
+            esp_log_buffer_hex(FUNCTOR_TAG,notify_data,ntf_data_size);
+            //uint8_t* received_bytes =  slave_instance->read_characteristic(chr,gatt_if, conn_id);
+            //if( received_bytes == NULL)
+            //   return;
             
             //esp_log_buffer_hex(FUNCTOR_TAG,received_bytes,6);
             //Check if read is complete.
             //parse the message
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Attempting to read the message with the message handler");
-            std::size_t  ret = slave_instance->get_message_handler()->read(received_bytes);
+            std::size_t  ret = slave_instance->get_message_handler()->read(notify_data);
             if(ret){
                 ESP_LOGE(FUNCTOR_TAG,"In notify callback: read: %d  bytes",ret);
-                esp_log_buffer_hex(FUNCTOR_TAG,received_bytes,ret);
+               
             }
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Handling the message with the message handler");
             slave_instance->get_message_handler()->handle();

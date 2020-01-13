@@ -102,7 +102,7 @@ extern bool get_service_S2;
 extern bool get_service_S3;
 
 
-typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t);
+typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t,uint8_t*,uint8_t);
 typedef void(*InitCb)(uint8_t);
 typedef void(*ShutDownCb)(uint8_t);
 //This callback function pass the newly updated MAC table entry to the master object.

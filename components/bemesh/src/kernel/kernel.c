@@ -638,7 +638,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
            
         }else{
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
-            (*ntf_cb)(gattc_if,get_client_connid(),p_data->notify.value[1]);
+            (*ntf_cb)(gattc_if,get_client_connid(),p_data->notify.value[1],p_data->notify.value,
+                                            p_data->notify.value_len);
         }
         if(p_data->notify.value[0] == 0xaa) {
 			// Handles for characteristics

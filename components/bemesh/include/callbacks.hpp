@@ -51,7 +51,8 @@ namespace bemesh{
         
 
         static void init_callback(uint8_t type);
-        static void notify_callback(uint16_t gattc_if,uint8_t conn_id,uint8_t charact);
+        static void notify_callback(uint16_t gattc_if,uint8_t conn_id,uint8_t charact,
+                                    uint8_t* notify_data, uint8_t ntf_data_size);
         static void server_update_callback(uint8_t* macs,uint8_t flag,uint16_t gatt_if,
                                         uint8_t conn_id,uint8_t server_id);
         static void exchange_routing_table_callback(uint8_t* src,uint8_t* dest,

@@ -212,6 +212,8 @@ namespace bemesh{
         
     
         uint8_t _pong_flag = routing_ping_message->pong_flag();
+
+        ESP_LOGE(GATTC_TAG,"Added a new entry into the ping_response list");
         ping_data_t p_data(routing_ping_message->source(),_pong_flag,conn_id,
                                                 gatt_if);
         
