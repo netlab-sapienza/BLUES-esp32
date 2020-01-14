@@ -46,8 +46,8 @@ namespace bemesh{
         return;
     }
 
-    dev_addr_t& Slave::get_dev_addr(){
-        return router->addr();
+    uint8_t* Slave::get_dev_addr(){
+        return address;
     }
 
     void Slave::set_dev_addr(uint8_t* dev_addr){
@@ -137,7 +137,7 @@ namespace bemesh{
 
 
 
-    void transmission_callback(uint8_t* message, uint8_t size, MessageHeader* header_t,
+    void slave_transmission_callback(uint8_t* message, uint8_t size, MessageHeader* header_t,
                                     void* args)
     {
         switch(header_t->id()){
@@ -165,17 +165,22 @@ namespace bemesh{
             return;
         if(size == 0)
             return;
+
+
+        //ESP_LOGE(GATTC_TAG,"The ping message I'm about to transmit is");
         
-        ESP_LOGE(GATTC_TAG,"In ping transmission callback: we begin to retrieve the arguments");
+       // esp_log_buffer_hex(GATTC_TAG,message,size);
+        
+        //ESP_LOGE(GATTC_TAG,"In ping transmission callback: we begin to retrieve the arguments");
         //Begin to parse the arguments
         uint16_t* ptr = (uint16_t*) args;
-        uint16_t gattc_if = *
-        ptr;
-        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+        uint16_t gattc_if = *ptr;
+        uint8_t * _ptr = (uint8_t*)args;
+        _ptr = (uint8_t*)(_ptr + sizeof(uint16_t));
         uint8_t conn_id = *(_ptr);
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t characteristic = *(_ptr);
-        ESP_LOGE(GATTC_TAG,"In ping transmission callback: we ended to retrieve the arguments");
+        //ESP_LOGE(GATTC_TAG,"In ping transmission callback: we ended to retrieve the arguments");
        
         write_policy_t policy  = Standard;
         ErrStatus ret_status = write_characteristic(characteristic,message,size,gattc_if,
@@ -197,38 +202,56 @@ namespace bemesh{
 
 
     void Slave::ping_reception_callback(MessageHeader* header_t, void* args){
-        ESP_LOGE(GATTC_TAG, "In ping reception callback");
+        //ESP_LOGE(GATTC_TAG, "In ping reception callback");
 
-        ESP_LOGE(GATTC_TAG,"In ping reception callback. Beginning to parse the arguments.");
+        //ESP_LOGE(GATTC_TAG,"In ping reception callback. Beginning to parse the arguments.");
         uint16_t* ptr = (uint16_t*)args;
         uint16_t gatt_if = *ptr;
-        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+        uint8_t* _ptr = (uint8_t*) args;
+        _ptr = (uint8_t*)(_ptr + sizeof(uint16_t));
         uint8_t conn_id = *(_ptr);
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t characteristic = *(_ptr);
         RoutingPingMessage* routing_ping_message = (RoutingPingMessage*)header_t;
 
-        ESP_LOGE(GATTC_TAG,"In ping reception callback. Ended to parse all the arguments.");
+        //ESP_LOGE(GATTC_TAG,"In ping reception callback. Ended to parse all the arguments.");
         
     
         uint8_t _pong_flag = routing_ping_message->pong_flag();
 
-        ESP_LOGE(GATTC_TAG,"Added a new entry into the ping_response list");
+        //ESP_LOGE(GATTC_TAG,"Added a new entry into the ping_response list");
         ping_data_t p_data(routing_ping_message->source(),_pong_flag,conn_id,
                                                 gatt_if);
         
-        if(routing_ping_message->pong_flag() == PONG_FLAG_VALUE && same_addresses(routing_ping_message->source(),get_dev_addr(),MAC_ADDRESS_SIZE)){
+
+        /*uint8_t source_addr[MAC_ADDRESS_SIZE];
+        uint8_t my_addr[MAC_ADDRESS_SIZE];
+        int i;
+        for(i = 0; i< MAC_ADDRESS_SIZE;++i){
+            source_addr[i] = routing_ping_message->source()[i];
+            my_addr[i] = get_dev_addr()[i];
+        }
+
+        ESP_LOGE(GATTC_TAG,"routing_ping_message->source(): byte[0] = %x",routing_ping_message->source()[0]);
+        esp_log_buffer_hex(GATTC_TAG,source_addr,MAC_ADDRESS_SIZE);
+        ESP_LOGE(GATTC_TAG,"my address");
+        esp_log_buffer_hex(GATTC_TAG,my_addr,MAC_ADDRESS_SIZE);
+    */
+
+
+
+        if(same_addresses(routing_ping_message->source(),_build_dev_addr(get_dev_addr()),MAC_ADDRESS_SIZE)){
             ESP_LOGE(GATTC_TAG,"I received pong from the server. But I sent it");
+            return;
 
         }
+        
         else{
             ESP_LOGE(GATTC_TAG, "Adding ping_data_t element to the ping response list");
             add_ping_response(p_data);
         }
 
-        //Preparing a pong message and rewrite it to the server.
-        characteristic = IDX_CHAR_VAL_A;
-        RoutingPingMessage new_ping_message(routing_ping_message->source(),get_dev_addr(),PONG_FLAG_VALUE);
+        RoutingPingMessage new_ping_message(routing_ping_message->source(),_build_dev_addr(get_dev_addr()),PONG_FLAG_VALUE);
         send_message(get_device_gatt_if(),get_device_connection_id(),NULL,
                         (MessageHeader*)&new_ping_message, characteristic);
 
@@ -243,7 +266,7 @@ namespace bemesh{
 
 
 
-    void reception_callback(MessageHeader* header_t, void* args){
+    void slave_reception_callback(MessageHeader* header_t, void* args){
         switch(header_t->id()){
             case ROUTING_UPDATE_ID: {
                 if(slave_instance)
@@ -304,7 +327,8 @@ namespace bemesh{
             //gatt_if conn_id characteristic
             uint16_t* args = (uint16_t*)slave_message_extra_args;
             *args = gattc_if;
-            uint8_t* _args = (uint8_t*)(args + sizeof(uint16_t));
+            uint8_t * _args = (uint8_t*) slave_message_extra_args;
+            _args = (uint8_t*)(_args + sizeof(uint16_t));
             *_args = conn_id;
             _args = (uint8_t*)(_args + sizeof(uint8_t));
             *_args = characteristic;
@@ -422,7 +446,7 @@ namespace bemesh{
         //Buffer to send/receive messages.
         ret =  mes_handler.installTxBuffer(slave_tx_buffer);
         assert(ret == Success);
-        ret = mes_handler.installTxCb(&transmission_callback);
+        ret = mes_handler.installTxCb(&slave_transmission_callback);
         assert(ret == Success);
         //Install reception callback for messages. Extra arguments to be added.
         //ret = mes_handler.installTxOps(ROUTING_DISCOVERY_REQ_ID,slave_message_extra_args);
@@ -441,9 +465,9 @@ namespace bemesh{
         //assert(ret == Success);
 
         //Passiamo il buffer degli argomenti anche ad installOps(possibile fonte di bug)
-        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&reception_callback,slave_message_extra_args);
+        ret = mes_handler.installOps(ROUTING_UPDATE_ID,&slave_reception_callback,slave_message_extra_args);
         assert(ret == Success);
-        ret = mes_handler.installOps(ROUTING_PING_ID,&reception_callback,slave_message_extra_args);
+        ret = mes_handler.installOps(ROUTING_PING_ID,&slave_reception_callback,slave_message_extra_args);
         assert(ret == Success);
         
         ESP_LOGE(GATTC_TAG,"Finished installing all things");
@@ -500,15 +524,44 @@ namespace bemesh{
         //Check if the mac address is in the routing table (robustness check).
 
         //Start pinging the server
-        dev_addr_t src_addr = get_dev_addr();
-        dev_addr_t dest_addr = _build_dev_addr(mac_address);
-        
-        RoutingPingMessage routing_ping_message(src_addr,dest_addr,pong_flag);
-        uint8_t characteristic = IDX_CHAR_VAL_A;
-        ErrStatus ret = send_message(gatt_if,conn_id,mac_address,(MessageHeader*)&routing_ping_message,characteristic);
-        if(ret != Success){
-            ESP_LOGE(GATTC_TAG,"Error in sending the ping to the connected server");
+        dev_addr_t src_addr = _build_dev_addr(get_dev_addr());
+        dev_addr_t src_addr_;
+        int j;
+        for(j = 0; j<MAC_ADDRESS_SIZE; j++){
+            src_address_to_send[j] = src_addr[j];
         }
+        dev_addr_t dest_addr = _build_dev_addr(mac_address);
+
+
+        RoutingPingMessage routing_ping_message(dest_addr,src_addr,pong_flag);
+        uint8_t characteristic = IDX_CHAR_VAL_A;
+        
+        uint16_t* args = (uint16_t*)slave_message_extra_args;
+        *args = gatt_if;
+        uint8_t * _args = (uint8_t*) slave_message_extra_args;
+        _args = (uint8_t*)(_args + sizeof(uint16_t));
+        *_args = conn_id;
+        _args = (uint8_t*)(_args + sizeof(uint8_t));
+        *_args = characteristic;
+        //ESP_LOGE(GATTC_TAG,"In ping transmission. src address is: ");
+        //esp_log_buffer_hex(GATTC_TAG,get_dev_addr(),MAC_ADDRESS_SIZE);
+        //ESP_LOGE(GATTC_TAG,"In ping transmission. dest_addr address is: ");
+        //esp_log_buffer_hex(GATTC_TAG,mac_address,MAC_ADDRESS_SIZE);
+        //First send the message into the buffer.
+        ErrStatus  status = mes_handler.send((MessageHeader*)&routing_ping_message);
+        if(status != Success){
+            ESP_LOGE(GATTC_TAG,"In Slave::send_message. Error in MessageHandler::send");
+            return status;
+        }
+
+            //Flush the output
+        mes_handler.handle();
+        return Success;
+        
+        //ErrStatus ret = send_message(gatt_if,conn_id,mac_address,(MessageHeader*)&routing_ping_message,characteristic);
+        //if(ret != Success){
+        //    ESP_LOGE(GATTC_TAG,"Error in sending the ping to the connected server");
+        //}
         return Success;
 
 

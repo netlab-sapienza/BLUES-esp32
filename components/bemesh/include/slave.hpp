@@ -49,8 +49,8 @@ extern "C"{
 namespace bemesh{
     static std::string comm_char = "Hello everyone";
 
-    void reception_callback(MessageHeader* header_t,void* args);
-    void transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,void*args);
+    void slave_reception_callback(MessageHeader* header_t,void* args);
+    void slave_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,void*args);
 
 
     class Slave{
@@ -63,6 +63,12 @@ namespace bemesh{
         bool connected_to_internet;
         std::string name;
         
+
+
+        dev_addr_t src_address_to_send;
+
+
+
         //Delete it if it is not necessary
         std::list<ping_data_t> ping_response_list;
 
@@ -95,7 +101,7 @@ namespace bemesh{
             bool is_esp();
             void set_esp(bool is_esp);
 
-            dev_addr_t& get_dev_addr();
+            uint8_t* get_dev_addr();
             void set_dev_addr(uint8_t* new_dev_addr);
 
             uint16_t get_server_connection_id();

@@ -141,8 +141,14 @@ namespace bemesh{
         std::cout<<"Received a packet"<<std::endl;
         esp_log_buffer_hex(FUNCTOR_TAG,packet,size);
         //Read the packet.
-        master_instance->parse_message_receive(packet,size);
+        //master_instance->parse_message_receive(packet,size);
+        std::size_t bytes_read = master_instance->get_message_handler()->read(packet);
+        if(bytes_read != size){
+            ESP_LOGE(GATTS_TAG,"In Master::parse_message_receive. Expected to read: %d bytes but %d actually read",size, bytes_read);
+        }
 
+        master_instance->get_message_handler()->handle();
+        return;
     }
 
 

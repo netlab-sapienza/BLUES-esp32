@@ -188,12 +188,31 @@ namespace bemesh{
     }
     
     void Master::ping_reception_callback(MessageHeader* header_t,void * args){
-        ESP_LOGE(GATTS_TAG,"In ping reception callback");
+        //ESP_LOGE(GATTS_TAG,"In ping reception callback");
         //Notify to all clients of the ping message.
-        
+       
 
         uint8_t pong_flag;
         RoutingPingMessage* rt_ping_message = (RoutingPingMessage*)header_t;
+        
+
+        ESP_LOGE(GATTS_TAG,"In ping reception callback: dest_address is");
+        int j;
+        uint8_t address_[MAC_ADDRESS_SIZE];
+        dev_addr_t addr = rt_ping_message->destination();
+        for(j = 0; j<MAC_ADDRESS_SIZE;++j){
+            address_[j] = rt_ping_message->destination()[j];
+        }
+        esp_log_buffer_hex(GATTS_TAG,address_,MAC_ADDRESS_SIZE);
+
+        ESP_LOGE(GATTS_TAG,"In ping reception callback: src_address is");
+
+        for(j = 0; j<MAC_ADDRESS_SIZE;++j){
+            address_[j] = rt_ping_message->source()[j];
+        }
+        esp_log_buffer_hex(GATTS_TAG,address_,MAC_ADDRESS_SIZE);
+
+       
         if(rt_ping_message->pong_flag() == PONG_FLAG_VALUE)
             pong_flag = PONG_FLAG_VALUE;
         else
@@ -208,18 +227,19 @@ namespace bemesh{
                     RoutingPingMessage client_ping_message(cl_addr,rt_ping_message->source(),pong_flag);
                     uint8_t notify = NOTIFY_YES;
 
-                    ESP_LOGE(GATTS_TAG,"In ping reception callback: beginning to parse all arguments");
+                    //ESP_LOGE(GATTS_TAG,"In ping reception callback: beginning to parse all arguments");
 
                     uint16_t* ptr = (uint16_t*) args;
                     *ptr = 0;
-                    uint8_t* _ptr = (uint8_t*) (ptr + sizeof(uint16_t));
+                    uint8_t * _ptr = (uint8_t*)args;
+                    _ptr = (uint8_t*) (_ptr + sizeof(uint16_t));
                     *_ptr = i;
                     _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
                     *_ptr = 0;
                     _ptr = (uint8_t*)(_ptr + sizeof(uint8_t*));
                     *_ptr = notify;
 
-                    ESP_LOGE(GATTS_TAG,"In ping reception callback: ended to parse all arguments");
+                    //ESP_LOGE(GATTS_TAG,"In ping reception callback: ended to parse all arguments");
 
                     ESP_LOGE(GATTS_TAG,"Pinging client: %d ",i);
 
@@ -253,7 +273,8 @@ namespace bemesh{
 
             uint16_t* ptr = (uint16_t*) args;
             *ptr = gatt_if;
-            uint8_t* _ptr = (uint8_t*) (ptr + sizeof(uint16_t));
+            uint8_t * _ptr = (uint8_t*) args;
+            _ptr = (uint8_t*) (_ptr + sizeof(uint16_t));
             *_ptr = conn_id;
             _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
             *_ptr = server_id;
@@ -387,18 +408,21 @@ namespace bemesh{
     void Master::ping_transmission_callback(uint8_t* buffer,uint8_t size, MessageHeader* header_t,
                                     void* args)
     {
-        ESP_LOGE(GATTS_TAG,"In ping transmission callback: beginning to parse all arguments");
+        //ESP_LOGE(GATTS_TAG,"In ping transmission callback: beginning to parse all arguments");
 
         uint16_t * ptr = (uint16_t*) args;
         uint16_t gatt_if = *ptr;
-        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+
+        //We move two bytes forward in the args buffer.
+        uint8_t* _ptr = (uint8_t*)args;
+        _ptr = (uint8_t*)(_ptr + sizeof(uint16_t));
         uint8_t conn_id = *_ptr;
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t server_id = *_ptr;
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t notify = *_ptr;
 
-        ESP_LOGE(GATTS_TAG,"In ping transmission callback: ended to parse all arguments");
+        //ESP_LOGE(GATTS_TAG,"In ping transmission callback: ended to parse all arguments");
 
         uint8_t characteristic = IDX_CHAR_VAL_A;
 
@@ -450,9 +474,10 @@ namespace bemesh{
         //The order is: gatt_if, conn_id, server_id.
         uint16_t* ptr = (uint16_t*) args;
         uint16_t gatt_if = *ptr;
-        uint8_t * _ptr = (uint8_t*) (ptr + sizeof(uint16_t));
+        uint8_t * _ptr = (uint8_t*)args;
+        _ptr = (uint8_t*) (_ptr + sizeof(uint16_t));
         uint8_t conn_id = *(_ptr);
-        _ptr = _ptr + sizeof(uint8_t);
+        _ptr =(uint8_t*) (_ptr + sizeof(uint8_t));
         uint8_t server_id = *(_ptr);
         ESP_LOGE(GATTS_TAG,"Parsed message arguments: gatt_if: %d, conn_id: %d, server_id: %d",
                         gatt_if, conn_id, server_id);
@@ -484,7 +509,8 @@ namespace bemesh{
         //First: take the arguments from the args buffer.
         uint16_t* ptr = (uint16_t*) args;
         uint16_t gatt_if = *ptr;
-        uint8_t* _ptr = (uint8_t*)(ptr + sizeof(uint16_t));
+        uint8_t * _ptr = (uint8_t*) args;
+        _ptr = (uint8_t*)(_ptr + sizeof(uint16_t));
         uint8_t conn_id = *_ptr;
         _ptr = (uint8_t*)(_ptr + sizeof(uint8_t));
         uint8_t server_id = *_ptr;
