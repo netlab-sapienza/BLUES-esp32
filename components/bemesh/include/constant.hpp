@@ -20,6 +20,10 @@
 #define NOTIFY_NO 0
 
 
+//Sleep time is 3 seconds
+#define SLEEP_TIME 3
+
+
 #define INTERNAL_CLIENT_FLAG 1
 #define CLIENT_FLAG 0
 

@@ -15,6 +15,9 @@ namespace bemesh{
                 discarded[i] = false;
     }
 
+    
+     
+     
     void Callback::ssc_active_callback(uint8_t internal_client_id){
         uint8_t BUF_SIZE = 10, i;
         uint8_t* buf = new uint8_t[BUF_SIZE];
@@ -149,6 +152,28 @@ namespace bemesh{
 
         master_instance->get_message_handler()->handle();
         return;
+    }
+
+
+    void Callback::retry_callback(device * device_list,uint8_t scan_seq,uint8_t flag_internal,
+                                        uint8_t server_id)
+    {
+        ESP_LOGE(GATTC_TAG,"Smth didn't work with connection. We sleep for :%d seconds and we retry",SLEEP_TIME);    
+        sleep(SLEEP_TIME);
+        reset_discarded();
+        
+        //If this approach did not work for a second time we reset all stuff and scan surrounding devices again.
+        if(reset){
+            reset = false;
+            gatt_client_main();
+            
+        }
+        else{
+            //we retry to connect to the arleady found servers.
+            reset = true;
+            endscanning_callback(device_list,scan_seq,flag_internal,server_id);
+            return;
+        }
     }
 
 
@@ -388,9 +413,22 @@ namespace bemesh{
         }
         assert(ret == 0);
     
+        ret = install_ServerLo 
+        ret = install_EndScanning(endscanning_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della endscanning_callback"); 
+        }
+        assert(ret == 0);
+    
         ret = install_ServerLost(server_lost_callback);
         if(ret){
            ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della server_lost_callback"); 
+        }
+        assert(ret == 0);
+
+        ret = install_RetryCb(retry_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della retry_callback"); 
         }
         assert(ret == 0);
         

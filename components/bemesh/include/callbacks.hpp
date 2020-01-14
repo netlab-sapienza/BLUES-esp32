@@ -25,6 +25,8 @@
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 
+#include <unistd.h>
+
 
 #define FUNCTOR_TAG "FUNCTOR"
 
@@ -66,6 +68,8 @@ namespace bemesh{
                                         uint8_t server_id);
         static void server_lost_callback(void);
 
+        static void retry_callback(device * device_list,uint8_t scan_seq,uint8_t flag_internal,
+                                        uint8_t server_id);
 
         //internal_client_id must be one of SERVER_S1, SERVER_S2 or SERVER_S3
         static void ssc_active_callback(uint8_t internal_client_id);

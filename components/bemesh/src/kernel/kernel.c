@@ -22,6 +22,7 @@ ReceivedPacketCb received_packet_cb;
 ShutDownCb shutdown_cb;
 
 EndScanning endscanning_cb;
+EndScanning retry_cb;
 ServerLost serverlost_cb;
 
 SSC_Active ssc_active;
@@ -57,7 +58,7 @@ uint8_t server_scanning = 0; // Server is scanning?
 bool wants_to_discover = true;
 bool wants_to_send_routing_table = false;
 
-
+bool reset = false;
 /*
  *  	CLIENT
  */
@@ -490,6 +491,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
     case ESP_GATTC_OPEN_EVT:
         if (param->open.status != ESP_GATT_OK){
             ESP_LOGE(GATTC_TAG, "open failed, status %d", p_data->open.status);
+            (*retry_cb)(scan_res,scan_seq,CLIENT_FLAG,0);
             break;
         }
         scan_seq = 0;
@@ -3141,6 +3143,16 @@ uint8_t install_SSC_Passive(SSC_Passive cb) {
 	if(!cb) return 1;
     ssc_passive = cb;
     return 0;
+}
+
+uint8_t install_RetryCb(EndScanning cb){
+    if(!cb) return 1;
+    else
+    {
+        retry_cb = cb;
+        return 0;
+    }
+    
 }
 
 
