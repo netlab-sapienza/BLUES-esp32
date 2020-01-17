@@ -288,34 +288,56 @@ namespace bemesh{
         for(i = 0; i<SCAN_LIMIT;++i)
             discarded[i] = false;
     }
+
+
+
     int Callback::connect_to_server(device* device_list, int device_list_size,
                                     uint8_t internal_flag, uint8_t server_id,
                                     connection_policy_t policy){
-        bool all_discarded = check_all_discarded();
-        //ESP_LOGE(GATTC_TAG,"I checked");
-        if(all_discarded)
-            return -1;
-        else{
+        uint8_t connection_ret = 0;
+        bool all_discarded;
+        do{
+            ESP_LOGE(FUNCTOR_TAG,"Choosing a server to connect to");
             int server_pos = choose_server(device_list,device_list_size,internal_flag,server_id,policy);
-            uint8_t connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
+            connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
             if(connection_ret){
                 discarded[server_pos] = true;
-                //We recursively look for another server keeping track of the discarded one.
-                int conn_ret = connect_to_server(device_list,device_list_size,internal_flag,
-                                        server_id,policy);
-                return conn_ret;
             }
-            else{
-                reset_discarded();
-                return 0;
-            }
-        }
+            all_discarded = check_all_discarded();
+            if(all_discarded)
+                break;
+
+        }while(connection_ret);
+
+        if(all_discarded)
+            return -1;
+        
+        return 0;
+
     }
 
     void Callback::endscanning_callback(device* device_list,uint8_t count,
                                         uint8_t internal_flag,uint8_t server_id){
-        int i;
+        int i,j;
         
+
+
+        //If it is an internal client we check if the device is arleady connected (race conditions?).
+        //It may happen that an internal client connects to this server after this check
+        //Thys nested loop has a quadratic cost (worst case).
+        if(internal_flag == INTERNAL_CLIENT_FLAG){
+            uint8_t* assigned_connids = get_server_connids();
+            uint8_t ** macs = get_connected_MACS();
+            for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
+                for(j = 0; j< SCAN_LIMIT; ++j){
+                    if(assigned_connids[i] == 1 && MAC_check(macs[i],device_list[j].mac)){
+                        //Discard all known devices that are arleady connected to me.
+                        discarded[j] = true;
+                    }
+                }
+            }
+        }
+
 
         //We perform some integrity check.
         if(device_list == NULL)
@@ -356,7 +378,6 @@ namespace bemesh{
                 ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
                 if(CLIENT_FLAG)
                     init_callback(CLIENT);
-                
             }
         }
     }
@@ -406,14 +427,6 @@ namespace bemesh{
         }
         assert(ret == 0);
 
-         
-        ret = install_EndScanning(endscanning_callback);
-        if(ret){
-           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della endscanning_callback"); 
-        }
-        assert(ret == 0);
-    
-        ret = install_ServerLo 
         ret = install_EndScanning(endscanning_callback);
         if(ret){
            ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della endscanning_callback"); 

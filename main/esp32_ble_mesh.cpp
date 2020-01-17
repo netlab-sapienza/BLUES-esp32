@@ -8,8 +8,6 @@
 
 
 
-
-
 #include <stdio.h>
 #include <vector>
 #include <iostream>
@@ -62,6 +60,7 @@ int main(void) {
   becoming_client = false;
   becoming_server = false;
 
+ 
   //Set the global error variable to a default value.
   bemesh_errno = SUCCESS;
 
