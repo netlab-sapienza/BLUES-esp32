@@ -33,6 +33,6 @@ else()
   add_library(Common common.cpp)
   target_include_directories(Common PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-  target_link_libraries(Common Kernel EspLog Routing)
+  target_link_libraries(Common EspLog Kernel Routing)
   
 endif(NOT DEFINED ESP32_SIMULATION)

@@ -1,5 +1,5 @@
 #include "slave.hpp"
-
+int bemesh_errno=0;
 //TO-DO. complete stuff.
 
 namespace bemesh{

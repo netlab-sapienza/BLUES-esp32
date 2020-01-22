@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include "esp_log.h"
 #include <unistd.h>
 
 
@@ -19,7 +18,8 @@
 #include <algorithm>
 
 extern "C"{
-    #include "kernel.h"
+#include "esp_log.h"
+#include "kernel.h"
 }
 
 namespace bemesh{

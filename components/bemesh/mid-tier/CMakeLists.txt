@@ -31,19 +31,19 @@ if(NOT DEFINED ESP32_SIMULATION)
 else()
   # Builds the libraries
   project(mid-tier)
-  add_library(RTable rtable.cpp)
-  target_include_directories(RTable PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  #add_library(RTable rtable.cpp)
+  #target_include_directories(RTable PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-  add_library(BemeshMessages bemesh_messages_v2.cpp)
-  target_include_directories(BemeshMessages PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  #add_library(BemeshMessages bemesh_messages_v2.cpp)
+  #target_include_directories(BemeshMessages PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-  add_library(Routing routing.cpp)
+  add_library(Routing rtable.cpp routing.cpp bemesh_messages_v2.cpp message_handler_v2.cpp)
   target_include_directories(Routing PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-  add_library(MessageHandler message_handler_v2.cpp)
-  target_include_directories(MessageHandler PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  #add_library(MessageHandler message_handler_v2.cpp)
+  #target_include_directories(MessageHandler PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-  target_link_libraries(Routing RTable BemeshMessages)
+  #target_link_libraries(Routing RTable BemeshMessages)
   
   
 		      
