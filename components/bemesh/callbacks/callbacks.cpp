@@ -15,6 +15,9 @@ namespace bemesh{
                 discarded[i] = false;
     }
 
+    
+     
+     
     void Callback::ssc_active_callback(uint8_t internal_client_id){
         uint8_t BUF_SIZE = 10, i;
         uint8_t* buf = new uint8_t[BUF_SIZE];
@@ -141,14 +144,43 @@ namespace bemesh{
         std::cout<<"Received a packet"<<std::endl;
         esp_log_buffer_hex(FUNCTOR_TAG,packet,size);
         //Read the packet.
-        master_instance->parse_message_receive(packet,size);
+        //master_instance->parse_message_receive(packet,size);
+        std::size_t bytes_read = master_instance->get_message_handler()->read(packet);
+        if(bytes_read != size){
+            ESP_LOGE(GATTS_TAG,"In Master::parse_message_receive. Expected to read: %d bytes but %d actually read",size, bytes_read);
+        }
 
+        master_instance->get_message_handler()->handle();
+        return;
+    }
+
+
+    void Callback::retry_callback(device * device_list,uint8_t scan_seq,uint8_t flag_internal,
+                                        uint8_t server_id)
+    {
+        ESP_LOGE(GATTC_TAG,"Smth didn't work with connection. We sleep for :%d seconds and we retry",SLEEP_TIME);    
+        sleep(SLEEP_TIME);
+        reset_discarded();
+        
+        //If this approach did not work for a second time we reset all stuff and scan surrounding devices again.
+        if(reset){
+            reset = false;
+            gatt_client_main();
+            
+        }
+        else{
+            //we retry to connect to the arleady found servers.
+            reset = true;
+            endscanning_callback(device_list,scan_seq,flag_internal,server_id);
+            return;
+        }
     }
 
 
     //This callback will be called by clients and internal clients.
     //It will only works with messages. No further "clumsy notifications" are allowed.
-    void Callback::notify_callback(uint16_t gatt_if,uint8_t conn_id,uint8_t characteristic){
+    void Callback::notify_callback(uint16_t gatt_if,uint8_t conn_id,uint8_t characteristic,
+                                    uint8_t* notify_data,uint8_t ntf_data_size){
         //Triggered when a client is notified. The client can now read the characteristic
         
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B || characteristic == IDX_CHAR_VAL_C){
@@ -165,19 +197,19 @@ namespace bemesh{
 
         if (slave_instance){  
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Attempting to read the characteristic");  
-        
-            uint8_t* received_bytes =  slave_instance->read_characteristic(chr,gatt_if, conn_id);
-            if( received_bytes == NULL)
-                return;
+            esp_log_buffer_hex(FUNCTOR_TAG,notify_data,ntf_data_size);
+            //uint8_t* received_bytes =  slave_instance->read_characteristic(chr,gatt_if, conn_id);
+            //if( received_bytes == NULL)
+            //   return;
             
             //esp_log_buffer_hex(FUNCTOR_TAG,received_bytes,6);
             //Check if read is complete.
             //parse the message
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Attempting to read the message with the message handler");
-            std::size_t  ret = slave_instance->get_message_handler()->read(received_bytes);
+            std::size_t  ret = slave_instance->get_message_handler()->read(notify_data);
             if(ret){
                 ESP_LOGE(FUNCTOR_TAG,"In notify callback: read: %d  bytes",ret);
-                esp_log_buffer_hex(FUNCTOR_TAG,received_bytes,ret);
+               
             }
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Handling the message with the message handler");
             slave_instance->get_message_handler()->handle();
@@ -256,34 +288,56 @@ namespace bemesh{
         for(i = 0; i<SCAN_LIMIT;++i)
             discarded[i] = false;
     }
+
+
+
     int Callback::connect_to_server(device* device_list, int device_list_size,
                                     uint8_t internal_flag, uint8_t server_id,
                                     connection_policy_t policy){
-        bool all_discarded = check_all_discarded();
-        //ESP_LOGE(GATTC_TAG,"I checked");
-        if(all_discarded)
-            return -1;
-        else{
+        uint8_t connection_ret = 0;
+        bool all_discarded;
+        do{
+            ESP_LOGE(FUNCTOR_TAG,"Choosing a server to connect to");
             int server_pos = choose_server(device_list,device_list_size,internal_flag,server_id,policy);
-            uint8_t connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
+            connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
             if(connection_ret){
                 discarded[server_pos] = true;
-                //We recursively look for another server keeping track of the discarded one.
-                int conn_ret = connect_to_server(device_list,device_list_size,internal_flag,
-                                        server_id,policy);
-                return conn_ret;
             }
-            else{
-                reset_discarded();
-                return 0;
-            }
-        }
+            all_discarded = check_all_discarded();
+            if(all_discarded)
+                break;
+
+        }while(connection_ret);
+
+        if(all_discarded)
+            return -1;
+        
+        return 0;
+
     }
 
     void Callback::endscanning_callback(device* device_list,uint8_t count,
                                         uint8_t internal_flag,uint8_t server_id){
-        int i;
+        int i,j;
         
+
+
+        //If it is an internal client we check if the device is arleady connected (race conditions?).
+        //It may happen that an internal client connects to this server after this check
+        //Thys nested loop has a quadratic cost (worst case).
+        if(internal_flag == INTERNAL_CLIENT_FLAG){
+            uint8_t* assigned_connids = get_server_connids();
+            uint8_t ** macs = get_connected_MACS();
+            for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
+                for(j = 0; j< SCAN_LIMIT; ++j){
+                    if(assigned_connids[i] == 1 && MAC_check(macs[i],device_list[j].mac)){
+                        //Discard all known devices that are arleady connected to me.
+                        discarded[j] = true;
+                    }
+                }
+            }
+        }
+
 
         //We perform some integrity check.
         if(device_list == NULL)
@@ -324,7 +378,6 @@ namespace bemesh{
                 ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
                 if(CLIENT_FLAG)
                     init_callback(CLIENT);
-                
             }
         }
     }
@@ -374,7 +427,6 @@ namespace bemesh{
         }
         assert(ret == 0);
 
-         
         ret = install_EndScanning(endscanning_callback);
         if(ret){
            ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della endscanning_callback"); 
@@ -384,6 +436,12 @@ namespace bemesh{
         ret = install_ServerLost(server_lost_callback);
         if(ret){
            ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della server_lost_callback"); 
+        }
+        assert(ret == 0);
+
+        ret = install_RetryCb(retry_callback);
+        if(ret){
+           ESP_LOGE(FUNCTOR_TAG,"Errore nell'installazione della retry_callback"); 
         }
         assert(ret == 0);
         

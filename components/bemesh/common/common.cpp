@@ -90,8 +90,8 @@ namespace bemesh{
     //A task used to perform writing on charateristics. In esp-idf task ~ thread.
     void write_characteristic_task(void * task_param) {
         task_param_write_t* params = (task_param_write_t*)task_param;
-		ESP_LOGE(GATTC_TAG, "BUFFER THAT TASK IS GOING TO WRITE IS:");
-		esp_log_buffer_hex(GATTC_TAG, params->buffer, params->buffer_size);
+		//ESP_LOGE(GATTC_TAG, "BUFFER THAT TASK IS GOING TO WRITE IS:");
+		//esp_log_buffer_hex(GATTC_TAG, params->buffer, params->buffer_size);
 		
         uint8_t conn_id = params->conn_id;
         uint16_t gatt_if = params->gatt_if;

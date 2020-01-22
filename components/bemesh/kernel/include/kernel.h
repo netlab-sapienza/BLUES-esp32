@@ -101,8 +101,10 @@ extern bool get_service_S1;
 extern bool get_service_S2;
 extern bool get_service_S3;
 
+extern bool reset;
 
-typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t);
+
+typedef void(*NotifyCb)(uint16_t,uint8_t,uint8_t,uint8_t*,uint8_t);
 typedef void(*InitCb)(uint8_t);
 typedef void(*ShutDownCb)(uint8_t);
 //This callback function pass the newly updated MAC table entry to the master object.
@@ -227,6 +229,8 @@ uint8_t install_ServerLost(ServerLost cb); // Triggered when the client is conne
 
 uint8_t install_SSC_Active(SSC_Active cb);
 uint8_t install_SSC_Passive(SSC_Passive cb);
+
+uint8_t install_RetryCb(EndScanning cb);
 
 bool has_ended_scanning();
 
