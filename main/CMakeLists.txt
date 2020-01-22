@@ -1,5 +1,5 @@
 
-list(APPEND REQUIRED_COMPS "kernel" "mid-tier" "callbacks" "common")
+list(APPEND REQUIRED_COMPS "kernel" "mid-tier" "callbacks" "common" "firmware")
 
 
 #In this variable we keep track of source files needed by the component.
