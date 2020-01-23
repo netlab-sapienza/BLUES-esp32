@@ -13,6 +13,7 @@ extern "C" {
 }
 
 int main(void) {
+  bemesh::main_routine(NULL);
   return 0;
 }
 
