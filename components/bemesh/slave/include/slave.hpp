@@ -1,7 +1,6 @@
 
 
 #pragma once
-#include "esp_log.h"
 #include <stdlib.h>
 
 #include "rtable.hpp" //For dev_addr_t data type.
@@ -21,8 +20,9 @@
 
 
 extern "C"{
-    #include "kernel.h"
-    #include "gatts_table.h"
+#include "esp_log.h"
+#include "kernel.h"
+#include "gatts_table.h"
 }
 
 namespace bemesh{

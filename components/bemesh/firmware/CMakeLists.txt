@@ -30,7 +30,7 @@ else()
   project(firmware)
   add_library(Firmware firmware.cpp)
   target_include_directories(Firmware PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-  
   target_link_libraries(Firmware Master Slave Kernel EspLog Callbacks Common Router)
+
   
 endif(NOT DEFINED ESP32_SIMULATION)

@@ -6,7 +6,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "esp_log.h"
 #include <list>
 #include "constant.hpp"
 #include "common.hpp"
@@ -21,6 +20,7 @@
 
 
 extern "C"{
+#include "esp_log.h"
 #include "kernel.h"
 #include "gatts_table.h"
 }

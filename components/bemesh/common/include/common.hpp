@@ -1,6 +1,5 @@
 
 #pragma once
-#include "esp_log.h"
 #include "constant.hpp"
 #include "rtable.hpp"
 #include "bemesh_error.hpp"
@@ -15,8 +14,9 @@
 
 
 extern "C"{
-    #include "kernel.h"
-    #include "gatts_table.h"
+#include "esp_log.h"
+#include "kernel.h"
+#include "gatts_table.h"
 }
 
 namespace bemesh{

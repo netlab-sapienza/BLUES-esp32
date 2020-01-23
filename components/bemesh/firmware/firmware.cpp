@@ -11,7 +11,6 @@ namespace bemesh {
 
     bool becoming_client=false;
     bool becoming_server=false;
-    int bemesh_errno=0;
     const char* LOG_TAG = "be_mesh_demo";
 
     ESP_LOGE(LOG_TAG, "Initializing Firmware...");

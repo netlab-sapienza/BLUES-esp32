@@ -32,6 +32,6 @@ else()
   add_library(Slave slave.cpp)
   target_include_directories(Slave PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
   
-  target_link_libraries(Slave Kernel EspLog Common)
+  target_link_libraries(Slave Kernel EspLog Routing Common)
   
 endif(NOT DEFINED ESP32_SIMULATION)
