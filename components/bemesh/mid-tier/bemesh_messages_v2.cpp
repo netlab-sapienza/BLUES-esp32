@@ -221,7 +221,7 @@ namespace bemesh {
   RoutingDiscoveryRequest* RoutingDiscoveryRequest::create(std::istream& istr) {
     // Read header
     istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
-    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_src_addr), sizeof(dev_addr_t));
     istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
     istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
     istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));
@@ -232,7 +232,7 @@ namespace bemesh {
   RoutingDiscoveryResponse* RoutingDiscoveryResponse::create(std::istream& istr) {
     // Read header
     istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
-    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_src_addr), sizeof(dev_addr_t));
     istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
     istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
     istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));
@@ -268,7 +268,7 @@ namespace bemesh {
   RoutingSyncMessage* RoutingSyncMessage::create(std::istream& istr) {
     // Read header
     istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
-    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_src_addr), sizeof(dev_addr_t));
     istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
     istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
     istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));
@@ -286,7 +286,7 @@ namespace bemesh {
   RoutingPingMessage* RoutingPingMessage::create(std::istream& istr) {
     // Read header
     istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
-    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_src_addr), sizeof(dev_addr_t));
     istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
     istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
     istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));
