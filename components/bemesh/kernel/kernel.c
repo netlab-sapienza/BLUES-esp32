@@ -37,7 +37,7 @@ SSC_Passive ssc_passive;
 // Established connections for a server
 const uint8_t NOID = -1;
 uint8_t MACS[TOTAL_NUMBER_LIMIT][6] = { 0 };
-uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID};
+uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID, NOID, NOID, NOID, NOID, NOID, NOID};
 uint8_t n_connections = 0;
 struct device scan_res[SCAN_LIMIT] = {0};
 
