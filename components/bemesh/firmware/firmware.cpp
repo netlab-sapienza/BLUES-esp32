@@ -14,11 +14,15 @@ namespace bemesh {
     const char* LOG_TAG = "be_mesh_demo";
 
     ESP_LOGE(LOG_TAG, "Initializing Firmware...");
-
-    bemesh::Callback callback_functor;
-    callback_functor();
-    //gatt_server_main();
-    gatt_client_main();
+    
+	ble_esp_startup();
+	gatt_client_main();
+	//gatt_server_main();
+	
+	//Installing all callbacks
+	bemesh::Callback callback_functor;
+	callback_functor();
+    
     return;
   }
 }
