@@ -674,7 +674,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         }
         ESP_LOGI(GATTC_TAG, "write descr success ");
         
-        becoming_client = true;
+        //becoming_client = true;
         (*init_cb)(CLIENT);
         //xTaskCreate(my_task2, "TASK", 2048, NULL, 2, NULL);
         
@@ -1260,7 +1260,7 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             ESP_LOGI(GATTS_TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
             
             (*init_cb)(SERVER);
-            becoming_server = true;
+            //becoming_server = true;
         
             break;
         case ESP_GATTS_CONNECT_EVT:

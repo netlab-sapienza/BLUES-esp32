@@ -9,8 +9,8 @@ namespace bemesh {
   void main_routine(void* args) {
     // May use additional args if needed.
 
-    bool becoming_client=false;
-    bool becoming_server=false;
+    //bool becoming_client=false;
+    //bool becoming_server=false;
     const char* LOG_TAG = "be_mesh_demo";
 
     ESP_LOGE(LOG_TAG, "Initializing Firmware...");

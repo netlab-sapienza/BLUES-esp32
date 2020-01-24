@@ -23,5 +23,5 @@ endforeach()
 #Finally we register the component using the values stored in the variables above
 idf_component_register(SRCS ${SOURCES}
                         INCLUDE_DIRS ${INCLUDE_LIST} 
-                        REQUIRES nvs_flash bt kernel mid-tier callbacks common)
+                        REQUIRES nvs_flash bt kernel mid-tier callbacks common firmware)
 

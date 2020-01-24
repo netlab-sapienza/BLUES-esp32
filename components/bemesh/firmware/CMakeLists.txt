@@ -1,9 +1,9 @@
 if(NOT DEFINED ESP32_SIMULATION)
-  list(APPEND REQUIRED_COMPS "kernel" "mid-tier" "common" "master" "slave")
+  list(APPEND REQUIRED_COMPS "kernel" "mid-tier" "common" "master" "slave" "callbacks")
 
 
   #In this variable we keep track of source files needed by the component.
-  list(APPEND SOURCES "callbacks.cpp")
+  list(APPEND SOURCES "firmware.cpp")
 
   #All header files will be located inside the "include" directory of the component "component" reachable from "../"
   set(BASE_PATH_TO_INCLUDE "../")
@@ -24,7 +24,7 @@ if(NOT DEFINED ESP32_SIMULATION)
   #Finally we register the component using the values stored in the variables above
   idf_component_register(SRCS ${SOURCES}
     INCLUDE_DIRS ${INCLUDE_LIST} 
-    REQUIRES mid-tier kernel common master slave)
+    REQUIRES mid-tier kernel common master slave callbacks)
 else()
   # Builds the libraries
   project(firmware)

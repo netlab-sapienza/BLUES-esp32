@@ -88,8 +88,8 @@ extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
 extern struct device scan_res[SCAN_LIMIT];
 
 
-extern bool becoming_client;
-extern bool becoming_server;
+//extern bool becoming_client;
+//extern bool becoming_server;
 
 extern bool wants_to_discover;
 extern bool wants_to_send_routing_table;
