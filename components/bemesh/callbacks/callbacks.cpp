@@ -35,7 +35,7 @@ namespace bemesh{
             
         }
         else if(slave_instance){
-            ESP_LOGE(GATTC_TAG,"In ssc_active_callback. Sending a notification");
+           ESP_LOGE(GATTC_TAG,"In ssc_active_callback. Sending a notification");
             slave_instance->write_characteristic(IDX_CHAR_VAL_A,buf,BUF_SIZE,get_gatt_if(),
                             get_internal_client_connid(internal_client_id),Standard);
         }
@@ -64,7 +64,7 @@ namespace bemesh{
                 //esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                //register_internal_client(SERVER_S1);
+                register_internal_client(SERVER_S1);
                 return;
             }
             case CLIENT:{
@@ -326,6 +326,7 @@ namespace bemesh{
         //It may happen that an internal client connects to this server after this check
         //Thys nested loop has a quadratic cost (worst case).
         if(internal_flag == INTERNAL_CLIENT_FLAG){
+            ESP_LOGE(GATTS_TAG,"Here. Checking arleady known devices");
             uint8_t* assigned_connids = get_server_connids();
             uint8_t ** macs = get_connected_MACS();
             for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
@@ -378,6 +379,8 @@ namespace bemesh{
                 ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
                 if(CLIENT_FLAG)
                     init_callback(CLIENT);
+                else
+                    ESP_LOGE(GATTS_TAG,"It is a server");
             }
         }
     }

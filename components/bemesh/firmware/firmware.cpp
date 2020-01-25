@@ -15,14 +15,18 @@ namespace bemesh {
 
     ESP_LOGE(LOG_TAG, "Initializing Firmware...");
     
-	ble_esp_startup();
-	gatt_client_main();
-	//gatt_server_main();
 	
-	//Installing all callbacks
-	bemesh::Callback callback_functor;
-	callback_functor();
+    //Installing all callbacks
+    bemesh::Callback callback_functor;
+    callback_functor();
+
+
+
+    ble_esp_startup();
+    //gatt_client_main();
+    gatt_server_main();
     
+      
     return;
   }
 }
