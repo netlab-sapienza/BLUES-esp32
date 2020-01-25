@@ -14,10 +14,12 @@
 
 //TO-DO. Levare sta schifezza e fare un array di callback.
 NotifyCb ntf_cb;
-ServerUpdateCb server_update_cb;
 InitCb init_cb;
+
+ServerUpdateCb server_update_cb;
 ExchangeRoutingTableCb exchange_routing_table_cb;
 SendRoutingTableCb send_routing_table_callback;
+
 ReceivedPacketCb received_packet_cb;
 ShutDownCb shutdown_cb;
 
@@ -1672,13 +1674,12 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         break;
     }
     case ESP_GATTC_DISCONNECT_EVT:
-        //Start scanning again
-        //start_scan();
         
         if (memcmp(p_data->disconnect.remote_bda, gl_internal_clients_tab[SERVER_S1].remote_bda, 6) == 0){
-            ESP_LOGI(GATTC_TAG, "device a disconnect");
+            ESP_LOGI(GATTC_TAG, "I lost connection with the server");
             conn_device_S1 = false;
             get_service_S1 = false;
+            //start_scan();
             //ID_TABLE[p_data->disconnect.conn_id] = NOID;
             //esp_ble_gap_start_scanning(base_scan*scan_dividend);
             //change_name(0, SERVERS_IDX);
@@ -1696,7 +1697,7 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
     switch (event) {
     case ESP_GATTC_REG_EVT:
         ESP_LOGI(GATTC_TAG, "REG_EVT");
-
+		/*
         uint8_t s_id = 66;
         if(conn_device_S1)
             s_id = SERVER_S1;
@@ -1704,7 +1705,8 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             s_id = SERVER_S2;
         else if(conn_device_S3)
             s_id = SERVER_S3;
-
+		
+		
         if(wants_to_send_routing_table){
             
             ESP_LOGE(GATTS_TAG,"I want to send my routing table entries");
@@ -1716,8 +1718,8 @@ void gattc_profile_S2_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         else{
             ESP_LOGE(GATTS_TAG,"I don't want to");
         }
-
-
+			
+		*/
         break;
     case ESP_GATTC_CONNECT_EVT:
         break;
@@ -2220,12 +2222,6 @@ void gattc_profile_S3_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
     }
 }
 
-
-void internal_client_task(void *pvParameters) {
-		start_internal_client(SERVER_S1);
-		vTaskDelete(NULL);
-	}
-
 void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     uint8_t *adv_name = NULL;
@@ -2324,10 +2320,8 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						esp_ble_gap_start_advertising(&adv_params);
                     }
                     
-                   
-                    //xTaskCreate(internal_client_task, "int_task", 2048, NULL, 2, NULL);
+                 
                     //processDevice(scan_result, adv_name, adv_name_len);
-					ESP_LOGE(GATTS_TAG, "SCANNING --------------------------");
 				}
 			}
 
@@ -2338,13 +2332,10 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
-            ESP_LOGE(GATTS_TAG,"BEFORE CALLBACK");
 			//(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
-            ESP_LOGE(GATTS_TAG,"AFTER CALLBACK");
 			scan_seq = 0;
             break;
         default:
-			ESP_LOGE(GATTS_TAG, "AOO ECCOME --------------------------");
             break;
         }
         break;
@@ -2368,8 +2359,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         break;
 
     default:
-		ESP_LOGE(GATTS_TAG, "eccome 2!!!!! --------------------------");
-        break;
+		break;
     }
 }
 

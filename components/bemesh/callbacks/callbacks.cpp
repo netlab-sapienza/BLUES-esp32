@@ -26,11 +26,22 @@ namespace bemesh{
         //uint8_t buffer[BUF_SIZE]={1,2,3,4};
         //uint8_t other_buff[BUF_SIZE]={5,5,5,5,5,5};
         write_policy_t policy = Standard;
-        if(master_instance){
+        if(master_instance) {
+			
             ESP_LOGE(GATTS_TAG,"In ssc_active_callback. writing");
+            /*
             master_instance->write_characteristic(IDX_CHAR_VAL_A,buf,BUF_SIZE,get_internal_client_gattif(internal_client_id),
                                                 get_internal_client_connid(internal_client_id),policy);
-
+			*/
+            uint8_t conn_id = get_internal_client_connid(internal_client_id);
+			master_instance->set_active(conn_id);
+            
+            bool resp = master_instance->is_active(conn_id);
+			ESP_LOGE(GATTS_TAG, "This server is active? %d", resp);
+            
+            exchange_routing_table_callback(get_my_MAC(), get_internal_client_serverMAC(internal_client_id),
+                                get_internal_client_gattif(internal_client_id), conn_id);
+            
             
             
         }
@@ -46,9 +57,13 @@ namespace bemesh{
         uint8_t BUF_SIZE = 6;
         uint8_t characteristic = IDX_CHAR_VAL_A;
         uint8_t buffer[BUF_SIZE] = {2,2,2,2,2,2};
+        
         if(master_instance){
             ESP_LOGE(GATTS_TAG,"In ssc_passive_callback. Sending a notification");
-            master_instance->send_notification(conn_id,characteristic,buffer,BUF_SIZE);
+            
+            master_instance->set_passive(conn_id);
+            //master_instance->send_notification(conn_id,characteristic,buffer,BUF_SIZE);
+        
         }
 
     }
@@ -69,7 +84,8 @@ namespace bemesh{
                 //esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                start_internal_client(SERVER_S1);
+                //start_internal_client(SERVER_S1);
+                
                 //xTaskCreate(internal_client_task, "int_task", 2048, NULL, 2, NULL);
                 return;
             }
@@ -91,8 +107,8 @@ namespace bemesh{
         master_instance->send_routing_table(src,dst,gatt_if,conn_id,server_id);
 
         //After we send the routing table we unregister the internal client.
-        unregister_internal_client(SERVER_S2);
-        ESP_LOGE(FUNCTOR_TAG,"Client number: %d unregistered",SERVER_S2);
+        //unregister_internal_client(SERVER_S2);
+        //ESP_LOGE(FUNCTOR_TAG,"Client number: %d unregistered",SERVER_S2);
 
     }
 

@@ -315,17 +315,33 @@ namespace bemesh{
     {
         ESP_LOGE(GATTS_TAG, "Someone wants to discover my routing table and I prepare a routing discovery response");
         //I must connect to the server that has requested the routing table and then exchange with it.
-       
-        
-        wants_to_discover = false;
+		wants_to_discover = false;
         wants_to_send_routing_table = true;
-        start_internal_client(SERVER_S2);
-        //register_internal_client(SERVER_S2);
 
-
-        //Prepare the routing discovery response message in the callback.
-        
-
+		uint8_t mac[MAC_LEN]; // mac address of the device sending the discovery req
+		memcpy(mac, header_t->destination().data(), sizeof(uint8_t) * MAC_LEN);
+		//esp_log_buffer_hex(GATTC_TAG, mac, MAC_LEN);
+		uint8_t conn_id = get_MAC_connid(mac);
+		
+		
+		//Prepare the routing discovery response message in the callback.
+		
+		bool status = master_instance->is_active(conn_id); 
+		switch(status) {
+		case true:
+			// I'm active, using write char
+			ESP_LOGE(GATTS_TAG, "I'm Active!!");
+			break;
+		case false:
+			// I'm passive, using notification
+			ESP_LOGE(GATTS_TAG, "I'm Passive!!");
+			break;
+		default:
+			ESP_LOGE(GATTS_TAG, "Who am I?");
+			break;
+		}
+		
+		
         return;                        
     }
 
@@ -862,7 +878,7 @@ namespace bemesh{
                 dev_addr_t addr = _build_dev_addr(address);
                 connected_server_params_t new_server(server_id,gatt_if,conn_id,addr);
                 add_neighbour(new_server);
-                ESP_LOGE(GATTS_TAG,"Adding a new neighbour ");
+                //ESP_LOGE(GATTS_TAG,"Adding a new neighbour ");
 
                 //std::cout<<"New address is: "<<std::endl;
                 /*
@@ -943,6 +959,20 @@ namespace bemesh{
         uint8_t notification_ret = notify_client(conn_id,characteristic,data,data_size);
         return notification_ret;
     }
-
+	
+	
+	bool Master::is_active(uint8_t conn_id){
+        return active[conn_id];
+    }
+    
+    void Master::set_active(uint8_t conn_id){
+        active[conn_id] = true;
+        return;
+    }
+    
+    void Master::set_passive(uint8_t conn_id){
+        active[conn_id] = false;
+        return;
+    }
 }
 

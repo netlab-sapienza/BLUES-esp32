@@ -85,7 +85,8 @@ namespace  bemesh{
             //Objects to be used by master class
             Router* router;
             MessageHandler mes_handler;
-
+			
+			bool active[TOTAL_NUMBER_LIMIT]; // K-th position (== conn_id) is 1 if this server is active wrt device 0 otherwise
 
             
 
@@ -237,7 +238,9 @@ namespace  bemesh{
                 uint8_t send_notification(uint8_t conn_id, uint8_t charcteristic,uint8_t* data,
                                         uint8_t data_size);
                 
-
+				bool is_active(uint8_t conn_id);
+				void set_active(uint8_t conn_id);
+				void set_passive(uint8_t conn_id);
                 
 
         };
