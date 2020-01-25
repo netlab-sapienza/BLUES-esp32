@@ -33,6 +33,8 @@ SSC_Passive ssc_passive;
 int timer = 0;
 uint32_t internal_scan_duration = 4;
 
+uint8_t MACSS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
+
 /*
  *  	SETTINGS
  */
@@ -378,8 +380,8 @@ const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 
     /* Characteristic Declaration */
     [IDX_CHAR_B]      =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
-      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read}},
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
     /* Characteristic Value */
     [IDX_CHAR_VAL_B]  =
@@ -1046,7 +1048,8 @@ void example_exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble
 void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param) {
     switch (event) {
     case ESP_GATTS_REG_EVT:
-		
+		ESP_LOGE(GATTS_TAG, "MAACCCCCCCCC");
+		esp_log_buffer_hex(GATTS_TAG, get_my_MAC(), MAC_LEN);
         ESP_LOGI(GATTS_TAG, "REGISTER_APP_EVT, status %d, app_id %d\n", param->reg.status, param->reg.app_id);
         /*
         gl_profile_tab[PROFILE_A_APP_ID].service_id.is_primary = true;
@@ -1306,7 +1309,10 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			// Updating MACs table
 			int k;
 			for(k=0; k<6; k++) {
-				MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
+				ESP_LOGE(GATTS_TAG, "PROCEDO MARIO con conn_id %d", param->connect.conn_id);
+				
+				MACSS[param->connect.conn_id][k] = param->connect.remote_bda[k];
+				esp_log_buffer_hex(GATTS_TAG,MACSS[param->connect.conn_id],MAC_LEN);
 			}
 			
             //Send the new mac_address to the server.
@@ -2683,7 +2689,15 @@ uint8_t get_num_connections() {
 }
 
 uint8_t** get_connected_MACS() {
-	return (uint8_t**) MACS;
+	uint8_t** macs = malloc(sizeof(uint8_t*)*TOTAL_NUMBER_LIMIT);
+	int i,j;
+	for(i=0; i<TOTAL_NUMBER_LIMIT; i++) macs[i] = malloc(sizeof(uint8_t)*MAC_LEN);
+	for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {	
+		for(j=0; j<MAC_LEN; j++) {	
+			macs[i][j] = MACS[i][j];
+		}
+	}
+	return macs;
 }
 
 uint8_t get_type_connection(uint8_t conn_id) {
@@ -3053,20 +3067,30 @@ uint8_t* get_connid_MAC(uint8_t conn_id) {
 	
 }
 
+
+void my_task4(void *pvParameters) {
+    
+    vTaskDelay(100); // Waiting for 1000 ticks (not ms)
+ 
+	ESP_LOGE(GATTC_TAG, "STO A FA NA PROVA");
+	esp_log_buffer_hex(GATTS_TAG, MACSS[0], MAC_LEN);
+ 
+    vTaskDelete(NULL);
+}
+
+
 uint8_t get_MAC_connid(uint8_t* mac_addr) {
+	//xTaskCreate(my_task4, "TASK4", 2048, NULL, 2, NULL);
 	int i,j;
 	uint8_t dev = get_node_type();
 	
 	if(dev == SERVER) {
 		for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
-			uint8_t check = 1;
-			for(j=0; j<6; j++) {
-				if(MACS[i][j] != mac_addr[j]) check=0;
-			}
-			if(check) return i;
+			if(MAC_check(mac_addr, MACSS[i])) return i;
 		}
 		return NOID; 
 	} else return gl_profile_tab2[PROFILE_A_APP_ID].conn_id;
+	
 	
 }
 
@@ -3080,7 +3104,7 @@ uint8_t* get_my_MAC() {
 		ESP_LOGE(GATTC_TAG, "Cannot retrieve the MAC address, err %x", ret);
 		return mac;
 	}
-	
+	mac[MAC_LEN-1] = mac[MAC_LEN-1]+2;
 	return mac;
 }
 
@@ -3357,7 +3381,7 @@ void scan(uint8_t duration, uint8_t num_internal_client) {
 uint8_t notify_client(uint8_t conn_id, uint8_t chr, uint8_t* data, uint8_t data_size) {
 	esp_err_t ret;
 	
-	ret= esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_A_APP_ID].gatts_if, conn_id, char_handle_table[chr], data_size, data, true);
+	ret= esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_A_APP_ID].gatts_if, conn_id, char_handle_table[chr], data_size, data, false);
 	if(ret != ESP_OK) {
 		return 1;
 	}

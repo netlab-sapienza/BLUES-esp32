@@ -17,7 +17,19 @@ namespace bemesh{
 
     
      
-     
+    void my_task_active(void *pvParameters) {
+    
+		vTaskDelay(100);
+		vTaskDelete(NULL);
+	}
+	
+	void my_task_passive(void *pvParameters) {
+    
+		vTaskDelay(100);
+		vTaskDelete(NULL);
+	}
+
+
     void Callback::ssc_active_callback(uint8_t internal_client_id){
         uint8_t BUF_SIZE = 10, i;
         uint8_t* buf = new uint8_t[BUF_SIZE];
@@ -33,12 +45,17 @@ namespace bemesh{
             master_instance->write_characteristic(IDX_CHAR_VAL_A,buf,BUF_SIZE,get_internal_client_gattif(internal_client_id),
                                                 get_internal_client_connid(internal_client_id),policy);
 			*/
+			
             uint8_t conn_id = get_internal_client_connid(internal_client_id);
 			master_instance->set_active(conn_id);
             
-            bool resp = master_instance->is_active(conn_id);
+            uint8_t resp = master_instance->is_active(conn_id);
 			ESP_LOGE(GATTS_TAG, "This server is active? %d", resp);
-            
+			
+			ESP_LOGE(GATTS_TAG, "ALLORA, IL SRC E':");
+			esp_log_buffer_hex(GATTS_TAG, get_my_MAC(), MAC_LEN);
+			ESP_LOGE(GATTS_TAG, "ALLORA, IL DEST E':");
+			esp_log_buffer_hex(GATTS_TAG, get_internal_client_serverMAC(internal_client_id), MAC_LEN);
             exchange_routing_table_callback(get_my_MAC(), get_internal_client_serverMAC(internal_client_id),
                                 get_internal_client_gattif(internal_client_id), conn_id);
             
@@ -84,7 +101,7 @@ namespace bemesh{
                 //esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                //start_internal_client(SERVER_S1);
+                start_internal_client(SERVER_S1);
                 
                 //xTaskCreate(internal_client_task, "int_task", 2048, NULL, 2, NULL);
                 return;
@@ -365,7 +382,7 @@ namespace bemesh{
         if(internal_flag == INTERNAL_CLIENT_FLAG){
             ESP_LOGE(GATTS_TAG,"Here. Checking arleady known devices");
             uint8_t* assigned_connids = get_server_connids();
-            uint8_t ** macs = get_connected_MACS();
+            uint8_t** macs = get_connected_MACS();
             for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
                 for(j = 0; j< SCAN_LIMIT; ++j){
 					//esp_log_buffer_char(FUNCTOR_TAG,device_list[i].dev_name,sizeof(device_list[i].dev_name));
@@ -391,8 +408,13 @@ namespace bemesh{
 					*/
                 }
             }
+            
+            for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i) {
+				free(macs[i]);
+			}
+			free(macs);
         }
-
+		
 
         //We perform some integrity check.
         if(device_list == NULL)

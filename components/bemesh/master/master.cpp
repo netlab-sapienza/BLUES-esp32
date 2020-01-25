@@ -320,27 +320,32 @@ namespace bemesh{
 
 		uint8_t mac[MAC_LEN]; // mac address of the device sending the discovery req
 		memcpy(mac, header_t->destination().data(), sizeof(uint8_t) * MAC_LEN);
-		//esp_log_buffer_hex(GATTC_TAG, mac, MAC_LEN);
+		ESP_LOGE(GATTS_TAG, "data isssssssssssssss:");
+		esp_log_buffer_hex(GATTS_TAG, header_t->destination().data(), MAC_LEN);
 		uint8_t conn_id = get_MAC_connid(mac);
 		
 		
 		//Prepare the routing discovery response message in the callback.
+		send_routing_table(get_my_MAC(), mac, get_gatt_if(), conn_id, 0);
 		
-		bool status = master_instance->is_active(conn_id); 
+		/*
+		uint8_t status = master_instance->is_active(conn_id); 
+		ESP_LOGE(GATTS_TAG, "Active? %d, conn_id is %d", status, conn_id);
 		switch(status) {
-		case true:
+		case 1:
 			// I'm active, using write char
 			ESP_LOGE(GATTS_TAG, "I'm Active!!");
 			break;
-		case false:
+		case 0:
 			// I'm passive, using notification
 			ESP_LOGE(GATTS_TAG, "I'm Passive!!");
+			send_routing_table(get_my_MAC(), mac, get_gatt_if(), conn_id, 0); // last argument, server_id, is a bit doubtful
 			break;
 		default:
 			ESP_LOGE(GATTS_TAG, "Who am I?");
 			break;
 		}
-		
+		*/
 		
         return;                        
     }
@@ -485,8 +490,7 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery response transmission callback");
-        //ESP_LOGE(GATTS_TAG, "BELLAAAAAA A TUTTIIIIIIIIIIIIIIIIIIIII");
-
+        /*
         //The order is: gatt_if, conn_id, server_id.
         uint16_t* ptr = (uint16_t*) args;
         uint16_t gatt_if = *ptr;
@@ -495,22 +499,55 @@ namespace bemesh{
         uint8_t conn_id = *(_ptr);
         _ptr =(uint8_t*) (_ptr + sizeof(uint8_t));
         uint8_t server_id = *(_ptr);
+        */
+        
+        uint8_t mac[MAC_LEN];
+		memcpy(mac, header_t->source().data(), sizeof(uint8_t) * MAC_LEN);
+		uint8_t conn_id = get_MAC_connid(mac);
+        uint16_t gatt_if = get_gatt_if();
+        
+        // Do i really care about server_id? 0 for the moment :)
+        esp_log_buffer_hex(GATTS_TAG, mac, MAC_LEN);
         ESP_LOGE(GATTS_TAG,"Parsed message arguments: gatt_if: %d, conn_id: %d, server_id: %d",
-                        gatt_if, conn_id, server_id);
+                        gatt_if, conn_id, 0);
 
         uint8_t characteristic = IDX_CHAR_VAL_B;
 
         //Write to some characteristic
-        write_policy_t policy = Standard;
-        ErrStatus ret_val = write_characteristic(characteristic,buffer,size,gatt_if,
-                            conn_id,policy);
         
-        if(ret_val){
-            
-            ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: error in writing the: %d characteristic. Error status: %d",
-                                characteristic,ret_val);
-        }
 
+        uint8_t status = master_instance->is_active(conn_id); 
+		ESP_LOGE(GATTS_TAG, "Active? %d, conn_id is %d", status, conn_id);
+		switch(status) {
+		case 1: {
+			// I'm active, using write char
+			ESP_LOGE(GATTS_TAG, "I'm Active!!");
+			write_policy_t policy = Standard;
+			ErrStatus ret_val = write_characteristic(characteristic,buffer,size,gatt_if,conn_id,policy);
+			if(ret_val){
+				ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: error in sending the: %d characteristic. Error status: %d",
+                                characteristic,ret_val);
+			}
+			break;
+		}
+		case 0: {
+			// I'm passive, using notification
+			ESP_LOGE(GATTS_TAG, "I'm Passive!!");
+			uint8_t notification_ret = send_notification(conn_id,characteristic,buffer,size);
+			if(notification_ret){
+                ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: Error in notifying the client: %d on the characteristic: %d",conn_id,characteristic);
+            }
+			break;
+		}
+		default:
+			ESP_LOGE(GATTS_TAG, "Who am I?");
+			break;
+		}
+        
+        
+        
+        
+		
         return;
     }
 
@@ -926,7 +963,7 @@ namespace bemesh{
 
         
         std::cout<<"RoutingDiscoveryResponseMessage sent"<<std::endl;
-        master_instance->get_message_handler()->handle();
+        master_instance->get_message_handler()->handle(); // qui chiamo routing_discovery_response_transmission callback
         std::cout<<"Message handled"<<std::endl;
         //And see what happens.
         return ret_val;
@@ -950,28 +987,33 @@ namespace bemesh{
         mes_handler.handle();
         return;
     }
+    
+
+
 
     uint8_t Master::send_notification(uint8_t conn_id,uint8_t characteristic,uint8_t* data,
                                     uint8_t data_size)
     {
         ESP_LOGE(GATTS_TAG,"In send notification conn_id: %d characteristic: %d",
                             conn_id, characteristic);
-        uint8_t notification_ret = notify_client(conn_id,characteristic,data,data_size);
+        uint8_t notification_ret;
+        
+        notification_ret = notify_client(conn_id,characteristic,data,data_size);
         return notification_ret;
     }
 	
 	
-	bool Master::is_active(uint8_t conn_id){
+	uint8_t Master::is_active(uint8_t conn_id){
         return active[conn_id];
     }
     
     void Master::set_active(uint8_t conn_id){
-        active[conn_id] = true;
+        active[conn_id] = 1;
         return;
     }
     
     void Master::set_passive(uint8_t conn_id){
-        active[conn_id] = false;
+        active[conn_id] = 0;
         return;
     }
 }
