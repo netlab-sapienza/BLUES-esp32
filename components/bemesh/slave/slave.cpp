@@ -494,7 +494,7 @@ namespace bemesh{
 
 
         //Begin testing the ping features
-        //ping_server(gatt_if,conn_id,server_mac_address,PING_FLAG_VALUE);
+        ping_server(gatt_if,conn_id,server_mac_address,PING_FLAG_VALUE);
 
     }
 

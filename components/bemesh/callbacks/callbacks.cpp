@@ -64,7 +64,7 @@ namespace bemesh{
                 //esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                start_internal_client(SERVER_S1);
+                //start_internal_client(SERVER_S1);
                 return;
             }
             case CLIENT:{
