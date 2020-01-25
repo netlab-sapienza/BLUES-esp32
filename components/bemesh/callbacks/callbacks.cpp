@@ -263,8 +263,9 @@ namespace bemesh{
 						//ESP_LOGE(GATTC_TAG, "NON VA BENE");
 						//continue;
 					//}
+					ESP_LOGE(GATTC_TAG, "IS SERVER? %d",device_list[i].is_server);
 					if(device_list[i].is_server == 0) {
-						ESP_LOGE(GATTC_TAG, "CHIST NUN E NU SERVER");
+						
 						continue;
 					}
 						
@@ -319,6 +320,7 @@ namespace bemesh{
             int server_pos = choose_server(device_list,device_list_size,internal_flag,server_id,policy);
             ESP_LOGE(FUNCTOR_TAG,"SERVER POS %d", server_pos);
             connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
+            ESP_LOGE(FUNCTOR_TAG,"CONNESSIONE AVVENUTA");
             if(connection_ret){
                 discarded[server_pos] = true;
             }

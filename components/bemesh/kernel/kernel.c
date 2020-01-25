@@ -1680,7 +1680,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
             conn_device_S1 = false;
             get_service_S1 = false;
             //ID_TABLE[p_data->disconnect.conn_id] = NOID;
-            esp_ble_gap_start_scanning(base_scan*scan_dividend);
+            //esp_ble_gap_start_scanning(base_scan*scan_dividend);
             //change_name(0, SERVERS_IDX);
         }
         break;
@@ -2301,7 +2301,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 							break;
 						}
 					}
-					/*	
+					/*
 					int i,k;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
 						uint8_t check = 1;
@@ -2311,7 +2311,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						if(check) break; // This MAC is already in the list of connected devices
 					}			
 					*/
-					/*
+					
 					ESP_LOGI(GATTC_TAG, "searched device %s, connect is %d\n", remote_device_name,conn_device_S1);
                     if (conn_device_S1 == false) {
                         conn_device_S1 = true;
@@ -2323,10 +2323,10 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						Isconnecting = true;
 						esp_ble_gap_start_advertising(&adv_params);
                     }
-                    */
+                    
                    
                     //xTaskCreate(internal_client_task, "int_task", 2048, NULL, 2, NULL);
-                    processDevice(scan_result, adv_name, adv_name_len);
+                    //processDevice(scan_result, adv_name, adv_name_len);
 					ESP_LOGE(GATTS_TAG, "SCANNING --------------------------");
 				}
 			}
@@ -2339,7 +2339,7 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
             ESP_LOGE(GATTS_TAG,"BEFORE CALLBACK");
-			(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
+			//(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
             ESP_LOGE(GATTS_TAG,"AFTER CALLBACK");
 			scan_seq = 0;
             break;
@@ -3319,6 +3319,7 @@ uint8_t connectTo(struct device server, uint8_t flag_internal, uint8_t num_inter
 			}
 		}
 	} else { // It's an internal client calling
+		ESP_LOGE(GATTC_TAG, "SONO QUI");
 		switch(num_internal_client) {
 		case(SERVER_S1):
 			conn_device_S1 = true;
@@ -3332,7 +3333,15 @@ uint8_t connectTo(struct device server, uint8_t flag_internal, uint8_t num_inter
 		default: return 1; 
 		}
 		stop_scan_done = true;
-		ret = esp_ble_gattc_open(gl_internal_clients_tab[num_internal_client].gattc_if, server.mac, server.addr_type, true);
+		ESP_LOGE(GATTC_TAG,"CIAO1");
+		esp_log_buffer_hex(GATTC_TAG, server.mac, MAC_LEN);
+		//esp_ble_gap_stop_scanning();
+		uint8_t * server_mac[MAC_LEN] = {0xa4, 0xcf, 0x12, 0x9a, 0x0c, 0x96};
+		ESP_LOGE(GATTC_TAG,"CIAO2");
+		esp_log_buffer_hex(GATTC_TAG, server_mac, MAC_LEN);
+		
+		ret = esp_ble_gattc_open(gl_internal_clients_tab[num_internal_client].gattc_if, server_mac, server.addr_type, true);
+		ESP_LOGE(GATTC_TAG,"CIAO3");
 		if(ret != ESP_OK) {
 			return 1;
 		}	
