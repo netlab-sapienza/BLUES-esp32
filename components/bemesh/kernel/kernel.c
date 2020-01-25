@@ -828,7 +828,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			//ESP_LOGE(GATTC_TAG, "I didn't find a server! I'm going to be a server...");
-			ESP_LOGE(GATTC_TAG, "End of scanning!");
+			//ESP_LOGE(GATTC_TAG, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 			(*endscanning_cb)(scan_res, scan_seq,CLIENT_FLAG,0);
 			scan_seq = 0;
 			//unregister_client();
@@ -2323,11 +2323,14 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
+             
 			stop_scan_done = true;
             esp_ble_gap_stop_scanning();
 			//unregister_internal_client(SERVER_S1);
 			esp_ble_gap_start_advertising(&adv_params);
+            ESP_LOGE(GATTS_TAG,"BEFORE CALLBACK");
 			(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
+            ESP_LOGE(GATTS_TAG,"AFTER CALLBACK");
 			scan_seq = 0;
             break;
         default:

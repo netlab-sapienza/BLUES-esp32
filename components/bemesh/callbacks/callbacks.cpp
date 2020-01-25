@@ -64,7 +64,7 @@ namespace bemesh{
                 //esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                register_internal_client(SERVER_S1);
+                start_internal_client(SERVER_S1);
                 return;
             }
             case CLIENT:{
@@ -320,7 +320,7 @@ namespace bemesh{
                                         uint8_t internal_flag,uint8_t server_id){
         int i,j;
         
-
+        ESP_LOGE(GATTS_TAG,"In endscanning callback");
 
         //If it is an internal client we check if the device is arleady connected (race conditions?).
         //It may happen that an internal client connects to this server after this check
@@ -365,9 +365,16 @@ namespace bemesh{
         connection_policy_t policy = Maximum_rssi_value_policy;
         if (count == 0){
             //If no server is found we become a server ourselves
-            becomeServer();
-            //ESP_LOGE(GATTC_TAG,"I become a server");
-            return;
+            
+            if(internal_flag == INTERNAL_CLIENT_FLAG){
+                ESP_LOGE(GATTS_TAG,"Internal client. Didn't find anyone. Return from endscanning");
+                return;  
+            }
+            else{
+                //ESP_LOGE(GATTC_TAG,"I become a server");
+                becomeServer();
+                return;
+            }
         }
         else{
             int server_pos = connect_to_server(device_list,count,internal_flag,server_id,policy);
@@ -379,8 +386,8 @@ namespace bemesh{
                 ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
                 if(CLIENT_FLAG)
                     init_callback(CLIENT);
-                else
-                    ESP_LOGE(GATTS_TAG,"It is a server");
+            
+                    
             }
         }
     }
