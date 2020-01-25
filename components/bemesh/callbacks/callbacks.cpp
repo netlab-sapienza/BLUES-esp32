@@ -52,7 +52,12 @@ namespace bemesh{
         }
 
     }
-
+	
+	void internal_client_task(void *pvParameters) {
+		start_internal_client(SERVER_S1);
+		vTaskDelete(NULL);
+	}
+	
     void Callback::init_callback(uint8_t type){
         switch(type){
             case SERVER:{
@@ -65,6 +70,7 @@ namespace bemesh{
 
                 //Try to find out if there is another server.
                 start_internal_client(SERVER_S1);
+                //xTaskCreate(internal_client_task, "int_task", 2048, NULL, 2, NULL);
                 return;
             }
             case CLIENT:{
@@ -221,6 +227,7 @@ namespace bemesh{
     int Callback::choose_server(device* device_list,int device_list_size,uint8_t internal_flag,
                                 uint8_t server_id, connection_policy_t policy){
         
+        
         //Check if the buffer exists.
         if(device_list == NULL)
             return -1;
@@ -236,6 +243,7 @@ namespace bemesh{
                 uint8_t rssi_min = device_list[0].rssi;
                 int server_pos = 0; 
                 for( i = 1; i< device_list_size; i++){
+                    //if(!device_list[i].dev_name || device_list[i].dev_name[0] != 'S') continue;
                     if(discarded[i] == false){
                         if(device_list[i].rssi < rssi_min){
                             rssi_min = device_list[i].rssi;
@@ -250,6 +258,16 @@ namespace bemesh{
                 uint8_t rssi_max = device_list[0].rssi;
                 int server_pos = 0;
                 for(i = 0; i< device_list_size; ++i){
+					//if(device_list[i].dev_name[0] != 'S') {
+						//esp_log_buffer_char(FUNCTOR_TAG,device_list[i].dev_name,sizeof(device_list[i].dev_name));
+						//ESP_LOGE(GATTC_TAG, "NON VA BENE");
+						//continue;
+					//}
+					if(device_list[i].is_server == 0) {
+						ESP_LOGE(GATTC_TAG, "CHIST NUN E NU SERVER");
+						continue;
+					}
+						
                     if(discarded[i] == false){
                         if(device_list[i].rssi > rssi_max){
                             rssi_max = device_list[i].rssi;
@@ -299,6 +317,7 @@ namespace bemesh{
         do{
             ESP_LOGE(FUNCTOR_TAG,"Choosing a server to connect to");
             int server_pos = choose_server(device_list,device_list_size,internal_flag,server_id,policy);
+            ESP_LOGE(FUNCTOR_TAG,"SERVER POS %d", server_pos);
             connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
             if(connection_ret){
                 discarded[server_pos] = true;
@@ -331,10 +350,27 @@ namespace bemesh{
             uint8_t ** macs = get_connected_MACS();
             for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
                 for(j = 0; j< SCAN_LIMIT; ++j){
+					//esp_log_buffer_char(FUNCTOR_TAG,device_list[i].dev_name,sizeof(device_list[i].dev_name));
+					/*
+					if(!device_list[j].dev_name) {
+						discarded[j] = true;
+						continue;
+					}
+					*/
                     if(assigned_connids[i] == 1 && MAC_check(macs[i],device_list[j].mac)){
                         //Discard all known devices that are arleady connected to me.
                         discarded[j] = true;
                     }
+                    /*
+					int k, check = 1;
+					char devs[7] = "SERVER";
+					for(k=0; k<6; k++) {
+						if(device_list[j].dev_name[k] != devs[k]) {
+							check = 0;
+						}
+					}
+					if(!check) discarded[j] = true;
+					*/
                 }
             }
         }
