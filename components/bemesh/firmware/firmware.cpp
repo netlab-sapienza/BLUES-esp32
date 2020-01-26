@@ -23,8 +23,8 @@ namespace bemesh {
 
 
     ble_esp_startup();
-    gatt_client_main();
-    //gatt_server_main();
+    //gatt_client_main();
+    gatt_server_main();
     
       
     return;

@@ -220,9 +220,9 @@ namespace bemesh{
         uint8_t * server_connids = get_server_connids();
         int i;
         for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
-			ESP_LOGE(GATTS_TAG,"conn_id is assigned?: %d ",server_connids[i]);
-            if(1){
-                if(1){
+			ESP_LOGE(GATTS_TAG,"conn_id %d is assigned?: %d ",i,server_connids[i]);
+            if(server_connids[i] == 1){
+                if(get_type_connection(i) == CLIENT){
                     uint8_t * client_address = get_connid_MAC(i);
                     dev_addr_t cl_addr = _build_dev_addr(client_address);
                     RoutingPingMessage client_ping_message(cl_addr,rt_ping_message->source(),pong_flag);
@@ -255,9 +255,6 @@ namespace bemesh{
 
                     }
                 }
-            else{
-                ESP_LOGE(GATTS_TAG,"Connids is zero");
-            }
          }
         
 
@@ -515,7 +512,7 @@ namespace bemesh{
         ESP_LOGE(GATTS_TAG,"Parsed message arguments: gatt_if: %d, conn_id: %d, server_id: %d",
                         gatt_if, conn_id, 0);
 
-        uint8_t characteristic = IDX_CHAR_VAL_B;
+        uint8_t characteristic = IDX_CHAR_VAL_A;
 
         //Write to some characteristic
         

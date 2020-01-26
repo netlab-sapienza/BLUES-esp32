@@ -33,7 +33,7 @@ SSC_Passive ssc_passive;
 int timer = 0;
 uint32_t internal_scan_duration = 4;
 
-uint8_t MACSS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
+
 
 /*
  *  	SETTINGS
@@ -41,11 +41,13 @@ uint8_t MACSS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
 
 // Established connections for a server
 const uint8_t NOID = -1;
-uint8_t MACS[TOTAL_NUMBER_LIMIT][6] = { 0 };
+//uint8_t MACS[TOTAL_NUMBER_LIMIT][6]; //= { 0 };
 uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID, NOID, NOID, NOID, NOID, NOID, NOID};
 uint8_t n_connections = 0;
 struct device* scan_res[SCAN_LIMIT];
 //struct device scan_res[SCAN_LIMIT];
+
+uint8_t MACSS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE] = {0};
 
 
 
@@ -378,18 +380,30 @@ const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     [IDX_CHAR_CFG_A]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t *)heart_measurement_ccc}},
-
-
-    /* Characteristic Declaration */
-    [IDX_CHAR_B]      =
+	
+	
+	/* Characteristic Declaration */
+    [IDX_CHAR_B]     =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
     /* Characteristic Value */
-    [IDX_CHAR_VAL_B]  =
+    [IDX_CHAR_VAL_B] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
+	
+    /* Characteristic Declaration 
+    [IDX_CHAR_B]      =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
+
+     Characteristic Value 
+    [IDX_CHAR_VAL_B]  =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
+	*/
+	
     /* Characteristic Declaration */
     [IDX_CHAR_C]      =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
@@ -446,7 +460,6 @@ void my_task(void *pvParameters) {
     vTaskDelete(NULL);
 }
 
-
 void my_task2(void *pvParameters) {
 	
 	//vTaskDelay(1000); // Waiting for 1000 ticks (not ms)
@@ -467,7 +480,6 @@ void my_task2(void *pvParameters) {
 
     vTaskDelete(NULL);
 }
-
 
 void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param)
 {
@@ -1146,10 +1158,11 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 
 						ID_TABLE[param->connect.conn_id] = SERVER;
                         int k;
+                        /*
                         for(k=0; k<6; k++) {
-                            MACS[param->connect.conn_id][k] = param->connect.remote_bda[k];
+                            MACSS[param->connect.conn_id][k] = param->connect.remote_bda[k];
                         }
-						
+						*/
                         //If something's wrong we'll see 66 in the logs.
                         uint8_t s_id = 66;
                         if(conn_device_S1)
@@ -1322,11 +1335,11 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 				ESP_LOGE(GATTS_TAG, "PROCEDO MARIO con conn_id %d", param->connect.conn_id);
 				
 				MACSS[param->connect.conn_id][k] = param->connect.remote_bda[k];
-				esp_log_buffer_hex(GATTS_TAG,MACSS[param->connect.conn_id],MAC_LEN);
+				//esp_log_buffer_hex(GATTS_TAG,MACSS[param->connect.conn_id],MAC_LEN);
 			}
 			
             //Send the new mac_address to the server.
-            (*server_update_cb)(MACS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
+            (*server_update_cb)(MACSS[param->connect.conn_id],UPDATE_ADD_CLIENT,0,0,0);
 
             break;
         case ESP_GATTS_DISCONNECT_EVT:
@@ -1335,15 +1348,15 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             ESP_LOGE(GATTS_TAG, "SI E' DISCONNESSO %d", param->disconnect.conn_id);
 			ESP_LOGI(GATTS_TAG, "DISCONNECTED, conn_id %d, remote %02x:%02x:%02x:%02x:%02x:%02x",
 						param->connect.conn_id,
-							MACS[param->disconnect.conn_id][0], MACS[param->disconnect.conn_id][1], MACS[param->disconnect.conn_id][2],
-								MACS[param->disconnect.conn_id][3], MACS[param->disconnect.conn_id][4], MACS[param->disconnect.conn_id][5]);
+							MACSS[param->disconnect.conn_id][0], MACSS[param->disconnect.conn_id][1], MACSS[param->disconnect.conn_id][2],
+								MACSS[param->disconnect.conn_id][3], MACSS[param->disconnect.conn_id][4], MACSS[param->disconnect.conn_id][5]);
             
-            (*server_update_cb)(MACS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
+            (*server_update_cb)(MACSS[param->disconnect.conn_id],UPDATE_REMOVE_CLIENT,0,0,0);
             
 
             uint8_t i;
 			for(i=0; i<6; i++) {
-				MACS[param->disconnect.conn_id][i] = 0;
+				MACSS[param->disconnect.conn_id][i] = 0;
 			}
             
             //Update the serer istance to track disconnection.
@@ -1522,9 +1535,11 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
                     }
 
                     /*  Every service have only one char in our 'ESP_GATTS_DEMO' demo, so we used first 'char_elem_result' */
+                    
                     if (count > 0 && (char_elem_result_S1[0].properties & ESP_GATT_CHAR_PROP_BIT_NOTIFY)){
                         gl_internal_clients_tab[SERVER_S1].char_handle = char_elem_result_S1[0].char_handle;
                         esp_ble_gattc_register_for_notify (gattc_if, gl_internal_clients_tab[SERVER_S1].remote_bda, char_elem_result_S1[0].char_handle);
+                        //esp_ble_gattc_register_for_notify (gattc_if, gl_internal_clients_tab[SERVER_S1].remote_bda, 42);
                     }
                 }
                 /* free char_elem_result */
@@ -1678,6 +1693,8 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
         for(; i<p_data->read.value_len; i++) {
 			//ESP_LOGI(GATTC_TAG, "read val %d: %x",i, p_data->read.value[i]);
 			CHR_VALUES[chr_idx][i] = p_data->read.value[i];
+			esp_err_t ret = esp_ble_gattc_register_for_notify (gattc_if, gl_internal_clients_tab[SERVER_S1].remote_bda, p_data->read.value[i]);
+			if(ret != ESP_OK) ESP_LOGE(GATTC_TAG, "CAN'T REGISTER TO NOTIFICATION OF CHAR HANDLE %d", p_data->read.value[i]);
 		}	
         
         break;
@@ -2307,8 +2324,9 @@ void esp_gap_S1_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 						break;
 					}
 					uint8_t i;
+					
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
-						if(MAC_check(scan_result->scan_rst.bda, MACS[i])) {
+						if(MAC_check(scan_result->scan_rst.bda, MACSS[i])) {
 							ESP_LOGI(GATTC_TAG, "I know this server!! It's already connected to me");
 							break;
 						}
@@ -2450,7 +2468,7 @@ void esp_gap_S2_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 					
 					uint8_t i;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
-						if(MAC_check(scan_result->scan_rst.bda, MACS[i])) {
+						if(MAC_check(scan_result->scan_rst.bda, MACSS[i])) {
 							ESP_LOGI(GATTC_TAG, "I know this server!! It's already connected to me");
 							break;
 						}
@@ -2590,7 +2608,7 @@ void esp_gap_S3_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 					
 					uint8_t i;
 					for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
-						if(MAC_check(scan_result->scan_rst.bda, MACS[i])) {
+						if(MAC_check(scan_result->scan_rst.bda, MACSS[i])) {
 							ESP_LOGI(GATTC_TAG, "I know this server!! It's already connected to me");
 							break;
 						}
@@ -2704,7 +2722,7 @@ uint8_t** get_connected_MACS() {
 	for(i=0; i<TOTAL_NUMBER_LIMIT; i++) macs[i] = malloc(sizeof(uint8_t)*MAC_LEN);
 	for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {	
 		for(j=0; j<MAC_LEN; j++) {	
-			macs[i][j] = MACS[i][j];
+			macs[i][j] = MACSS[i][j];
 		}
 	}
 	return macs;
@@ -3072,20 +3090,9 @@ uint8_t* get_server_connids() {
 
 uint8_t* get_connid_MAC(uint8_t conn_id) {
 	uint8_t dev = get_node_type();
-	if(dev == SERVER) return MACS[conn_id];
+	if(dev == SERVER) return MACSS[conn_id];
 	else return gl_profile_tab2[PROFILE_A_APP_ID].remote_bda;
 	
-}
-
-
-void my_task4(void *pvParameters) {
-    
-    vTaskDelay(100); // Waiting for 1000 ticks (not ms)
- 
-	ESP_LOGE(GATTC_TAG, "STO A FA NA PROVA");
-	esp_log_buffer_hex(GATTS_TAG, MACSS[0], MAC_LEN);
- 
-    vTaskDelete(NULL);
 }
 
 
