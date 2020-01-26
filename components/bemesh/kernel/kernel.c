@@ -642,11 +642,11 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
 		esp_err_t ret;
         if (p_data->notify.is_notify){
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive notify value:");
-           
-        }else{
-            ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
             (*ntf_cb)(gattc_if,get_client_connid(),p_data->notify.value[1],p_data->notify.value,
                                             p_data->notify.value_len);
+        }else{
+            ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
+           
         }
         if(p_data->notify.value[0] == 0xaa) {
 			// Handles for characteristics
@@ -663,7 +663,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
 				if(ret) {
 					ESP_LOGE(GATTC_TAG, "Error reading the char: %x", ret);
 				}
-			
+               
 			}
 			
 		}   

@@ -144,6 +144,7 @@ namespace bemesh{
 
     void Callback::server_update_callback( uint8_t* mac,uint8_t flag,uint16_t gatt_if, uint8_t conn_id,
                                            uint8_t server_id){
+        ESP_LOGE(FUNCTOR_TAG,"In server update callback");
         master_instance->update_master_macs(mac,gatt_if,conn_id,server_id,flag);
         //Send a routing update to the neighbouring servers.
 

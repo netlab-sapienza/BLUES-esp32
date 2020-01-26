@@ -220,8 +220,8 @@ namespace bemesh{
         uint8_t * server_connids = get_server_connids();
         int i;
         for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
-            if(server_connids[i] == 1){
-                if(get_type_connection(i) == CLIENT){
+            if(1){
+                if(1){
                     uint8_t * client_address = get_connid_MAC(i);
                     dev_addr_t cl_addr = _build_dev_addr(client_address);
                     RoutingPingMessage client_ping_message(cl_addr,rt_ping_message->source(),pong_flag);
@@ -254,6 +254,9 @@ namespace bemesh{
 
                     }
                 }
+            else{
+                ESP_LOGE(GATTS_TAG,"Connids is zero");
+            }
          }
         
 

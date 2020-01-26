@@ -247,21 +247,27 @@ namespace bemesh{
         }
         
         else{
-            ESP_LOGE(GATTC_TAG, "Adding ping_data_t element to the ping response list");
-            add_ping_response(p_data);
+            if(contains_ping_data(ping_response_list,routing_ping_message->source())){
+                ESP_LOGE(GATTS_TAG,"Hello it's me");
+                return;
+            }
+            else{
+                ESP_LOGE(GATTC_TAG, "Adding ping_data_t element to the ping response list");
+                add_ping_response(p_data);
+                RoutingPingMessage new_ping_message(routing_ping_message->source(),_build_dev_addr(get_dev_addr()),PONG_FLAG_VALUE);
+                send_message(get_device_gatt_if(),get_device_connection_id(),NULL,
+                            (MessageHeader*)&new_ping_message, characteristic);
+
+                //Send the pong to the server.
+                //ping_server(get_device_gatt_if(),get_server_connection_id(),server_dev_addr,_pong_flag);
+                
+                
+                
+                return;
+            }
         }
 
-        RoutingPingMessage new_ping_message(routing_ping_message->source(),_build_dev_addr(get_dev_addr()),PONG_FLAG_VALUE);
-        send_message(get_device_gatt_if(),get_device_connection_id(),NULL,
-                        (MessageHeader*)&new_ping_message, characteristic);
-
-        
-        
-
-
-        //Send the pong to the server.
-        ping_server(get_device_gatt_if(),get_server_connection_id(),server_dev_addr,_pong_flag);
-        return;
+       
     }
 
 
