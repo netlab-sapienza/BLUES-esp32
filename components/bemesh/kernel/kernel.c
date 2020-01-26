@@ -44,14 +44,16 @@ const uint8_t NOID = -1;
 uint8_t MACS[TOTAL_NUMBER_LIMIT][6] = { 0 };
 uint8_t ID_TABLE[TOTAL_NUMBER_LIMIT] = {NOID, NOID, NOID, NOID, NOID, NOID, NOID};
 uint8_t n_connections = 0;
-struct device scan_res[SCAN_LIMIT] = {0};
+struct device* scan_res[SCAN_LIMIT];
+//struct device scan_res[SCAN_LIMIT];
 
 
 
 // Scan parameters
 uint32_t base_scan = 2;
-uint32_t scan_dividend = 10;
+uint32_t scan_dividend = 11;
 uint8_t scan_seq = 0;
+uint32_t SCAN_DURATION;
 
 // Other
 uint8_t server = 0;
@@ -752,7 +754,11 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
     switch (event) {
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
 		uint8_t mac[6];
-		uint32_t SCAN_DURATION;
+		
+		//scan_res = (struct device*) malloc(sizeof(struct device)*SCAN_LIMIT);
+		int i;
+		for(i=0; i<SCAN_LIMIT; ++i) scan_res[i] = malloc(sizeof(struct device));
+		
 		esp_err_t ret = esp_efuse_mac_get_default(mac);
 		
 		if (ret) {
@@ -785,12 +791,12 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
-            esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6); 
+            //esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6); 
             //ESP_LOGI(GATTC_TAG, "searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
             adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
                                                 ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
             //ESP_LOGI(GATTC_TAG, "searched Device Name Len %d", adv_name_len);
-            esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
+            //esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
 
 #if CONFIG_EXAMPLE_DUMP_ADV_DATA_AND_SCAN_RESP
             if (scan_result->scan_rst.adv_data_len > 0) {
@@ -803,12 +809,13 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
             }
 #endif
 			
-            ESP_LOGI(GATTC_TAG, "\n");
+            //ESP_LOGI(GATTC_TAG, "\n");
 			
             if (adv_name != NULL) {
 				//adv_name_len = DEVICE_NAME_LEN;
                 if (strlen(remote_device_name) == DEVICE_NAME_LEN && strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
-					/*
+					//esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
+					
 					int c = adv_name[CLIENTS_IDX] - '0';
 					
 					if(c > CLIENTS_NUMBER_LIMIT) {
@@ -822,11 +829,12 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
                     if (connect == false) {
                         connect = true;
                         ESP_LOGI(GATTC_TAG, "connect to the remote device.");
+                        esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
                         esp_ble_gap_stop_scanning();
                         esp_ble_gattc_open(gl_profile_tab2[PROFILE_A_APP_ID].gattc_if, scan_result->scan_rst.bda, scan_result->scan_rst.ble_addr_type, true);
                     }
-					*/
-					processDevice(scan_result, adv_name, adv_name_len);
+					
+					//processDevice(scan_result, adv_name, adv_name_len);
                 }
                 
             }
@@ -834,10 +842,12 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
 			//ESP_LOGE(GATTC_TAG, "I didn't find a server! I'm going to be a server...");
 			//ESP_LOGE(GATTC_TAG, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-			(*endscanning_cb)(scan_res, scan_seq,CLIENT_FLAG,0);
+			//esp_ble_gap_stop_scanning();
+			//(*endscanning_cb)(scan_res, scan_seq,CLIENT_FLAG,0);
 			scan_seq = 0;
+			//free(scan_res);
 			//unregister_client();
-			//gatt_server_main();
+            becomeServer();
 			
             break;
         default:
@@ -3237,32 +3247,51 @@ uint8_t* get_internal_client_serverMAC(uint8_t client_id) {
 }
 
 uint8_t MAC_check(uint8_t* mac1, uint8_t* mac2) {
+	/*
 	ESP_LOGE(GATTC_TAG, "Check args:");
 	esp_log_buffer_hex(GATTC_TAG, mac1, MAC_LEN);
 	esp_log_buffer_hex(GATTC_TAG, mac2, MAC_LEN);
-		
+	*/
 	uint8_t check = 1, i;
 	for(i=0; i<MAC_LEN; ++i) if(mac1[i]!=mac2[i]) check=0;
-	ESP_LOGE(GATTC_TAG,"Result is -> %d", check);
+	ESP_LOGE(GATTC_TAG,"Check between the 2 is -> %d", check);
+	esp_log_buffer_hex(GATTC_TAG, mac1, MAC_LEN);
+	esp_log_buffer_hex(GATTC_TAG, mac2, MAC_LEN);
 	return check;
 }
 
+void task_bella(void *pvParameters) { 
+    ESP_LOGE(GATTC_TAG,"Ora provo a stoppare!");
+	esp_ble_gap_stop_scanning();
+	(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
+    vTaskDelete(NULL);
+}
+
+
 
 void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8_t adv_len) {
-	timer++;
-	if(timer >= internal_scan_duration*10) {
-		ESP_LOGE(GATTS_TAG, "SONO ARRIVATOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+	//vTaskDelay(150);
+	ESP_LOGE(GATTC_TAG,"Timer is: %d", timer);
+	/*
+	if(timer >= SCAN_DURATION) {
 		timer = 0;
+		scanning = 0;
+		//ESP_LOGE(GATTS_TAG,"Ora provo a stoppare!");
+		//esp_ble_gap_stop_scanning();
+		//(*endscanning_cb)(scan_res, scan_seq,CLIENT_FLAG,0);
+		xTaskCreate(task_bella, "TASK4", 2048, NULL, 2, NULL);
+		scan_seq = 0;
 		//stop_scan_done = true;
 		//esp_ble_gap_stop_scanning();
 		//unregister_internal_client(SERVER_S1);
 		//esp_ble_gap_start_advertising(&adv_params);
-		ESP_LOGE(GATTS_TAG,"BEFORE CALLBACK");
-		(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
-		ESP_LOGE(GATTS_TAG,"AFTER CALLBACK");
-		scan_seq = 0;
+		//ESP_LOGE(GATTS_TAG,"BEFORE CALLBACK");
+		//(*endscanning_cb)(scan_res, scan_seq,INTERNAL_CLIENT_FLAG,SERVER_S1);
+		ESP_LOGE(GATTS_TAG,"FINITO TUTTO!");
+		//scan_seq = 0;
 		return;	
 	}
+	*/
 	uint8_t i;
 	esp_ble_gap_cb_param_t * dest= malloc(sizeof(esp_ble_gap_cb_param_t));
 	memcpy(dest, scan_result, sizeof(esp_ble_gap_cb_param_t));
@@ -3272,47 +3301,49 @@ void processDevice(esp_ble_gap_cb_param_t *scan_result, uint8_t *adv_name, uint8
 	
 	
 	if(!scan_result || !adv_name) return;
-	ESP_LOGE(GATTC_TAG,"---------------------------------------------");
+	//ESP_LOGE(GATTC_TAG,"---------------------------------------------");
 	ESP_LOGE(GATTC_TAG,"Number of devs %d", scan_seq);
 	
-	ESP_LOGE(GATTC_TAG,"Actual device:");
+	ESP_LOGE(GATTC_TAG,"Device found:");
 	esp_log_buffer_char(GATTC_TAG, adv_name, adv_len);
 	esp_log_buffer_hex(GATTC_TAG, new_mac, MAC_LEN);
 	
-	if(strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
+	//if(strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
 		 //ESP_LOGE(GATTC_TAG,"#################################################################################");
 		 //esp_log_buffer_char(GATTC_TAG, adv_name, adv_len);
-		 //ESP_LOGE(GATTC_TAG,"#################################################################################");
-		 
-	}
-	for(i=0; i<SCAN_LIMIT; ++i) {
-		if(i >= scan_seq) break;
-			
+		 //ESP_LOGE(GATTC_TAG,"#################################################################################"); 
+	//}
+	for(i=0; i<scan_seq; ++i) {
+		//if(i >= scan_seq) break;
+				
+		//ESP_LOGE(GATTC_TAG,"Iter. n. %d", i);
+		ESP_LOGI(GATTC_TAG,"Mac stored is: ");
+		esp_log_buffer_hex(GATTC_TAG, scan_res[i]->mac, MAC_LEN);
 		
-		ESP_LOGE(GATTC_TAG,"Iter. n. %d", i);
-		esp_log_buffer_hex(GATTC_TAG, scan_res[i].mac, MAC_LEN);
-		if(MAC_check(new_mac, scan_res[i].mac)) {
-			ESP_LOGE(GATTC_TAG,"Already known device!");
-			scan_res[i].dev_name = adv_name;
-			scan_res[i].addr_type = new_addr_type;
-			scan_res[i].clients_num = adv_name[CLIENTS_IDX] - '0';
-			scan_res[i].rssi = new_rssi;
+		if(MAC_check(new_mac, scan_res[i]->mac)) {
+			//ESP_LOGE(GATTC_TAG,"Already known device!");
+			scan_res[i]->dev_name = adv_name;
+			scan_res[i]->addr_type = new_addr_type;
+			scan_res[i]->clients_num = adv_name[CLIENTS_IDX] - '0';
+			scan_res[i]->rssi = new_rssi;
 			
 			timer++;
-			ESP_LOGE(GATTS_TAG, "TIMER IS %d", timer);
+			//ESP_LOGE(GATTS_TAG, "TIMER IS %d", timer);
+			free(dest);
+			ESP_LOGE(GATTC_TAG,"-------------------------");
 			return;
 		}
 		
 	}
-	ESP_LOGE(GATTC_TAG,"New device discovered");
-	scan_res[scan_seq].dev_name = adv_name;
-	scan_res[scan_seq].mac = new_mac;
-	scan_res[scan_seq].addr_type = new_addr_type;
-	scan_res[scan_seq].clients_num = adv_name[CLIENTS_IDX] - '0';
-	scan_res[scan_seq].rssi = new_rssi;
+	ESP_LOGE(GATTC_TAG,"This is a new device!");
+	scan_res[scan_seq]->dev_name = adv_name;
+	scan_res[scan_seq]->mac = new_mac;
+	scan_res[scan_seq]->addr_type = new_addr_type;
+	scan_res[scan_seq]->clients_num = adv_name[CLIENTS_IDX] - '0';
+	scan_res[scan_seq]->rssi = new_rssi;
 	if(strncmp((char *)adv_name, remote_device_name, DEVICE_NAME_LEN) == 0) {
-				scan_res[i].is_server = 1;
-	} else scan_res[i].is_server = 0;
+				scan_res[i]->is_server = 1;
+	} else scan_res[i]->is_server = 0;
 	
 	scan_seq++;
 	ESP_LOGE(GATTC_TAG,"---------------------------------------------");

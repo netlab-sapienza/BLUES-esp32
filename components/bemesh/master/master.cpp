@@ -220,6 +220,7 @@ namespace bemesh{
         uint8_t * server_connids = get_server_connids();
         int i;
         for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
+			ESP_LOGE(GATTS_TAG,"conn_id is assigned?: %d ",server_connids[i]);
             if(1){
                 if(1){
                     uint8_t * client_address = get_connid_MAC(i);

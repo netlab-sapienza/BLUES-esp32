@@ -86,7 +86,7 @@ extern uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX];
 extern uint16_t CHR_HANDLES[HRS_IDX_NB];
 extern struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM];
 extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
-extern struct device scan_res[SCAN_LIMIT];
+//extern struct device scan_res[SCAN_LIMIT];
 
 
 //extern bool becoming_client;
