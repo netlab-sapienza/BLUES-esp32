@@ -1184,18 +1184,16 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                         }
 						*/
                         //If something's wrong we'll see 66 in the logs.
-                        uint8_t s_id = 66;
+						
+                        uint8_t s_id = param->connect.conn_id;
+                        /*
                         if(conn_device_S1)
                             s_id = SERVER_S1;
                         else if(conn_device_S2)
                             s_id = SERVER_S2;
                         else if(conn_device_S3)
                             s_id = SERVER_S3;
-
-                        
-                        (*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
-                                          get_internal_client_connid(s_id),s_id);
-                        
+						*/
                         /*
                         if(wants_to_discover){
                             ESP_LOGE(GATTS_TAG,"I want to discover some routing table");
@@ -1213,6 +1211,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 						*/
 						
 						(*ssc_passive)(param->connect.conn_id);
+						(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                                          get_internal_client_connid(s_id),s_id);
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
 						esp_ble_gap_start_advertising(&adv_params);
