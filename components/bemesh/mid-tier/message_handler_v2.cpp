@@ -44,7 +44,7 @@ namespace bemesh {
   
   ErrStatus MessageHandler::send(MessageHeader* t_h) {
     // write the message size
-    std::size_t msg_len=1+t_h->psize()+MESSAGE_HEADER_DATA_SIZE;
+    std::size_t msg_len=t_h->psize()+MESSAGE_HEADER_DATA_SIZE;
     m_tx_strm.write(reinterpret_cast<char*>(&msg_len), sizeof(std::size_t));
     // write the message
     t_h->serialize(m_tx_strm);
