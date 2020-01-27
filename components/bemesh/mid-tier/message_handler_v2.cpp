@@ -44,7 +44,10 @@ namespace bemesh {
   
   ErrStatus MessageHandler::send(MessageHeader* t_h) {
     // write the message size
-    std::size_t msg_len=1+t_h->psize()+MESSAGE_HEADER_DATA_SIZE;
+    std::size_t msg_len=t_h->psize()+MESSAGE_HEADER_DATA_SIZE;
+    // The Serializer will also add an additional byte representing the ID of the message
+    msg_len += 1;
+    
     m_tx_strm.write(reinterpret_cast<char*>(&msg_len), sizeof(std::size_t));
     // write the message
     t_h->serialize(m_tx_strm);
@@ -89,7 +92,12 @@ namespace bemesh {
 	  // remember to implement dtor pls :(
 	  //delete recv_msg;
 	} else {
-	  (*ops->recv_cb)(recv_msg, ops->args);
+		printf("SONO FUORI 1\n");
+	  if(ops->recv_cb) {
+		  printf("SONO DENTRO\n");
+	    (*ops->recv_cb)(recv_msg, ops->args);
+	  }
+	  printf("SONO FUORI 2\n");
 	}
       }
       

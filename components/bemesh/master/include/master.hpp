@@ -86,7 +86,7 @@ namespace  bemesh{
             Router* router;
             MessageHandler mes_handler;
 			
-			uint8_t active[TOTAL_NUMBER_LIMIT]; // K-th position (== conn_id) is 1 if this server is active wrt device 0 otherwise
+			uint8_t active[TOTAL_NUMBER_LIMIT] = {0}; // K-th position (== conn_id) is 1 if this server is active wrt device 0 otherwise
 
             
 

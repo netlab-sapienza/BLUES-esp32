@@ -1211,8 +1211,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 						*/
 						
 						(*ssc_passive)(param->connect.conn_id);
-						(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
-                                          get_internal_client_connid(s_id),s_id);
+						//(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                        //                get_internal_client_connid(s_id),s_id);
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
 						esp_ble_gap_start_advertising(&adv_params);
@@ -1304,6 +1304,8 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
             break;
         case ESP_GATTS_CONF_EVT:
             ESP_LOGI(GATTS_TAG, "ESP_GATTS_CONF_EVT, status = %d, attr_handle %d", param->conf.status, param->conf.handle);
+            //if(param->write.len >4) (*received_packet_cb)(param->write.value,param->write.len);
+            
             break;
         case ESP_GATTS_START_EVT:
             ESP_LOGI(GATTS_TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
@@ -3281,9 +3283,11 @@ uint8_t MAC_check(uint8_t* mac1, uint8_t* mac2) {
 	*/
 	uint8_t check = 1, i;
 	for(i=0; i<MAC_LEN; ++i) if(mac1[i]!=mac2[i]) check=0;
+	/*
 	ESP_LOGE(GATTC_TAG,"Check between the 2 is -> %d", check);
 	esp_log_buffer_hex(GATTC_TAG, mac1, MAC_LEN);
 	esp_log_buffer_hex(GATTC_TAG, mac2, MAC_LEN);
+	*/
 	return check;
 }
 
