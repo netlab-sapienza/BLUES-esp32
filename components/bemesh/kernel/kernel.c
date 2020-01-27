@@ -1209,10 +1209,10 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
                             wants_to_discover = true;
                         }
 						*/
-						
+						(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
+                                          get_internal_client_connid(s_id),s_id);
 						(*ssc_passive)(param->connect.conn_id);
-						//(*server_update_cb)(get_internal_client_serverMAC(s_id),UPDATE_ADD_SERVER,get_internal_client_gattif(s_id),
-                        //                get_internal_client_connid(s_id),s_id);
+						
 						change_name(0, CLIENTS_IDX);
 						change_name(1, SERVERS_IDX);
 						esp_ble_gap_start_advertising(&adv_params);
