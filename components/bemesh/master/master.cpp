@@ -323,9 +323,12 @@ namespace bemesh{
 		memcpy(mac, header_t->destination().data(), sizeof(uint8_t) * MAC_LEN);
 		ESP_LOGE(GATTS_TAG, "data isssssssssssssss:");
 		esp_log_buffer_hex(GATTS_TAG, header_t->destination().data(), MAC_LEN);
+		
+		
 		uint8_t conn_id = get_MAC_connid(mac);
-		
-		
+		if(conn_id == 255) {
+			conn_id = get_internal_client_connid(SERVER_S1); // This has to be parametrized
+		}
 		//Prepare the routing discovery response message in the callback.
 		send_routing_table(get_my_MAC(), mac, get_gatt_if(), conn_id, 0);
 		
@@ -446,9 +449,9 @@ namespace bemesh{
 
         //ESP_LOGE(GATTS_TAG,"In ping transmission callback: ended to parse all arguments");
 
-        uint8_t characteristic = IDX_CHAR_VAL_A;
 
         if(notify == NOTIFY_NO){
+			uint8_t characteristic = IDX_CHAR_VAL_B;
             write_policy_t policy = Standard;
             ErrStatus write_ret = write_characteristic(characteristic,buffer,size,gatt_if,conn_id,
                                                         policy);
@@ -457,6 +460,7 @@ namespace bemesh{
             }
         }
         else{
+			uint8_t characteristic = IDX_CHAR_VAL_A;
             uint8_t notification_ret = send_notification(conn_id,characteristic,buffer,size);
                                                     
             if(notification_ret){
@@ -475,11 +479,35 @@ namespace bemesh{
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery request transmission callback");
        
-        uint8_t characteristic = IDX_CHAR_VAL_B;
-        //Writing the packet to the characteristic
-        write_policy_t policy = Standard;
-        write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
+        //uint8_t characteristic = IDX_CHAR_VAL_B;
+                                    
+        uint8_t status = master_instance->is_active(internal_client_conn_id); 
+		ESP_LOGE(GATTS_TAG, "Active? %d, conn_id is %d", status, internal_client_conn_id);
+		switch(status) {
+		case 1: {
+			uint8_t characteristic = IDX_CHAR_VAL_B;
+			// I'm active, using write char
+			ESP_LOGE(GATTS_TAG, "I'm Active!!");
+			//Writing the packet to the characteristic
+			write_policy_t policy = Standard;
+			write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
                                     internal_client_conn_id,policy);
+			break;
+		}
+		case 0: {
+			uint8_t characteristic = IDX_CHAR_VAL_A;
+			// I'm passive, using notification
+			ESP_LOGE(GATTS_TAG, "I'm Passive!!");
+			uint8_t notification_ret = send_notification(internal_client_conn_id,IDX_CHAR_VAL_A,buffer,size);
+			if(notification_ret){
+                ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: Error in notifying the client: %d on the characteristic: %d",internal_client_conn_id,characteristic);
+            }
+			break;
+		}
+		default:
+			ESP_LOGE(GATTS_TAG, "Who am I?");
+			break;
+		}
                 
         return;
     }
@@ -505,6 +533,7 @@ namespace bemesh{
         uint8_t mac[MAC_LEN];
 		memcpy(mac, header_t->source().data(), sizeof(uint8_t) * MAC_LEN);
 		uint8_t conn_id = get_MAC_connid(mac);
+        if(conn_id == 255) conn_id = get_internal_client_connid(SERVER_S1); // This has to be parametrized
         uint16_t gatt_if = get_gatt_if();
         
         // Do i really care about server_id? 0 for the moment :)
@@ -512,7 +541,7 @@ namespace bemesh{
         ESP_LOGE(GATTS_TAG,"Parsed message arguments: gatt_if: %d, conn_id: %d, server_id: %d",
                         gatt_if, conn_id, 0);
 
-        uint8_t characteristic = IDX_CHAR_VAL_A;
+        
 
         //Write to some characteristic
         
@@ -521,6 +550,7 @@ namespace bemesh{
 		ESP_LOGE(GATTS_TAG, "Active? %d, conn_id is %d", status, conn_id);
 		switch(status) {
 		case 1: {
+			uint8_t characteristic = IDX_CHAR_VAL_B;
 			// I'm active, using write char
 			ESP_LOGE(GATTS_TAG, "I'm Active!!");
 			write_policy_t policy = Standard;
@@ -532,6 +562,7 @@ namespace bemesh{
 			break;
 		}
 		case 0: {
+			uint8_t characteristic = IDX_CHAR_VAL_A;
 			// I'm passive, using notification
 			ESP_LOGE(GATTS_TAG, "I'm Passive!!");
 			uint8_t notification_ret = send_notification(conn_id,characteristic,buffer,size);
@@ -545,10 +576,6 @@ namespace bemesh{
 			break;
 		}
         
-        
-        
-        
-		
         return;
     }
 

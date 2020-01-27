@@ -391,29 +391,49 @@ const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     [IDX_CHAR_VAL_B] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
+	
+	/* Client Characteristic Configuration Descriptor */
+	[IDX_CHAR_CFG_B]  =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t *)heart_measurement_ccc}},
+	
+	
+	/* Characteristic Declaration */
+    [IDX_CHAR_C]     =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
+    /* Characteristic Value */
+    [IDX_CHAR_VAL_C] =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_C, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
+	
+	/* Client Characteristic Configuration Descriptor */
+	[IDX_CHAR_CFG_C]  =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t *)heart_measurement_ccc}},
 	
     /* Characteristic Declaration 
     [IDX_CHAR_B]      =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
-     Characteristic Value 
+    // Characteristic Value 
     [IDX_CHAR_VAL_B]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
-	*/
 	
-    /* Characteristic Declaration */
+	
+    // Characteristic Declaration 
     [IDX_CHAR_C]      =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_write}},
 
-    /* Characteristic Value */
+    // Characteristic Value 
     [IDX_CHAR_VAL_C]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_C, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
-
+	*/
 };
 
 
@@ -1332,8 +1352,6 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
 			// Updating MACs table
 			int k;
 			for(k=0; k<6; k++) {
-				ESP_LOGE(GATTS_TAG, "PROCEDO MARIO con conn_id %d", param->connect.conn_id);
-				
 				MACSS[param->connect.conn_id][k] = param->connect.remote_bda[k];
 				//esp_log_buffer_hex(GATTS_TAG,MACSS[param->connect.conn_id],MAC_LEN);
 			}
@@ -1622,6 +1640,7 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 		esp_err_t ret;
         if (p_data->notify.is_notify){
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive notify value:");
+            esp_log_buffer_hex(GATTC_TAG, p_data->notify.value, p_data->notify.value_len);
         }else{
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
         }
@@ -1636,18 +1655,19 @@ void gattc_profile_S1_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
 			}
 			
 			// Notifications on a characteristic => I'm going to read the char
-			if(p_data->notify.value_len == 2) {
+			else if(p_data->notify.value_len == 2) {
 				ret = esp_ble_gattc_read_char(gattc_if, gl_profile_tab2[PROFILE_A_APP_ID].conn_id, p_data->notify.value[1], ESP_GATT_AUTH_REQ_NONE);
 				if(ret) {
 					ESP_LOGE(GATTC_TAG, "Error reading the char: %x", ret);
 				}
 			}
 			
-			
+		} else {
+			(*ntf_cb)(gattc_if,get_internal_client_connid(SERVER_S1),find_CHR(p_data->notify.handle),p_data->notify.value, p_data->notify.value_len);
 		}   
 
 		
-        esp_log_buffer_hex(GATTC_TAG, p_data->notify.value, p_data->notify.value_len);
+        
         break;
 	}
     case ESP_GATTC_WRITE_DESCR_EVT:

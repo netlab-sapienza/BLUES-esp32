@@ -71,15 +71,17 @@ namespace bemesh{
     }
 
     void Callback::ssc_passive_callback(uint8_t conn_id){
+        /*
         uint8_t BUF_SIZE = 6;
         uint8_t characteristic = IDX_CHAR_VAL_A;
         uint8_t buffer[BUF_SIZE] = {2,2,2,2,2,2};
-        
+        */
         if(master_instance){
+			//vTaskDelay(500);
             ESP_LOGE(GATTS_TAG,"In ssc_passive_callback. Sending a notification");
-            
             master_instance->set_passive(conn_id);
             //master_instance->send_notification(conn_id,characteristic,buffer,BUF_SIZE);
+            exchange_routing_table_callback(get_my_MAC(), get_connid_MAC(conn_id),get_gatt_if(), conn_id);
         
         }
 
@@ -254,6 +256,11 @@ namespace bemesh{
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Handling the message with the message handler");
             slave_instance->get_message_handler()->handle();
         }
+        
+        if (master_instance) {
+			// Manage a notification for the server-server communication
+			received_packet_callback(notify_data,ntf_data_size);
+		}
 
     }
 
