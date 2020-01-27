@@ -179,7 +179,7 @@ namespace bemesh{
 
 
 
-    //It will triggere the correct message callback.
+    //It will triggere the correct message callback for servers.
     void Callback::received_packet_callback(uint8_t* packet,uint16_t size){
         if(!packet )
             return;
