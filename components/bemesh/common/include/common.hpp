@@ -30,6 +30,7 @@ namespace bemesh{
     enum write_policy_t{
         Standard = 0,
         Mandatory = 1,
+        Special = 2,
     };
 
 

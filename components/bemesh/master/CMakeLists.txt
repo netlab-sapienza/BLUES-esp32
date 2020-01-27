@@ -1,5 +1,5 @@
 if(NOT DEFINED ESP32_SIMULATION)
-  list(APPEND REQUIRED_COMPS "kernel" "mid-tier" "common")
+  list(APPEND REQUIRED_COMPS "kernel" "mid-tier" "common" "callbacks")
 
 
   #In this variable we keep track of source files needed by the component.
@@ -24,13 +24,13 @@ if(NOT DEFINED ESP32_SIMULATION)
   #Finally we register the component using the values stored in the variables above
   idf_component_register(SRCS ${SOURCES}
     INCLUDE_DIRS ${INCLUDE_LIST} 
-    REQUIRES nvs_flash bt mid-tier kernel common)
+    REQUIRES nvs_flash bt mid-tier kernel common callbacks)
 else()
   # Builds the libraries
   project(master)
   add_library(Master master.cpp)
   target_include_directories(Master PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
   
-  target_link_libraries(Master Kernel EspLog Common)
+  target_link_libraries(Master Kernel EspLog Common Callbacks)
   
 endif(NOT DEFINED ESP32_SIMULATION)

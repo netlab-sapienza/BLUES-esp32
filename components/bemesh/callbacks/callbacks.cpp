@@ -181,8 +181,12 @@ namespace bemesh{
 
     //It will triggere the correct message callback for servers.
     void Callback::received_packet_callback(uint8_t* packet,uint16_t size){
+
+        ESP_LOGE(GATTS_TAG,"Hey I'm in the received_packet_callback, size is %d",size);
         if(!packet )
             return;
+            
+        //if(size == 0) return;
         std::cout<<"Received a packet"<<std::endl;
         esp_log_buffer_hex(FUNCTOR_TAG,packet,size);
         //Read the packet.
@@ -226,7 +230,7 @@ namespace bemesh{
         //Triggered when a client is notified. The client can now read the characteristic
         
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B || characteristic == IDX_CHAR_VAL_C){
-            ESP_LOGE(FUNCTOR_TAG,"In notify callback. Notify registered to a well known characteristic: %d",characteristic);
+            ESP_LOGE(FUNCTOR_TAG,"In notify callback. Notify registered to a well known characteristic: %d with size %d",characteristic, ntf_data_size);
         }
         else{
             ESP_LOGE(FUNCTOR_TAG,"In notify callback: I don't know this characteristic: %d",characteristic);
