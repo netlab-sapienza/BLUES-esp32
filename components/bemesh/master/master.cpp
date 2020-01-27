@@ -412,6 +412,15 @@ namespace bemesh{
 
                 ESP_LOGE(GATTS_TAG,"Sending to the neighbour: ");
                 esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
+
+                for(i = 0; i<MAC_ADDRESS_SIZE; ++i){
+                    addr[i] = update_source[i];
+                }
+
+                ESP_LOGE(GATTS_TAG,"Sender is: ");
+                esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
+
+
                 RoutingUpdateMessage routing_update_message(src_addr,dest_addr,updates,ROUTING_UPDATE_ENTRIES_MAX);
                 ESP_LOGE(GATTS_TAG,"Ended preparing the message: now I transmit");
                 //Before sending we have to set the arguments for the transmission callback
@@ -419,7 +428,8 @@ namespace bemesh{
                 //Push the server gatt_if (uint16_t)
                 uint16_t* args = (uint16_t*)master_message_extra_args;
                 *args = server.gatt_if;
-                uint8_t* _args = (uint8_t*)(args + sizeof(uint16_t));
+                uint8_t * _args = (uint8_t*)(master_message_extra_args);
+                 _args = (uint8_t*)(_args + sizeof(uint16_t));
                 //Then the corresponding server conn_id
                 *_args = server.conn_id;
                 _args = (uint8_t*)(_args + sizeof(uint8_t));
@@ -762,15 +772,17 @@ namespace bemesh{
 
     ErrStatus Master::send_routing_update(){
         std::vector<routing_update_t> r_updates = router->getRoutingUpdates();
+        //ESP_LOGE(GATTS_TAG,"HELLO");
         std::size_t num_updates = r_updates.size();
         std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> arr_updates;
         std::copy_n(r_updates.begin(),num_updates,arr_updates.begin());
-        
+        //ESP_LOGE(GATTS_TAG,"HELLO");
         dev_addr_t src_addr = get_router_dev_addr();
         //Send the routing updates to all neighbours.
         
         ESP_LOGE(GATTS_TAG,"Preparing to send the update packets to all neighbours");
         for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
+            ESP_LOGE(GATTS_TAG,"It number: %d",0);
             connected_server_params_t server = *it;
             //Retrieve the mac address from the data structure
             dev_addr_t dest_addr = server.server_mac_address;
@@ -782,7 +794,7 @@ namespace bemesh{
             }
 
 
-            ESP_LOGE(GATTS_TAG,"Sending to the neighbour: ");
+            ESP_LOGE(GATTS_TAG,"Sending to the neighbour conn_id: %d ",server.conn_id);
             esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
             RoutingUpdateMessage routing_update_message(src_addr,dest_addr,arr_updates,num_updates);
             
@@ -791,7 +803,8 @@ namespace bemesh{
             //Push the server gatt_if (uint16_t)
             uint16_t* args = (uint16_t*)master_message_extra_args;
             *args = server.gatt_if;
-            uint8_t* _args = (uint8_t*)(args + sizeof(uint16_t));
+            uint8_t* _args = (uint8_t *)master_message_extra_args;
+             _args = (uint8_t*)(_args + sizeof(uint16_t));
             //Then the corresponding server conn_id
             *_args = server.conn_id;
             _args = (uint8_t*)(_args + sizeof(uint8_t));
