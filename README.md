@@ -1,6 +1,7 @@
-Master branch of be-mesh
+# esp32-ble-mesh
 
-To monitor multiple esp
+After the toolchain is installed correctly (refer to the wiki):
 
-idf.py monitor -p port
+- To build and launch the program on esp: `idf.py flash monitor -p port`
+- To monitor multiple esp: `idf.py monitor -p port` on the new port
 

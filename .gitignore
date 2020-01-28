@@ -103,3 +103,4 @@ build/
 sdkconfig
 
 *.old
+/.idea/
