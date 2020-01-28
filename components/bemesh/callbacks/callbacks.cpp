@@ -17,7 +17,19 @@ namespace bemesh{
 
     
      
-     
+    void my_task_active(void *pvParameters) {
+    
+		vTaskDelay(100);
+		vTaskDelete(NULL);
+	}
+	
+	void my_task_passive(void *pvParameters) {
+    
+		vTaskDelay(100);
+		vTaskDelete(NULL);
+	}
+
+
     void Callback::ssc_active_callback(uint8_t internal_client_id){
         uint8_t BUF_SIZE = 10, i;
         uint8_t* buf = new uint8_t[BUF_SIZE];
@@ -26,16 +38,32 @@ namespace bemesh{
         //uint8_t buffer[BUF_SIZE]={1,2,3,4};
         //uint8_t other_buff[BUF_SIZE]={5,5,5,5,5,5};
         write_policy_t policy = Standard;
-        if(master_instance){
+        if(master_instance) {
+			
             ESP_LOGE(GATTS_TAG,"In ssc_active_callback. writing");
+            /*
             master_instance->write_characteristic(IDX_CHAR_VAL_A,buf,BUF_SIZE,get_internal_client_gattif(internal_client_id),
                                                 get_internal_client_connid(internal_client_id),policy);
-
+			*/
+			
+            uint8_t conn_id = get_internal_client_connid(internal_client_id);
+			master_instance->set_active(conn_id);
+            
+            uint8_t resp = master_instance->is_active(conn_id);
+			ESP_LOGE(GATTS_TAG, "This server is active? %d", resp);
+			
+			ESP_LOGE(GATTS_TAG, "ALLORA, IL SRC E':");
+			esp_log_buffer_hex(GATTS_TAG, get_my_MAC(), MAC_LEN);
+			ESP_LOGE(GATTS_TAG, "ALLORA, IL DEST E':");
+			esp_log_buffer_hex(GATTS_TAG, get_internal_client_serverMAC(internal_client_id), MAC_LEN);
+            exchange_routing_table_callback(get_my_MAC(), get_internal_client_serverMAC(internal_client_id),
+                                get_internal_client_gattif(internal_client_id), conn_id);
+            
             
             
         }
         else if(slave_instance){
-            ESP_LOGE(GATTC_TAG,"In ssc_active_callback. Sending a notification");
+           ESP_LOGE(GATTC_TAG,"In ssc_active_callback. Sending a notification");
             slave_instance->write_characteristic(IDX_CHAR_VAL_A,buf,BUF_SIZE,get_gatt_if(),
                             get_internal_client_connid(internal_client_id),Standard);
         }
@@ -43,16 +71,27 @@ namespace bemesh{
     }
 
     void Callback::ssc_passive_callback(uint8_t conn_id){
+        /*
         uint8_t BUF_SIZE = 6;
         uint8_t characteristic = IDX_CHAR_VAL_A;
         uint8_t buffer[BUF_SIZE] = {2,2,2,2,2,2};
+        */
         if(master_instance){
+			//vTaskDelay(500);
             ESP_LOGE(GATTS_TAG,"In ssc_passive_callback. Sending a notification");
-            master_instance->send_notification(conn_id,characteristic,buffer,BUF_SIZE);
+            master_instance->set_passive(conn_id);
+            //master_instance->send_notification(conn_id,characteristic,buffer,BUF_SIZE);
+            exchange_routing_table_callback(get_my_MAC(), get_connid_MAC(conn_id),get_gatt_if(), conn_id);
+        
         }
 
     }
-
+	
+	void internal_client_task(void *pvParameters) {
+		start_internal_client(SERVER_S1);
+		vTaskDelete(NULL);
+	}
+	
     void Callback::init_callback(uint8_t type){
         switch(type){
             case SERVER:{
@@ -64,7 +103,9 @@ namespace bemesh{
                 //esp_log_buffer_hex(GATTS_TAG,get_my_MAC(),MAC_ADDRESS_SIZE);
 
                 //Try to find out if there is another server.
-                //register_internal_client(SERVER_S1);
+                start_internal_client(SERVER_S1);
+                
+                //xTaskCreate(internal_client_task, "int_task", 2048, NULL, 2, NULL);
                 return;
             }
             case CLIENT:{
@@ -85,8 +126,8 @@ namespace bemesh{
         master_instance->send_routing_table(src,dst,gatt_if,conn_id,server_id);
 
         //After we send the routing table we unregister the internal client.
-        unregister_internal_client(SERVER_S2);
-        ESP_LOGE(FUNCTOR_TAG,"Client number: %d unregistered",SERVER_S2);
+        //unregister_internal_client(SERVER_S2);
+        //ESP_LOGE(FUNCTOR_TAG,"Client number: %d unregistered",SERVER_S2);
 
     }
 
@@ -105,6 +146,7 @@ namespace bemesh{
 
     void Callback::server_update_callback( uint8_t* mac,uint8_t flag,uint16_t gatt_if, uint8_t conn_id,
                                            uint8_t server_id){
+        ESP_LOGE(FUNCTOR_TAG,"In server update callback");
         master_instance->update_master_macs(mac,gatt_if,conn_id,server_id,flag);
         //Send a routing update to the neighbouring servers.
 
@@ -137,10 +179,14 @@ namespace bemesh{
 
 
 
-    //It will triggere the correct message callback.
+    //It will triggere the correct message callback for servers.
     void Callback::received_packet_callback(uint8_t* packet,uint16_t size){
+
+        ESP_LOGE(GATTS_TAG,"Hey I'm in the received_packet_callback, size is %d",size);
         if(!packet )
             return;
+            
+        //if(size == 0) return;
         std::cout<<"Received a packet"<<std::endl;
         esp_log_buffer_hex(FUNCTOR_TAG,packet,size);
         //Read the packet.
@@ -184,7 +230,7 @@ namespace bemesh{
         //Triggered when a client is notified. The client can now read the characteristic
         
         if(characteristic == IDX_CHAR_VAL_A || characteristic == IDX_CHAR_VAL_B || characteristic == IDX_CHAR_VAL_C){
-            ESP_LOGE(FUNCTOR_TAG,"In notify callback. Notify registered to a well known characteristic: %d",characteristic);
+            ESP_LOGE(FUNCTOR_TAG,"In notify callback. Notify registered to a well known characteristic: %d with size %d",characteristic, ntf_data_size);
         }
         else{
             ESP_LOGE(FUNCTOR_TAG,"In notify callback: I don't know this characteristic: %d",characteristic);
@@ -214,12 +260,18 @@ namespace bemesh{
             ESP_LOGE(FUNCTOR_TAG,"In notify callback. Handling the message with the message handler");
             slave_instance->get_message_handler()->handle();
         }
+        
+        if (master_instance) {
+			// Manage a notification for the server-server communication
+			received_packet_callback(notify_data,ntf_data_size);
+		}
 
     }
 
     //Choose a server to connect to according to the policy "policy"
     int Callback::choose_server(device* device_list,int device_list_size,uint8_t internal_flag,
                                 uint8_t server_id, connection_policy_t policy){
+        
         
         //Check if the buffer exists.
         if(device_list == NULL)
@@ -236,6 +288,7 @@ namespace bemesh{
                 uint8_t rssi_min = device_list[0].rssi;
                 int server_pos = 0; 
                 for( i = 1; i< device_list_size; i++){
+                    //if(!device_list[i].dev_name || device_list[i].dev_name[0] != 'S') continue;
                     if(discarded[i] == false){
                         if(device_list[i].rssi < rssi_min){
                             rssi_min = device_list[i].rssi;
@@ -250,6 +303,17 @@ namespace bemesh{
                 uint8_t rssi_max = device_list[0].rssi;
                 int server_pos = 0;
                 for(i = 0; i< device_list_size; ++i){
+					//if(device_list[i].dev_name[0] != 'S') {
+						//esp_log_buffer_char(FUNCTOR_TAG,device_list[i].dev_name,sizeof(device_list[i].dev_name));
+						//ESP_LOGE(GATTC_TAG, "NON VA BENE");
+						//continue;
+					//}
+					ESP_LOGE(GATTC_TAG, "IS SERVER? %d",device_list[i].is_server);
+					if(device_list[i].is_server == 0) {
+						
+						continue;
+					}
+						
                     if(discarded[i] == false){
                         if(device_list[i].rssi > rssi_max){
                             rssi_max = device_list[i].rssi;
@@ -299,7 +363,9 @@ namespace bemesh{
         do{
             ESP_LOGE(FUNCTOR_TAG,"Choosing a server to connect to");
             int server_pos = choose_server(device_list,device_list_size,internal_flag,server_id,policy);
+            ESP_LOGE(FUNCTOR_TAG,"SERVER POS %d", server_pos);
             connection_ret = connectTo(device_list[server_pos],internal_flag,server_id);
+            ESP_LOGE(FUNCTOR_TAG,"CONNESSIONE AVVENUTA");
             if(connection_ret){
                 discarded[server_pos] = true;
             }
@@ -320,24 +386,47 @@ namespace bemesh{
                                         uint8_t internal_flag,uint8_t server_id){
         int i,j;
         
-
+        ESP_LOGE(GATTS_TAG,"In endscanning callback");
 
         //If it is an internal client we check if the device is arleady connected (race conditions?).
         //It may happen that an internal client connects to this server after this check
         //Thys nested loop has a quadratic cost (worst case).
         if(internal_flag == INTERNAL_CLIENT_FLAG){
+            ESP_LOGE(GATTS_TAG,"Here. Checking arleady known devices");
             uint8_t* assigned_connids = get_server_connids();
-            uint8_t ** macs = get_connected_MACS();
+            uint8_t** macs = get_connected_MACS();
             for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
                 for(j = 0; j< SCAN_LIMIT; ++j){
+					//esp_log_buffer_char(FUNCTOR_TAG,device_list[i].dev_name,sizeof(device_list[i].dev_name));
+					/*
+					if(!device_list[j].dev_name) {
+						discarded[j] = true;
+						continue;
+					}
+					*/
                     if(assigned_connids[i] == 1 && MAC_check(macs[i],device_list[j].mac)){
                         //Discard all known devices that are arleady connected to me.
                         discarded[j] = true;
                     }
+                    /*
+					int k, check = 1;
+					char devs[7] = "SERVER";
+					for(k=0; k<6; k++) {
+						if(device_list[j].dev_name[k] != devs[k]) {
+							check = 0;
+						}
+					}
+					if(!check) discarded[j] = true;
+					*/
                 }
             }
+            
+            for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i) {
+				free(macs[i]);
+			}
+			free(macs);
         }
-
+		
 
         //We perform some integrity check.
         if(device_list == NULL)
@@ -364,9 +453,16 @@ namespace bemesh{
         connection_policy_t policy = Maximum_rssi_value_policy;
         if (count == 0){
             //If no server is found we become a server ourselves
-            becomeServer();
-            //ESP_LOGE(GATTC_TAG,"I become a server");
-            return;
+            
+            if(internal_flag == INTERNAL_CLIENT_FLAG){
+                ESP_LOGE(GATTS_TAG,"Internal client. Didn't find anyone. Return from endscanning");
+                return;  
+            }
+            else{
+                //ESP_LOGE(GATTC_TAG,"I become a server");
+                becomeServer();
+                return;
+            }
         }
         else{
             int server_pos = connect_to_server(device_list,count,internal_flag,server_id,policy);
@@ -378,6 +474,8 @@ namespace bemesh{
                 ESP_LOGE(GATTC_TAG,"Chosen server in pos: %d",server_pos);
                 if(CLIENT_FLAG)
                     init_callback(CLIENT);
+            
+                    
             }
         }
     }

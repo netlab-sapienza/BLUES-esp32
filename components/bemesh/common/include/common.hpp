@@ -30,6 +30,7 @@ namespace bemesh{
     enum write_policy_t{
         Standard = 0,
         Mandatory = 1,
+        Special = 2,
     };
 
 
@@ -73,6 +74,7 @@ namespace bemesh{
     bool same_addresses(dev_addr_t addr1,dev_addr_t addr2,uint8_t address_size);
     bool contains_mac(std::list<uint8_t*> ls,uint8_t* address, uint8_t address_size);
     bool contains_server(std::list<connected_server_params_t> ls,uint8_t server_id);
+    bool contains_ping_data(std::list<ping_data_t> ls,dev_addr_t address);
     bemesh::dev_addr_t _build_dev_addr(uint8_t* address);
     void _print_mac_address(uint8_t* address);
     void write_characteristic_task(void* task_param);

@@ -40,6 +40,16 @@ namespace bemesh{
         return !operator==(cc);
     }
 
+    bool contains_ping_data(std::list<ping_data_t> ls, dev_addr_t address){
+        std::list<ping_data_t>::iterator it;
+        bool ret = false;
+        for(it = ls.begin(); it!= ls.end();++it){
+            ping_data_t ping_data = *it;
+            if(same_addresses(ping_data.sender,address,MAC_ADDRESS_SIZE))
+                return true;
+        }
+        return ret;
+    }
 
     bool contains_server(std::list<connected_server_params_t>ls,uint8_t id){
         std::list<connected_server_params_t>::iterator it;
@@ -122,6 +132,15 @@ namespace bemesh{
                 while(! write_CHR(gatt_if, conn_id, charact, data, buffer_size));
                 break;
             }
+            case Special: {
+				ESP_LOGE(GATTC_TAG,"Wow, a special policy! Gonna make a write 2 times");
+				int i;
+				for(i = 0; i<20; i++){
+                    ESP_LOGE(GATTC_TAG,"Writing attempt number: %d",i);
+                    write_CHR(gatt_if, conn_id, charact, data, buffer_size);
+                }
+                break;
+			}
             default:{
                 ESP_LOGE(GATTC_TAG,"Unknown write policy");
                 break;

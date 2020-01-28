@@ -92,7 +92,7 @@ namespace bemesh {
 	  // remember to implement dtor pls :(
 	  //delete recv_msg;
 	} else {
-	  if(ops->recv_cb) {
+    if(ops->recv_cb) {
 	    (*ops->recv_cb)(recv_msg, ops->args);
 	  }
 	}

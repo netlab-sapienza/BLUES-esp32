@@ -2,7 +2,6 @@
 #include <iostream>
 
 
-
 namespace bemesh{
     
 
@@ -220,8 +219,9 @@ namespace bemesh{
         uint8_t * server_connids = get_server_connids();
         int i;
         for(i = 0; i<TOTAL_NUMBER_LIMIT; ++i){
-            if(server_connids[i] == 1){
-                if(get_type_connection(i) == CLIENT){
+			ESP_LOGE(GATTS_TAG,"conn_id %d is assigned?: %d ",i,server_connids[i]);
+            if(server_connids[i] == 1 || true){
+                if(get_type_connection(i) == CLIENT || true){
                     uint8_t * client_address = get_connid_MAC(i);
                     dev_addr_t cl_addr = _build_dev_addr(client_address);
                     RoutingPingMessage client_ping_message(cl_addr,rt_ping_message->source(),pong_flag);
@@ -315,17 +315,41 @@ namespace bemesh{
     {
         ESP_LOGE(GATTS_TAG, "Someone wants to discover my routing table and I prepare a routing discovery response");
         //I must connect to the server that has requested the routing table and then exchange with it.
-       
-        
-        wants_to_discover = false;
+		wants_to_discover = false;
         wants_to_send_routing_table = true;
-        start_internal_client(SERVER_S2);
-        //register_internal_client(SERVER_S2);
 
-
-        //Prepare the routing discovery response message in the callback.
-        
-
+		uint8_t mac[MAC_LEN]; // mac address of the device sending the discovery req
+		memcpy(mac, header_t->destination().data(), sizeof(uint8_t) * MAC_LEN);
+		//ESP_LOGE(GATTS_TAG, "data isssssssssssssss:");
+		//esp_log_buffer_hex(GATTS_TAG, header_t->destination().data(), MAC_LEN);
+		
+		
+		uint8_t conn_id = get_MAC_connid(mac);
+		if(conn_id == 255) {
+			conn_id = get_internal_client_connid(SERVER_S1); // This has to be parametrized
+		}
+		//Prepare the routing discovery response message in the callback.
+		send_routing_table(get_my_MAC(), mac, get_gatt_if(), conn_id, 0);
+		
+		/*
+		uint8_t status = master_instance->is_active(conn_id); 
+		ESP_LOGE(GATTS_TAG, "Active? %d, conn_id is %d", status, conn_id);
+		switch(status) {
+		case 1:
+			// I'm active, using write char
+			ESP_LOGE(GATTS_TAG, "I'm Active!!");
+			break;
+		case 0:
+			// I'm passive, using notification
+			ESP_LOGE(GATTS_TAG, "I'm Passive!!");
+			send_routing_table(get_my_MAC(), mac, get_gatt_if(), conn_id, 0); // last argument, server_id, is a bit doubtful
+			break;
+		default:
+			ESP_LOGE(GATTS_TAG, "Who am I?");
+			break;
+		}
+		*/
+		
         return;                        
     }
 
@@ -363,19 +387,85 @@ namespace bemesh{
         ESP_LOGE(GATTS_TAG,"Merging the updates calling router->mergeUpdates");
         std::size_t merge_res = router->mergeUpdates(vec_updates,sender);
         ESP_LOGE(GATTS_TAG,"Merge result is (number of entries updated): %d",merge_res);
-
-
+        
+        
         //Then propagate the updates until a server can't propagate no longer.
-        send_routing_update(updates,routing_updates->entries());
+        //send_routing_update(updates,routing_updates->entries());
+
+        dev_addr_t update_source = routing_updates->source();
+        dev_addr_t src_addr = get_router_dev_addr();
+        ESP_LOGE(GATTS_TAG,"Preparing to send the update packets to all neighbours");
+        for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
+            connected_server_params_t server = *it;
+            //Retrieve the mac address of the server I'm going to contact from the data structure 
+            dev_addr_t dest_addr = server.server_mac_address;
+            
+            //I don't want to resend the update to the sender.
+            if(!same_addresses(dest_addr,update_source,MAC_ADDRESS_SIZE)){
+                //Just for print status (to be commented sonner or later).
+                uint8_t addr[MAC_ADDRESS_SIZE];
+                int i;
+                for(i = 0; i<MAC_ADDRESS_SIZE; ++i){
+                    addr[i] = dest_addr[i];
+                }
+
+                ESP_LOGE(GATTS_TAG,"Sending to the neighbour: ");
+                esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
+
+                for(i = 0; i<MAC_ADDRESS_SIZE; ++i){
+                    addr[i] = update_source[i];
+                }
+
+                ESP_LOGE(GATTS_TAG,"Sender is: ");
+                esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
+
+
+                RoutingUpdateMessage routing_update_message(src_addr,dest_addr,updates,ROUTING_UPDATE_ENTRIES_MAX);
+                ESP_LOGE(GATTS_TAG,"Ended preparing the message: now I transmit");
+                //Before sending we have to set the arguments for the transmission callback
+                
+                //Push the server gatt_if (uint16_t)
+                uint16_t* args = (uint16_t*)master_message_extra_args;
+                *args = server.gatt_if;
+                uint8_t * _args = (uint8_t*)(master_message_extra_args);
+                 _args = (uint8_t*)(_args + sizeof(uint16_t));
+                //Then the corresponding server conn_id
+                *_args = server.conn_id;
+                _args = (uint8_t*)(_args + sizeof(uint8_t));
+                //Then the server_id
+                *_args = server.server_id;
+                
+                
+                //Send the message.
+                ESP_LOGE(GATTS_TAG,"Before send");
+                ErrStatus ret_val = get_message_handler()->send((MessageHeader*)&routing_update_message);
+                if(ret_val != Success){
+                    ESP_LOGE(GATTS_TAG,"Error in sending the routing updates to: %d",server.server_id);
+                }
+                get_message_handler()->handle();
+            }
+            ESP_LOGE(GATTS_TAG,"Ended updating the neighbours");
+
+            //Then flush the output stream. 
+            //Need to pass arguments to MessageHandler::handle for this message.
+
+            //return Success;
+        }
+
+
+
 
         return;
     }
 
     void master_reception_callback(MessageHeader* header_t, void* args)
     {
+        ESP_LOGE(GATTS_TAG,"SONO QUI --------------------------------------------------");
         if(master_instance == NULL)
             return;
-        
+		
+		
+		
         switch(header_t->id()){
             case ROUTING_DISCOVERY_REQ_ID:{
                 if(master_instance)
@@ -424,9 +514,9 @@ namespace bemesh{
 
         //ESP_LOGE(GATTS_TAG,"In ping transmission callback: ended to parse all arguments");
 
-        uint8_t characteristic = IDX_CHAR_VAL_A;
 
         if(notify == NOTIFY_NO){
+			uint8_t characteristic = IDX_CHAR_VAL_A;
             write_policy_t policy = Standard;
             ErrStatus write_ret = write_characteristic(characteristic,buffer,size,gatt_if,conn_id,
                                                         policy);
@@ -435,6 +525,7 @@ namespace bemesh{
             }
         }
         else{
+			uint8_t characteristic = IDX_CHAR_VAL_A;
             uint8_t notification_ret = send_notification(conn_id,characteristic,buffer,size);
                                                     
             if(notification_ret){
@@ -452,12 +543,50 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery request transmission callback");
-       
-        uint8_t characteristic = IDX_CHAR_VAL_B;
-        //Writing the packet to the characteristic
-        write_policy_t policy = Standard;
-        write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
+		if(size == 0) {
+			ESP_LOGE(GATTS_TAG,"Size is zero");
+			return;
+        }
+        //uint8_t characteristic = IDX_CHAR_VAL_B;
+        uint8_t conn_id = internal_client_conn_id;                
+        uint8_t status = master_instance->is_active(internal_client_conn_id); 
+		if(internal_client_conn_id > 3) { // I'm not an internal client
+			uint8_t* list = get_server_connids();
+			int i;
+			for(i=0; i<TOTAL_NUMBER_LIMIT; i++) {
+				if(list[i] == 1 && get_type_connection(i) == SERVER) {
+					ESP_LOGE(GATTS_TAG,"ECCOME SO ARRIVATO");
+					conn_id = i;
+					status = master_instance->is_active(i); 
+				}
+			}
+		}
+		ESP_LOGE(GATTS_TAG, "Active? %d, conn_id is %d", status, conn_id);
+		switch(status) {
+		case 1: {
+			uint8_t characteristic = IDX_CHAR_VAL_B;
+			// I'm active, using write char
+			ESP_LOGE(GATTS_TAG, "I'm Active!!");
+			//Writing the packet to the characteristic
+			write_policy_t policy = Special;
+			write_characteristic(characteristic,buffer,size,internal_client_gatt_if,
                                     internal_client_conn_id,policy);
+			break;
+		}
+		case 0: {
+			uint8_t characteristic = IDX_CHAR_VAL_A;
+			// I'm passive, using notification
+			ESP_LOGE(GATTS_TAG, "I'm Passive!! Sending a packet with size %d", size);
+			uint8_t notification_ret = send_notification(conn_id,characteristic,buffer,size);
+			if(notification_ret){
+                ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: Error in notifying the client: %d on the characteristic: %d",internal_client_conn_id,characteristic);
+            }
+			break;
+		}
+		default:
+			ESP_LOGE(GATTS_TAG, "Who am I?");
+			break;
+		}
                 
         return;
     }
@@ -469,8 +598,9 @@ namespace bemesh{
                                     void* args)
     {
         ESP_LOGE(GATTS_TAG,"In routing discovery response transmission callback");
-        //ESP_LOGE(GATTS_TAG, "BELLAAAAAA A TUTTIIIIIIIIIIIIIIIIIIIII");
-
+        
+        
+        /*
         //The order is: gatt_if, conn_id, server_id.
         uint16_t* ptr = (uint16_t*) args;
         uint16_t gatt_if = *ptr;
@@ -479,22 +609,77 @@ namespace bemesh{
         uint8_t conn_id = *(_ptr);
         _ptr =(uint8_t*) (_ptr + sizeof(uint8_t));
         uint8_t server_id = *(_ptr);
+        */
+        
+        uint8_t mac[MAC_LEN];
+		memcpy(mac, header_t->source().data(), sizeof(uint8_t) * MAC_LEN);
+		uint8_t conn_id = get_MAC_connid(mac);
+        if(conn_id == 255) conn_id = get_internal_client_connid(SERVER_S1); // This has to be parametrized
+        uint16_t gatt_if = get_gatt_if();
+        
+        // Do i really care about server_id? 0 for the moment :)
+        esp_log_buffer_hex(GATTS_TAG, mac, MAC_LEN);
         ESP_LOGE(GATTS_TAG,"Parsed message arguments: gatt_if: %d, conn_id: %d, server_id: %d",
-                        gatt_if, conn_id, server_id);
-
-        uint8_t characteristic = IDX_CHAR_VAL_B;
+                        gatt_if, conn_id, 0);
+        
+        
 
         //Write to some characteristic
-        write_policy_t policy = Standard;
-        ErrStatus ret_val = write_characteristic(characteristic,buffer,size,gatt_if,
-                            conn_id,policy);
         
-        if(ret_val){
-            
-            ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: error in writing the: %d characteristic. Error status: %d",
-                                characteristic,ret_val);
-        }
 
+        uint8_t status = master_instance->is_active(conn_id); 
+		ESP_LOGE(GATTS_TAG, "Active? %d, conn_id is %d", status, conn_id);
+		switch(status) {
+		case 1: {
+			uint8_t characteristic = IDX_CHAR_VAL_C;
+			//policy = Special;
+			// I'm active, using write char
+			ESP_LOGE(GATTS_TAG, "I'm Active!!");
+			write_policy_t policy = Standard;
+			ErrStatus ret_val = write_characteristic(characteristic,buffer,size,gatt_if,conn_id,policy);
+			if(ret_val){
+				ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: error in sending the: %d characteristic. Error status: %d",
+                                characteristic,ret_val);
+			}
+			break;
+		}
+		case 0: {
+			uint8_t characteristic = IDX_CHAR_VAL_A;
+			// I'm passive, using notification
+			ESP_LOGE(GATTS_TAG, "I'm Passive!!");
+			uint8_t notification_ret = send_notification(conn_id,characteristic,buffer,size);
+			if(notification_ret){
+                ESP_LOGE(GATTS_TAG,"In routing_discovery_response_transmission_callback: Error in notifying the client: %d on the characteristic: %d",conn_id,characteristic);
+            }
+			break;
+		}
+		default:
+			ESP_LOGE(GATTS_TAG, "Who am I?");
+			break;
+		}
+		/*
+		if(status == 0) {
+			if(master_instance){
+				//vTaskDelay(1000);
+				ESP_LOGE(GATTS_TAG,"Now I'm going to do my passive job... with conn_id %d", conn_id);
+				master_instance->set_passive(conn_id);
+				//exchange_routing_table_callback(get_my_MAC(), get_connid_MAC(conn_id),get_gatt_if(), conn_id);
+				
+				uint8_t* src_address = get_my_MAC();
+				uint8_t* dest_address = get_connid_MAC(conn_id);
+				
+				dev_addr_t src_addr = _build_dev_addr(src_address);
+				dev_addr_t dest_addr = _build_dev_addr(dest_address);
+				//std::cout<<"Address built"<<std::endl;
+				RoutingDiscoveryRequest routing_discovery_request_message(src_addr,dest_addr);
+				//Serialize message (prepare message)
+								   
+				master_instance->get_message_handler()->send((MessageHeader*)&routing_discovery_request_message);
+				//std::cout<<"Message sent"<<std::endl;
+				master_instance->get_message_handler()->handle();
+			}
+		}
+        */
         return;
     }
 
@@ -516,11 +701,26 @@ namespace bemesh{
         uint8_t server_id = *_ptr;
         ESP_LOGE(GATTS_TAG,"In routing update transmission callback. Ended to parse the arguments");
        
-       
-        uint8_t characteristic = IDX_CHAR_VAL_B;
-        write_policy_t policy = Standard;
-        write_characteristic(characteristic, buffer,size,gatt_if,conn_id,policy);
-        return;
+        uint8_t status = is_active(conn_id);
+        switch (status){
+            //It is active
+            case 1:{
+                uint8_t characteristic = IDX_CHAR_VAL_B;
+                write_policy_t policy = Standard;
+                write_characteristic(characteristic, buffer,size,gatt_if,conn_id,policy);
+                return;
+            }
+
+            case 0: {
+                uint8_t characteristic = IDX_CHAR_VAL_A;
+                uint8_t not_ret = notify_client(conn_id,characteristic,buffer,size);
+                if(not_ret){
+                    ESP_LOGE(GATTS_TAG,"Error in notifying the neighbour %d",conn_id);
+                }
+                return;
+            }
+
+        }
     }
                                     
     void master_transmission_callback(uint8_t* buffer,uint8_t size,MessageHeader* header_t,
@@ -611,15 +811,17 @@ namespace bemesh{
 
     ErrStatus Master::send_routing_update(){
         std::vector<routing_update_t> r_updates = router->getRoutingUpdates();
+        //ESP_LOGE(GATTS_TAG,"HELLO");
         std::size_t num_updates = r_updates.size();
         std::array<routing_update_t,ROUTING_UPDATE_ENTRIES_MAX> arr_updates;
         std::copy_n(r_updates.begin(),num_updates,arr_updates.begin());
-        
+        //ESP_LOGE(GATTS_TAG,"HELLO");
         dev_addr_t src_addr = get_router_dev_addr();
         //Send the routing updates to all neighbours.
         
         ESP_LOGE(GATTS_TAG,"Preparing to send the update packets to all neighbours");
         for(auto it = neighbours.begin(); it != neighbours.end(); ++it){
+            ESP_LOGE(GATTS_TAG,"It number: %d",0);
             connected_server_params_t server = *it;
             //Retrieve the mac address from the data structure
             dev_addr_t dest_addr = server.server_mac_address;
@@ -631,7 +833,7 @@ namespace bemesh{
             }
 
 
-            ESP_LOGE(GATTS_TAG,"Sending to the neighbour: ");
+            ESP_LOGE(GATTS_TAG,"Sending to the neighbour conn_id: %d ",server.conn_id);
             esp_log_buffer_hex(GATTS_TAG, addr,MAC_ADDRESS_SIZE);
             RoutingUpdateMessage routing_update_message(src_addr,dest_addr,arr_updates,num_updates);
             
@@ -640,7 +842,8 @@ namespace bemesh{
             //Push the server gatt_if (uint16_t)
             uint16_t* args = (uint16_t*)master_message_extra_args;
             *args = server.gatt_if;
-            uint8_t* _args = (uint8_t*)(args + sizeof(uint16_t));
+            uint8_t* _args = (uint8_t *)master_message_extra_args;
+             _args = (uint8_t*)(_args + sizeof(uint16_t));
             //Then the corresponding server conn_id
             *_args = server.conn_id;
             _args = (uint8_t*)(_args + sizeof(uint8_t));
@@ -862,17 +1065,17 @@ namespace bemesh{
                 dev_addr_t addr = _build_dev_addr(address);
                 connected_server_params_t new_server(server_id,gatt_if,conn_id,addr);
                 add_neighbour(new_server);
-                ESP_LOGE(GATTS_TAG,"Adding a new neighbour ");
+                //ESP_LOGE(GATTS_TAG,"Adding a new neighbour ");
 
                 //std::cout<<"New address is: "<<std::endl;
-                /*
-                dev_addr_t addr = _build_dev_addr(address);
+                
+                //dev_addr_t addr = _build_dev_addr(address);
                 uint8_t num_hops = 1;
                 uint8_t flags = 0;
                 dev_addr_t my_addr = get_router_dev_addr();
                 add_routing_table_entry(addr,my_addr,num_hops,flags);
-                */
-
+                return;
+                
             }
         }
         return;
@@ -910,7 +1113,7 @@ namespace bemesh{
 
         
         std::cout<<"RoutingDiscoveryResponseMessage sent"<<std::endl;
-        master_instance->get_message_handler()->handle();
+        master_instance->get_message_handler()->handle(); // qui chiamo routing_discovery_response_transmission callback
         std::cout<<"Message handled"<<std::endl;
         //And see what happens.
         return ret_val;
@@ -918,9 +1121,12 @@ namespace bemesh{
 
     void Master::parse_message_receive(uint8_t* packet, uint16_t size){
         std::size_t bytes_read = mes_handler.read(packet);
+        
+        /*
         if(bytes_read != size){
             ESP_LOGE(GATTS_TAG,"In Master::parse_message_receive. Expected to read: %d bytes but %d actually read",size, bytes_read);
         }
+        */
 
         mes_handler.handle();
         return;
@@ -934,15 +1140,63 @@ namespace bemesh{
         mes_handler.handle();
         return;
     }
+    
+
+	void notify_characteristic_task(void * task_param) {
+        task_param_write_t* params = (task_param_write_t*)task_param;
+		//ESP_LOGE(GATTC_TAG, "BUFFER THAT TASK IS GOING TO WRITE IS:");
+		//esp_log_buffer_hex(GATTC_TAG, params->buffer, params->buffer_size);
+		
+        uint8_t conn_id = params->conn_id;
+        //uint16_t gatt_if = params->gatt_if;
+        uint8_t charact = params->characteristic;
+        uint8_t * data = params->buffer;
+        uint16_t buffer_size = params->buffer_size;
+        //write_policy_t  policy = params->policy;
+		//ESP_LOGE(GATTC_TAG,"TEST IN THE SLAVE 3: conn_id %d, gatt_if %d", conn_id, gatt_if);
+        ESP_LOGE(GATTS_TAG,"In notify characteristic task.");
+        
+        notify_client(conn_id,charact,data,buffer_size);
+        
+		delete params;
+        vTaskDelete(NULL);
+
+    }
 
     uint8_t Master::send_notification(uint8_t conn_id,uint8_t characteristic,uint8_t* data,
                                     uint8_t data_size)
     {
         ESP_LOGE(GATTS_TAG,"In send notification conn_id: %d characteristic: %d",
                             conn_id, characteristic);
-        uint8_t notification_ret = notify_client(conn_id,characteristic,data,data_size);
-        return notification_ret;
+        uint8_t notification_ret;
+        task_param_write_t* write_params = new task_param_write_t;
+		write_params->conn_id = conn_id;
+		//write_params->gatt_if = gatts_if;
+		write_params->characteristic = characteristic;
+		write_params->buffer = data;
+		write_params->buffer_size = data_size;
+		//write_params->policy = policy;
+		ESP_LOGE(GATTC_TAG, "I'm going to notify:");
+		esp_log_buffer_hex(GATTC_TAG, write_params->buffer, write_params->buffer_size);
+		
+		xTaskCreate(notify_characteristic_task,"notify_server",WRITE_TASK_STACK_SIZE,write_params,TASK_PRIORITY,NULL);
+        //notification_ret = notify_client(conn_id,characteristic,data,data_size);
+        return 0;
     }
-
+	
+	
+	uint8_t Master::is_active(uint8_t conn_id){
+        return active[conn_id];
+    }
+    
+    void Master::set_active(uint8_t conn_id){
+        active[conn_id] = 1;
+        return;
+    }
+    
+    void Master::set_passive(uint8_t conn_id){
+        active[conn_id] = 0;
+        return;
+    }
 }
 

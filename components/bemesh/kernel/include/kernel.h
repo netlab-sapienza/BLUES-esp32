@@ -79,13 +79,14 @@ struct device {
 	uint8_t addr_type; // BLE addr type
 	uint8_t clients_num; // Number of clients connected to that device
 	uint8_t rssi; // Received signal strength indication
+	uint8_t is_server;
 };
 
 extern uint8_t CHR_VALUES[HRS_IDX_NB][GATTS_CHAR_VAL_LEN_MAX];
 extern uint16_t CHR_HANDLES[HRS_IDX_NB];
 extern struct gattc_profile_inst gl_profile_tab2[PROFILE_NUM];
-extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
-extern struct device scan_res[SCAN_LIMIT];
+//extern uint8_t MACS[TOTAL_NUMBER_LIMIT][MAC_ADDRESS_SIZE];
+//extern struct device scan_res[SCAN_LIMIT];
 
 
 //extern bool becoming_client;
