@@ -1,6 +1,6 @@
 
 #In this variable we keep track of source files needed by the component.
-list(APPEND SOURCES "core.c")
+list(APPEND SOURCES "core.c" "gatts_callbacks.c")
 
 
 #All header files will be located inside the "include" directory of the component "component" reachable from "../"
@@ -21,5 +21,5 @@ list(APPEND INCLUDE_LIST )
 
 #Finally we register the component using the values stored in the variables above
 idf_component_register(SRCS ${SOURCES}
-                        INCLUDE_DIRS ${INCLUDE_LIST} 
+                        INCLUDE_DIRS "include"
                         REQUIRES nvs_flash bt)
