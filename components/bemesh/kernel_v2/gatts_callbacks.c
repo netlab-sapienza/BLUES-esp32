@@ -3,7 +3,6 @@
  * Container for GATTS callbacks.
  */
 
-#pragma once
 #include "core.h"
 
 /*

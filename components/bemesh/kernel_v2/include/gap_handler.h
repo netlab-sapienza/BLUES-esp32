@@ -21,11 +21,16 @@ typedef struct {
   // Scanning:
   esp_ble_scan_params_t scan_params; // Scanning parameters
   
-
   uint8_t mode; // 0 for scanning, 1 for advertising.
+
+  // Buffer for storing response customized payload (manufacturer)
+  uint8_t *rsp_man_buffer;
+  uint8_t rsp_man_buffer_len;
 } bemesh_gap_handler;
 
 // Initializes the ble structures in the gap handler h.
-int bemesh_gap_handler_init(bemesh_gap_handler* h);
+int bemesh_gap_handler_init(bemesh_gap_handler* h,
+			    uint8_t rsp_buffer,
+			    uint8_t rsp_buffer_len);
 // Configure the operational mode on the gap handler h.
 void bemesh_gap_handler_mode(bemesh_gap_handler* h, uint8_t m);
