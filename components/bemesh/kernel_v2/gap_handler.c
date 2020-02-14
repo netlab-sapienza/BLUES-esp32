@@ -58,7 +58,7 @@ static void setup_advertising_data(esp_ble_adv_data_t* adv,
 static void setup_resp_data(esp_ble_adv_data_t* adv,
 			    bemesh_gap_handler* h) {
   adv->set_scan_rsp=true; // This is the response structure.
-  adv->include_name=false; // Do not include the name in the resp packet.
+  adv->include_name=true; // Do not include the name in the resp packet.
 
   // Will transmit data present in the rsp_man_buffer.
   // TAKE CARE: maximum payload size of 31 bytes for the resp.
@@ -145,12 +145,14 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
   // initialize the handler's vars
   h->scan_params_complete=0;
   h->found_devs=0;
+  h->adv_data_set=false;
+  h->rsp_data_set=false;
 
   // Execute paramter passing routines to esp
-  esp_ble_gap_set_scan_params(&h->scan_params);
-  esp_ble_gap_config_adv_data(&h->adv_data);
-  esp_ble_gap_config_adv_data(&h->rsp_data);
-  
+  esp_ble_gap_set_device_name("ESP32BLEMESH");
+  ESP_ERROR_CHECK(esp_ble_gap_set_scan_params(&h->scan_params));
+  ESP_ERROR_CHECK(esp_ble_gap_config_adv_data(&h->adv_data));
+  ESP_ERROR_CHECK(esp_ble_gap_config_adv_data(&h->rsp_data));  
   return h;
 }
 
@@ -158,15 +160,26 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
 void bemesh_gap_handler_mode(bemesh_gap_handler* h, uint8_t m) {
   h->mode=m;
   if(m==GAP_HANDLER_MODE_PERIPHERAL) {
+    ESP_LOGI(TAG, "Starting peripheral mode.");
     // Procedure to become a peripheral (advertising)
     // if the device was scanning, stop it.
     esp_ble_gap_stop_scanning();
+    // if advertising and scan response setup proc. was completed,
+    // start advertising
+    // wait for data setup.
+    while(!h->rsp_data_set) {}
+    if(h->adv_data_set==true && h->rsp_data_set==true) {
+      esp_ble_gap_start_advertising(&h->adv_params);
+    }
   } else if(m==GAP_HANDLER_MODE_CENTRAL) {
+    ESP_LOGI(TAG, "Starting central mode.");
     // Procedure to become a central (scanning)
     // if the device was advertising, stop it.
     esp_ble_gap_stop_advertising();
     // if the scan parameters setup proc. was completed, start scanning
-    esp_ble_gap_start_scanning(SCAN_DURATION_SEC);
+    if(h->scan_params_complete) {
+      esp_ble_gap_start_scanning(SCAN_DURATION_SEC);
+    }
   }
   return;
 }
@@ -179,6 +192,7 @@ void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
 // PERIPHERAL MODE callbacks (adv)
 void adv_data_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
 void adv_rsp_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+void adv_start_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
 
 /*
  * GAP Event handler.
@@ -206,6 +220,9 @@ void bemesh_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) 
   case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
     // Scan response data setup complete
     adv_rsp_complete_cb(param, h);
+    break;
+  case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
+    adv_start_cb(param, h);
     break;
   default:
     //TODO
@@ -308,11 +325,26 @@ void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
   return;
 }
 
-
+// Advertisement data passing proc. complete
 void adv_data_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
-  
+  ESP_LOGI(TAG, "Advertising data setup complete.");
+  h->adv_data_set=true;
+  return;
 }
 
+// Scan response data passing proc. complete
 void adv_rsp_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
+  ESP_LOGI(TAG, "Scan response data setup complete.");
+  h->rsp_data_set=true;
+  return;
+}
 
+// Advertisement proc. start callback
+void adv_start_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
+  if(param->adv_start_cmpl.status==ESP_BT_STATUS_SUCCESS) {
+    ESP_LOGI(TAG, "Advertising started.");
+  } else {
+    ESP_LOGE(TAG, "Unable to start advertising.");
+  }
+  return;
 }
