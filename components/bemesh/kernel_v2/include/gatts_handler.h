@@ -40,10 +40,23 @@ typedef struct {
   esp_bt_uuid_t descr_uuid;
 } gatts_profile_inst;
 
+/*
+ * In order to communicate with higher levels, the gatts_handler requires a callback handler
+ */
+
+//typedef void (*bemesh_gatts_cb)(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler *h, void* args);
+
 typedef struct {
   gatts_profile_inst profile_inst;
   esp_attr_value_t char1_val;
   uint8_t char_buffer[GATT_CHAR_BUF_SIZE];
+
+  //bemesh_gatts_cb ext_gatts_handler_cb;
+  //void* ext_gatts_handler_cb_args;
 } bemesh_gatts_handler;
 
 bemesh_gatts_handler* bemesh_gatts_handler_init(void);
+/*
+void bemesh_gatts_handler_install_cb(bemesh_gatts_handler* h, bemesh_gatts_cb cb);
+void bemesh_gatts_handler_remove_cb(bemesh_gatts_handler* h);
+*/

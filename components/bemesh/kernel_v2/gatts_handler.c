@@ -66,13 +66,28 @@ bemesh_gatts_handler *bemesh_gatts_handler_init(void) {
   
   return h;
 }
+/*
+void bemesh_gatts_handler_install_cb(bemesh_gatts_handler* h, bemesh_gatts_cb cb, void* cb_args) {
+  if(cb!=NULL && h->ext_gatts_handler_cb==NULL) {
+    h->ext_gatts_handler_cb=cb;
+    h->ext_gatts_handler_cb_args=cb_args;
+  }
+  return;
+}
 
+void bemesh_gatts_handler_remove_cb(bemesh_gatts_handler* h) {
+  h->ext_gatts_handler_cb=NULL;
+  h->ext_gatts_handler_cb_args=NULL;
+  return;
+}
+*/
 // Event callbacks.
 static void app_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void serv_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void char_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void char_descr_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
+static void disconnection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void read_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 //TODO
@@ -106,6 +121,9 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
     // A new client connects to the server.
     connection_cb(gatts_if, param, h);
     break;
+  case ESP_GATTS_DISCONNECT_EVT:
+    disconnection_cb(gatts_if, param, h);
+    break;
   case ESP_GATTS_READ_EVT:
     // Receive read request
     read_cb(gatts_if, param, h);
@@ -116,8 +134,14 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
     //TODO
   default:
     //TODO
+    ESP_LOGI(TAG, "Recived unhandled event no. %d", event);
     break;
   }
+  /*
+  if(h->ext_gatts_handler_cb!=NULL) {
+    (*h->ext_gatts_handler_cb)(event, gatts_if, param, h, h->ext_gatts_handler_cb_args);
+  }
+  */
   return;
 }
 
@@ -230,6 +254,12 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
   h->profile_inst.conn_id=param->connect.conn_id;
   // Update the connection parameters to the peer device.
   esp_ble_gap_update_conn_params(&conn_params);
+  return;
+}
+
+static void disconnection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
+  ESP_LOGI(TAG, "Disconnected event.");
+  // Launch the gatts callback handler for higher order operations
   return;
 }
 
