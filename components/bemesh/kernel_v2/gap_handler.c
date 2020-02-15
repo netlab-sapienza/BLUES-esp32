@@ -104,15 +104,16 @@ static void setup_advetising_params(esp_ble_adv_params_t* params,
  * -scan window of 30ms
  * each scan operation is 30ms long, and repeats every 50ms
  */
+// TODO delete magic numbers
 static void setup_scanning_params(esp_ble_scan_params_t* params,
 				  bemesh_gap_handler* h) {
-  params->scan_type=BLE_SCAN_TYPE_ACTIVE;
-  params->own_addr_type=BLE_ADDR_TYPE_PUBLIC;
-  params->scan_filter_policy=BLE_SCAN_FILTER_ALLOW_ALL;
-  params->scan_interval=0x50;
-  params->scan_window=0x30;
-  return;
-}
+            params->scan_type=BLE_SCAN_TYPE_ACTIVE;
+            params->own_addr_type=BLE_ADDR_TYPE_PUBLIC;
+            params->scan_filter_policy=BLE_SCAN_FILTER_ALLOW_ALL;
+            params->scan_interval=0x50; // TODO set the value
+            params->scan_window=0x30; // TODO set the value
+            return;
+    }
 
 // Initializes the ble structures in the gap handler h.
 bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
