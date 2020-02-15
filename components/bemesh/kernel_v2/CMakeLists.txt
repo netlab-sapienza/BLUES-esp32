@@ -1,6 +1,6 @@
 
 #In this variable we keep track of source files needed by the component.
-list(APPEND SOURCES "core.c" "gatts_callbacks.c" "gap_handler.c")
+list(APPEND SOURCES "core.c" "gap_handler.c" "gatts_handler.c")
 
 
 #All header files will be located inside the "include" directory of the component "component" reachable from "../"

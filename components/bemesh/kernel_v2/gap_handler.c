@@ -17,7 +17,7 @@ static bemesh_gap_handler *get_gap1_ptr(void) {
 }
 
 // GAP callback handler definition
-void bemesh_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
+static void bemesh_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 
 /*
  * Configure the advertising data for the module.
@@ -58,7 +58,7 @@ static void setup_advertising_data(esp_ble_adv_data_t* adv,
 static void setup_resp_data(esp_ble_adv_data_t* adv,
 			    bemesh_gap_handler* h) {
   adv->set_scan_rsp=true; // This is the response structure.
-  adv->include_name=true; // Do not include the name in the resp packet.
+  adv->include_name=false; // Do not include the name in the resp packet.
 
   // Will transmit data present in the rsp_man_buffer.
   // TAKE CARE: maximum payload size of 31 bytes for the resp.
@@ -119,15 +119,6 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
 					    uint8_t rsp_buffer_len,
 					    uint8_t *srv_uuid_buffer,
 					    uint8_t srv_uuid_len) {
-  // Initial routine to activate bluedroid stack (PLEASE REMOVE AFTER ENABLING CORE LIB)
-  ESP_ERROR_CHECK(nvs_flash_init());
-  ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
-  esp_bt_controller_config_t bt_cfg=BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-  esp_bt_controller_init(&bt_cfg);
-  esp_bt_controller_enable(ESP_BT_MODE_BLE);
-  esp_bluedroid_init();
-  esp_bluedroid_enable();
-
   // set callback function
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(bemesh_gap_cb));
   
@@ -149,7 +140,6 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
   h->rsp_data_set=false;
 
   // Execute paramter passing routines to esp
-  esp_ble_gap_set_device_name("ESP32BLEMESH");
   ESP_ERROR_CHECK(esp_ble_gap_set_scan_params(&h->scan_params));
   ESP_ERROR_CHECK(esp_ble_gap_config_adv_data(&h->adv_data));
   ESP_ERROR_CHECK(esp_ble_gap_config_adv_data(&h->rsp_data));  
@@ -185,20 +175,23 @@ void bemesh_gap_handler_mode(bemesh_gap_handler* h, uint8_t m) {
 }
 
 // CENTRAL MODE callbacks (scan)
-void scan_param_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
-void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
-void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+static void scan_param_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+static void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+static void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
 
 // PERIPHERAL MODE callbacks (adv)
-void adv_data_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
-void adv_rsp_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
-void adv_start_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+static void adv_data_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+static void adv_rsp_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+static void adv_start_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
+
+// General cases (i think so ?)
+static void conn_params_update_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
 
 /*
  * GAP Event handler.
  * Executed when a new GAP event occurs.
  */
-void bemesh_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
+static void bemesh_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
   bemesh_gap_handler* h=get_gap1_ptr();
   switch(event) {
   case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
@@ -224,6 +217,9 @@ void bemesh_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) 
   case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
     adv_start_cb(param, h);
     break;
+  case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+    // Update connection parameters
+    conn_params_update_cb(param, h);
   default:
     //TODO
     break;
@@ -252,10 +248,11 @@ void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h
 
 
 /*
+ * TODO
  * check validity of the entry (eg. check payload to confirm bemesh protocol
  * can be initialized).
+ * static int entry_valid_esp_ble_gap_cb_param_t* param);
  */
-static int entry_valid(esp_ble_gap_cb_param_t* param);
 /*
  * Auxilary function to check and eventually store the new scanned dev into
  * found_devs_vect
@@ -310,7 +307,7 @@ static void print_scanned_dev_info(esp_ble_gap_cb_param_t* param) {
   return;
 }
 
-void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
+static void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
   if(param->scan_rst.search_evt==ESP_GAP_SEARCH_INQ_RES_EVT) {
     // A new device is found. Check that it was not found previously.
     // And eventually store it in found_devs_vect
@@ -326,25 +323,37 @@ void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
 }
 
 // Advertisement data passing proc. complete
-void adv_data_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
+static void adv_data_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
   ESP_LOGI(TAG, "Advertising data setup complete.");
   h->adv_data_set=true;
   return;
 }
 
 // Scan response data passing proc. complete
-void adv_rsp_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
+static void adv_rsp_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
   ESP_LOGI(TAG, "Scan response data setup complete.");
   h->rsp_data_set=true;
   return;
 }
 
 // Advertisement proc. start callback
-void adv_start_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
+static void adv_start_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
   if(param->adv_start_cmpl.status==ESP_BT_STATUS_SUCCESS) {
     ESP_LOGI(TAG, "Advertising started.");
   } else {
     ESP_LOGE(TAG, "Unable to start advertising.");
   }
+  return;
+}
+
+// Updated connection parameters (Event caused by the gatts or gattc handlers)
+static void conn_params_update_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
+  ESP_LOGI(TAG, "Updated connection params: status=%d, min_int=%d, max_int=%d, conn_int=%d, latency=%d, timeout=%d",
+	   param->update_conn_params.status,
+	   param->update_conn_params.min_int,
+	   param->update_conn_params.max_int,
+	   param->update_conn_params.conn_int,
+	   param->update_conn_params.latency,
+	   param->update_conn_params.timeout);
   return;
 }
