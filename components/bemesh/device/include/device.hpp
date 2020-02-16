@@ -6,7 +6,10 @@
 #define ESP32_BLE_MESH_DEVICE_HPP
 
 
-enum class Role { SERVER, CLIENT };
+enum class Role {
+    SERVER, CLIENT
+};
+
 class Device;
 
 #endif // ESP32_BLE_MESH_DEVICE_HPP
