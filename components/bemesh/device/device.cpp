@@ -112,4 +112,26 @@ public:
         }
 
     }
+
+    /**
+     * Callback triggered when a message is received to this device. Parameters to be decided.
+     *
+     */
+    void on_message_received(/*id or something to identify the sender*/,/*message*/){
+
+    }
+
+    /**
+     *  Send a message to a particular device. Parameters to be decided.
+     *
+     */
+    void send_message(/*id or something to identify the receiver*/,/*message*/){
+
+    }
+
+    /**
+     * Callback triggered when a message of update  of the routing table is received. Parameters to be decided.
+     */
+    // TODO valutare se è utile altriment eliminare e includere tutto nella on message received.
+    void on_routing_table_update(/*update defined by you in message protocol*/);
 };
