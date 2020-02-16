@@ -12,10 +12,12 @@
 #include "esp_gatt_defs.h" // GATT definitions.
 
 #include "gap_handler.h"
+#include "gatts_handler.h"
 
 
 typedef struct {
   bemesh_gap_handler* gaph;
+  bemesh_gatts_handler* gattsh;
 } bemesh_core_t;
 
 bemesh_core_t* bemesh_core_init(void);
