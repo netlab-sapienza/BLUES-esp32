@@ -24,7 +24,7 @@ private:
      * @param device_list list of the devices found in the scan
      * @return the first element of the list
      */
-    bemesh_dev_t select_device_to_connect(bemesh_dev_t *device_list, int length) {
+    bemesh_dev_t* select_device_to_connect(bemesh_dev_t *device_list, int length) {
         int i, j;
         bemesh_dev_t temp;
 
@@ -98,7 +98,7 @@ public:
      */
     void on_scan_completed(bemesh_dev_t *device_list, int list_length) {
 
-        bemesh_dev_t target = select_device_to_connect(device_list, list_length);
+        bemesh_dev_t* target = select_device_to_connect(device_list, list_length);
         this->role = Role::CLIENT;
 
         for (int i = 0; !connected && i < list_length; i++, target = device_list[i + 1])
