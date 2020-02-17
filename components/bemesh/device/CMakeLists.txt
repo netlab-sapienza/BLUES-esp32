@@ -22,4 +22,4 @@ list(APPEND INCLUDE_LIST)
 #Finally we register the component using the values stored in the variables above
 idf_component_register(SRCS ${SOURCES}
         INCLUDE_DIRS "include"
-        REQUIRES nvs_flash bt mid-tier)
+        REQUIRES nvs_flash bt mid-tier kernel_v2)

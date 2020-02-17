@@ -5,11 +5,20 @@
 #ifndef ESP32_BLE_MESH_DEVICE_HPP
 #define ESP32_BLE_MESH_DEVICE_HPP
 
-#include "rtable.hpp"
+#include "core_int.h"
+#include "gap_device.h"
 
-enum class Role {
-    SERVER, CLIENT
-};
+// Routing and messages
+#include "bemesh_messages_v2.hpp"
+#include "message_handler_v2.hpp"
+
+// just for the timeout
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+enum class Role { SERVER, CLIENT };
+
+# define MAX_NUM_CLIENTS 2
 
 class Device;
 

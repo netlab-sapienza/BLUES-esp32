@@ -1,6 +1,6 @@
 /*
  * rtable.cpp
- * 
+ *
  */
 
 #include "rtable.hpp"
@@ -15,7 +15,7 @@ namespace bemesh {
       int ret=sprintf(buf+wb, "%X", addr[i]);
       wb+=ret;
     }
-    return wb;    
+    return wb;
   }
 
   void printRoutingParams(const routing_params_t& p) {
@@ -28,9 +28,9 @@ namespace bemesh {
     printf("routing params: %s", buf);
     return;
   }
-  
+
   RoutingTable::RoutingTable(void): m_routing_table() {
-    
+
   }
 
   std::ostream& operator <<(std::ostream& os, const routing_params_t& up) {
@@ -49,15 +49,14 @@ namespace bemesh {
     m_routing_table.insert(std::pair<dev_addr_t, routing_params_t>(target_addr, t_target_params));
     return t_target_params;
   }
-  
+
   routing_params_t RoutingTable::insert(dev_addr_t t_target_addr, dev_addr_t t_hop_addr, uint8_t t_num_hops, uint8_t t_flags) {
     routing_params_t target_params;
     target_params.target_addr=t_target_addr;
     target_params.hop_addr=t_hop_addr;
     target_params.num_hops=t_num_hops;
     target_params.flags=t_flags;
-    m_routing_table.insert(std::pair<dev_addr_t, routing_params_t>(t_target_addr, target_params));
-    return target_params;
+    return insert(target_params);
   }
 
   ErrStatus RoutingTable::remove(dev_addr_t t_target_addr) {
@@ -100,7 +99,7 @@ namespace bemesh {
   std::size_t encodeTable(std::vector<routing_params_t>& t_src_vect, uint8_t* t_dest, std::size_t dest_len) {
     std::size_t exp_byte_size=t_src_vect.size()*sizeof(routing_params_t);
     assert(dest_len >= exp_byte_size);
-    
+
     memcpy((void*)t_dest, (const void*)t_src_vect.data(), exp_byte_size);
     return exp_byte_size;
   }
