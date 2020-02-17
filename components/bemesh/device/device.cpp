@@ -24,7 +24,7 @@ private:
      * @param device_list list of the devices found in the scan
      * @return the first element of the list
      */
-    bemesh_dev_t select_device_to_connect(bemesh_dev_t *device_list, int length) {
+    bemesh_dev_t* select_device_to_connect(bemesh_dev_t *device_list, int length) {
         int i, j;
         bemesh_dev_t temp;
 
@@ -98,7 +98,7 @@ public:
      */
     void on_scan_completed(bemesh_dev_t *device_list, int list_length) {
 
-        bemesh_dev_t target = select_device_to_connect(device_list, list_length);
+        bemesh_dev_t* target = select_device_to_connect(device_list, list_length);
         this->role = Role::CLIENT;
 
         for (int i = 0; !connected && i < list_length; i++, target = device_list[i + 1])
@@ -112,4 +112,26 @@ public:
         }
 
     }
+
+    /**
+     * Callback triggered when a message is received to this device. Parameters to be decided.
+     *
+     */
+    void on_message_received(/*id or something to identify the sender*/,/*message*/){
+
+    }
+
+    /**
+     *  Send a message to a particular device. Parameters to be decided.
+     *
+     */
+    void send_message(/*id or something to identify the receiver*/,/*message*/){
+
+    }
+
+    /**
+     * Callback triggered when a message of update  of the routing table is received. Parameters to be decided.
+     */
+    // TODO valutare se è utile altriment eliminare e includere tutto nella on message received.
+    void on_routing_table_update(/*update defined by you in message protocol*/);
 };

@@ -5,6 +5,7 @@
 #ifndef ESP32_BLE_MESH_DEVICE_HPP
 #define ESP32_BLE_MESH_DEVICE_HPP
 
+#include "rtable.hpp"
 
 enum class Role {
     SERVER, CLIENT
