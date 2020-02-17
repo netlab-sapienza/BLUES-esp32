@@ -31,10 +31,10 @@ void core_peripheral_init(void) {
 bemesh_core_t* bemesh_core_init(void) {
   core_peripheral_init();
   bemesh_core_t *core=get_core1_ptr();
-  core->gaph=bemesh_gap_handler_init(NULL, 0, NULL, 0); // TODO: Add rsp and srv_uuid buffers
-  // Link the gatts_handler to core1
+  // Link the gatts_handler to core1 and initialize it
   core->gattsh=bemesh_gatts_handler_init();
-  
+  // Link the gap_handler to core1 and initialize it
+  core->gaph=bemesh_gap_handler_init(NULL, 0, NULL, 0); // TODO: Add rsp and srv_uuid buffers  
   //TODO
-  return NULL;
+  return core;
 }

@@ -37,10 +37,32 @@ bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
   // Initialize the app profile vect.
   profile_inst_vect_init(h->profile_inst_vect);
 
+  // Set gattc_handler vars
+  h->server_valid_flag=false;
+
+  // register the callback function for the gattc module
+  esp_ble_gattc_register_callback(bemesh_gattc_cb);
+  
   // Set the MTU size
   esp_ble_gatt_set_local_mtu(GATTC_MTU_SIZE);
-  
+
+  // Install the app profile.
+  esp_ble_gattc_app_register(GATTC_APP_ID);  
   return h;  
+}
+
+// Open connection with a remote device. Returns -1 if no free gatt intefaces are available
+uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp_ble_addr_type_t remote_addr_type) {
+  esp_err_t ret;
+  for(int i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
+    // If the current app profile is not bounded to any remote, use that to connect.
+    if(h->profile_inst_vect[i].conn_id==0) {
+      // Open the connection with the remote bda.
+      ret=esp_ble_gattc_open(h->profile_inst_vect[i].gattc_if,
+			     remote_bda, remote_addr_type, true);
+    }
+  }
+  return ret;
 }
 
 // Event callbacks.
@@ -115,6 +137,9 @@ static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
   if(ret) {
     ESP_LOGE(TAG, "Error: could not config MTU, errcode=%d", ret);
   }
+
+  // Before going forward on copen_cb, reset the server validity flag
+  h->server_valid_flag=false;
   return;
 }
 
@@ -147,10 +172,13 @@ static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *par
   // Check if we found the service that we're looking for.
   if(srvc_id->id.uuid.len==h->remote_filter_service_uuid.len &&
      srvc_id->id.uuid.uuid.uuid16==h->remote_filter_service_uuid.uuid.uuid16) {
-    // We found it !
+    // Validity of the server confirmed.
+    h->server_valid_flag=true;
     gattc_profile_inst* prof=__get_gattc_profile(gattc_if, h->profile_inst_vect);
+    // Setup start and end handle, used to get characteristics
     prof->service_start_handle=param->search_res.start_handle;
     prof->service_end_handle=param->search_res.end_handle;
+    ESP_LOGI(TAG, "Found UUID16: %d", srvc_id->id.uuid.uuid.uuid16);
   }
   return;
 }

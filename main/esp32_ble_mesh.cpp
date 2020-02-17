@@ -17,19 +17,21 @@ extern "C" {
 
 #include "gap_handler.h"
 #include "gatts_handler.h"
+#include "gattc_handler.h"
 #include "core.h"
   void app_main();
 }
 
 int main(void) {
   //bemesh::main_routine(NULL);
-  bemesh_core_init();
-  bemesh_gap_handler* gap_handle=bemesh_gap_handler_init(NULL, 0,
-    NULL, 0);
-  bemesh_gatts_handler* gatts_handle=bemesh_gatts_handler_init();
-  bemesh_gap_handler_mode(gap_handle, GAP_HANDLER_MODE_PERIPHERAL);
-  vTaskDelay(1000);
-  bemesh_gap_handler_mode(gap_handle, GAP_HANDLER_MODE_CENTRAL);
+  bemesh_core_t *core1=bemesh_core_init();
+  bemesh_gap_handler_mode(core1->gaph, GAP_HANDLER_MODE_PERIPHERAL);
+
+  /*
+  vTaskDelay(4000);
+  esp_bd_addr_t server_bda={0x24,0x6f,0x28,0x96,0x8c,0xaa};
+  bemesh_gattc_open(gattc_handle, server_bda, BLE_ADDR_TYPE_PUBLIC);
+  */
   return 0;
 }
 

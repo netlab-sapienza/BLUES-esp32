@@ -28,6 +28,12 @@ typedef struct gattc_profile_inst {
 typedef struct bemesh_gattc_handler {
   gattc_profile_inst profile_inst_vect[GATTC_APP_PROFILE_INST_LEN];
   esp_bt_uuid_t remote_filter_service_uuid;
+
+  // Flag to indicate if server is valid
+  // a server is valid iff it contains a specific service.
+  uint8_t server_valid_flag;
 } bemesh_gattc_handler;
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void);
+// Open connection with a remote device. Returns -1 if no free gatt intefaces are available
+uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp_ble_addr_type_t remote_addr_type);

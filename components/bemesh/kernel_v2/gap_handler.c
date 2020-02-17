@@ -356,5 +356,7 @@ static void conn_params_update_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_hand
 	   param->update_conn_params.conn_int,
 	   param->update_conn_params.latency,
 	   param->update_conn_params.timeout);
+  ESP_LOGI(TAG, "Starting new advertisement proc.");
+  esp_ble_gap_start_advertising(&h->adv_params);
   return;
 }
