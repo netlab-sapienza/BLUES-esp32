@@ -53,13 +53,15 @@ bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
 
 // Open connection with a remote device. Returns -1 if no free gatt intefaces are available
 uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp_ble_addr_type_t remote_addr_type) {
-  esp_err_t ret;
+  esp_err_t ret=ESP_FAIL;
   for(int i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
     // If the current app profile is not bounded to any remote, use that to connect.
-    if(h->profile_inst_vect[i].conn_id==0) {
+    if(h->profile_inst_vect[i].conn_id==0 && h->profile_inst_vect[i].gattc_if!=ESP_GATT_IF_NONE) {
       // Open the connection with the remote bda.
+      ESP_LOGI(TAG, "Opening connection with gattc_if: %d", h->profile_inst_vect[i].gattc_if);
       ret=esp_ble_gattc_open(h->profile_inst_vect[i].gattc_if,
 			     remote_bda, remote_addr_type, true);
+      return ret;
     }
   }
   return ret;
@@ -135,7 +137,7 @@ static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
   // Send local MTU to server
   esp_err_t ret=esp_ble_gattc_send_mtu_req(gattc_if, param->connect.conn_id);
   if(ret) {
-    ESP_LOGE(TAG, "Error: could not config MTU, errcode=%d", ret);
+    ESP_LOGE(TAG, "Error: could not config MTU, errcode=%X", ret);
   }
 
   // Before going forward on copen_cb, reset the server validity flag
@@ -146,7 +148,7 @@ static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
 // Connection opened callback
 static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   if(param->open.status!=ESP_GATT_OK) {
-    ESP_LOGE(TAG, "Error: open failed, errcode=%d", param->open.status);
+    ESP_LOGE(TAG, "Error: open failed, errcode=%X", param->open.status);
   }
   ESP_LOGI(TAG, "Open operation succesful.");
   return;

@@ -25,7 +25,10 @@ extern "C" {
 int main(void) {
   //bemesh::main_routine(NULL);
   bemesh_core_t *core1=bemesh_core_init();
-  bemesh_gap_handler_mode(core1->gaph, GAP_HANDLER_MODE_PERIPHERAL);
+  bemesh_gap_handler_mode(core1->gaph, GAP_HANDLER_MODE_CENTRAL);
+  esp_bd_addr_t remote_bda1 = {0x24, 0x6f, 0x28, 0x97, 0x4c, 0x32};
+  vTaskDelay(500);
+  bemesh_gattc_open(core1->gattch, remote_bda1, BLE_ADDR_TYPE_PUBLIC);
 
   /*
     vTaskDelay(4000);
