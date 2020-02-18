@@ -13,5 +13,5 @@
 #define GAP_HANDLER_MODE_PERIPHERAL 0
 #define GAP_HANDLER_MODE_CENTRAL 1
 
-// Maximum saveable devices during scan
+// Maximum savable devices during scan
 #define GAP_HANDLER_SCAN_DEVS_MAX 32

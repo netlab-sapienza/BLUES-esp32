@@ -16,9 +16,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-enum class Role { SERVER, CLIENT };
+enum class Role { UNDEFINED = 0, SERVER = 1, CLIENT = 2 };
 
-# define MAX_NUM_CLIENTS 2
 
 class Device;
 
