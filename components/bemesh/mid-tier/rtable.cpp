@@ -26,8 +26,7 @@ namespace bemesh {
     n+=printDevAddr(buf+n, p.hop_addr);
     n+=sprintf(buf+n, "\tnum_hops: %d\n", p.num_hops);
     printf("routing params: %s", buf);
-    return;
-  }
+ }
 
   RoutingTable::RoutingTable(void): m_routing_table() {
 
@@ -51,11 +50,12 @@ namespace bemesh {
   }
 
   routing_params_t RoutingTable::insert(dev_addr_t t_target_addr, dev_addr_t t_hop_addr, uint8_t t_num_hops, uint8_t t_flags) {
-    routing_params_t target_params;
-    target_params.target_addr=t_target_addr;
-    target_params.hop_addr=t_hop_addr;
-    target_params.num_hops=t_num_hops;
-    target_params.flags=t_flags;
+    routing_params_t target_params = {
+        .target_addr = t_target_addr,
+        .hop_addr = t_hop_addr,
+        .num_hops = t_num_hops,
+        .flags = t_flags
+    };
     return insert(target_params);
   }
 
@@ -84,16 +84,22 @@ namespace bemesh {
     return it->second;
   }
 
-  uint16_t RoutingTable::size(void) {
+  uint16_t RoutingTable::size() {
     return m_routing_table.size();
   }
 
-  std::vector<routing_params_t> RoutingTable::exportTable(void) {
+  std::vector<routing_params_t> RoutingTable::exportTable() {
     std::vector<routing_params_t> rtable_vect;
     for(auto const& x: m_routing_table) {
       rtable_vect.push_back(x.second);
     }
     return rtable_vect;
+  }
+
+  int RoutingTable::get_number_of_clients(dev_addr_t t_target_addr) {
+    // TODO
+
+    return 0;
   }
 
   std::size_t encodeTable(std::vector<routing_params_t>& t_src_vect, uint8_t* t_dest, std::size_t dest_len) {

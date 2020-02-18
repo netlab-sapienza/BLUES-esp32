@@ -3,6 +3,7 @@
 //
 
 #include "device.hpp"
+#include <gatt_def.h>
 
 class Device {
 private:
@@ -43,7 +44,7 @@ private:
    * discovered
    * @return true if connected
    */
-  bool connect_to_server(bemesh_dev_t target_server) {
+  static bool connect_to_server(bemesh_dev_t target_server) {
     return (bool)connect_to(target_server.bda);
   }
 
@@ -55,6 +56,11 @@ private:
 public:
   Role role;
   bool connected;
+
+  Device() {
+    role = Role::UNDEFINED;
+    connected = false;
+  }
 
   /**
    * Launcher function of the device
@@ -72,18 +78,15 @@ public:
   /**
    * Operations performed as a client;
    *
-   * In this case the client is stupid, every 10 seconds it sends a message
-   * to a random device into its routing table
+   * In this case the client is stupid, every timeout_sec seconds it sends a
+   * message to a random device into its routing table
    *
    *
    */
   void client_routine() {
-    while (true) {
-
+    for (int i = 0; i < 100; i++) {
       send_message();
       vTaskDelay(timeout_sec / portTICK_RATE_MS);
-      if (rand())
-        break;
     }
   }
 
@@ -137,8 +140,10 @@ public:
    */
   void on_incoming_connection(bemesh_evt_params_t *params) {
     // TODO
-    if (routingTable.get_number_of_clients(get_own_bda()) < MAX_NUM_CLIENTS) {
-      auto *device = (bemesh::dev_addr_t *)params->conn.remote_bda;
+    if (routingTable.get_number_of_clients(get_own_bda()) <
+        GATTS_MAX_CONNECTIONS) {
+      auto device = new bemesh::dev_addr_t(
+          params->conn.remote_bda); // TODO check the cast
       uint8_t t_num_hops = 0;
       uint8_t t_flag = bemesh::Reachable;
       routingTable.insert(device, device, t_num_hops, t_flag);

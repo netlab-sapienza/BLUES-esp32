@@ -1,6 +1,6 @@
 /*
  * rtable.h
- * 
+ *
  */
 
 #pragma once
@@ -19,7 +19,7 @@ namespace bemesh {
     Reachable=0x01,
     Passive=0x02,
     Internet=0x04,
-    Gps=0x08,
+    Gps=0x08
     //... TODO
   };
 
@@ -40,10 +40,10 @@ namespace bemesh {
 
   struct RoutingTable {
     std::map<dev_addr_t, routing_params_t> m_routing_table;
-    
+
     RoutingTable(void);
     std::vector<routing_params_t> exportTable(void);
-  
+
     routing_params_t insert(routing_params_t t_target_params);
     routing_params_t insert(dev_addr_t t_target_addr, dev_addr_t t_hop_addr, uint8_t t_num_hops,
 			    uint8_t t_flags);
@@ -54,6 +54,7 @@ namespace bemesh {
     routing_params_t& getRoutingParams(dev_addr_t t_target_addr);
 
     uint16_t size(void);
+    int get_number_of_clients(dev_addr_t t_target_addr);
   };
 
   std::size_t encodeTable(std::vector<routing_params_t>& t_src_vect, uint8_t* t_dest, std::size_t dest_len);
