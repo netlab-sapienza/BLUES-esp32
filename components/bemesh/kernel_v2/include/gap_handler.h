@@ -14,6 +14,12 @@
 #include "gap_def.h" // GAP parameters definition
 #include "gap_device.h" // bemesh_dev_t struct
 
+typedef enum {
+  O_SCN = 1<<0,//Scan flag
+  O_ADV = 1<<1,//Advertise flag
+  O_SCNCMPL = 1<<2, // Scan complete flag
+} BemeshGapFlags;
+
 typedef struct {
   // Advertising:
   esp_ble_adv_data_t adv_data; // Advertising data
@@ -23,12 +29,14 @@ typedef struct {
   uint8_t rsp_data_set; // flag for rsp_data setup
   // Scanning:
   esp_ble_scan_params_t scan_params; // Scanning parameters
-  uint8_t scan_params_complete;
+  uint8_t scan_params_complete;  
   // Array of found devices
   bemesh_dev_t found_devs_vect[GAP_HANDLER_SCAN_DEVS_MAX];
   uint8_t found_devs;
   
-  uint8_t mode; // 0 for scanning, 1 for advertising.
+  uint8_t mode;
+
+  uint8_t flags;// Flags of the gap_handler, refer to BemeshGapFlags enum.
 
   // Buffer for storing response customized payload (manufacturer)
   uint8_t *rsp_man_buffer;

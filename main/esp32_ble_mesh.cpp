@@ -28,7 +28,7 @@ int main(void) {
   bemesh_gap_handler_mode(core1->gaph, GAP_HANDLER_MODE_PERIPHERAL);
 
   /*
-  vTaskDelay(4000);
+    vTaskDelay(4000);
   esp_bd_addr_t server_bda={0x24,0x6f,0x28,0x96,0x8c,0xaa};
   bemesh_gattc_open(gattc_handle, server_bda, BLE_ADDR_TYPE_PUBLIC);
   */

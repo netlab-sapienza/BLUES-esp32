@@ -6,7 +6,8 @@ list(APPEND PROJ_COMPS_LIST)
 
 
 # PROJ_COMPS stores the name of the all custom components required by the project
-set(PROJ_COMPS "mid-tier" "kernel_v2" "device")
+#set(PROJ_COMPS "mid-tier" "kernel_v2" "device") #TODO Fix bugs on device.
+set(PROJ_COMPS "mid-tier" "kernel_v2")
 
 # Each component directory is in "components/bemesh"
 set(BASE_COMPS_PATH "components/bemesh/")

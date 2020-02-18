@@ -288,11 +288,10 @@ static void read_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bem
   esp_gatt_rsp_t rsp;
   memset(&rsp, 0, sizeof(rsp));
   rsp.attr_value.handle=param->read.handle;
-  rsp.attr_value.len=4;
-  rsp.attr_value.value[0]=0xde;
-  rsp.attr_value.value[1]=0xad;
-  rsp.attr_value.value[2]=0xbe;
-  rsp.attr_value.value[3]=0xb0;
+  rsp.attr_value.len=h->char1_val.attr_len;
+  memcpy(rsp.attr_value.value,
+	 h->char1_val.attr_value,
+	 h->char1_val.attr_len);
   esp_ble_gatts_send_response(gatts_if, param->read.conn_id,
 			      param->read.trans_id,
 			      ESP_GATT_OK, &rsp);
@@ -313,12 +312,24 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
   // Print some debug info.
   //ESP_LOGI(TAG, "Received write characteristic operation: len:%d, value:", param->write.len);
   //esp_log_buffer_hex(TAG, param->write.value, param->write.len);
+  if(param->write.need_rsp) {
+    ESP_LOGE(TAG, "Need to send a response!");
+  }
+  
   char buf[64];
   int wb=sprintf(buf, "Received write char op. len:%d, val: ", param->write.len);
   for(int i=0;i<param->write.len;++i) {
     wb+=sprintf(buf+wb, "%02X.", param->write.value[i]);
   }
   ESP_LOGI(TAG, "%s", buf);
+
+  if(param->write.len>GATT_CHAR_BUF_SIZE) {
+    ESP_LOGW(TAG, "Warning: received payload is too long.");
+    return;
+  }
+  // Copy the stuff on the characteristic.
+  memcpy(h->char1_val.attr_value, param->write.value, param->write.len);
+  h->char1_val.attr_len=param->write.len;
      
   return;
 }

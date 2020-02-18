@@ -50,6 +50,7 @@ typedef struct bemesh_gatts_handler{
   gatts_profile_inst profile_inst;
   esp_attr_value_t char1_val;
   uint8_t char_buffer[GATT_CHAR_BUF_SIZE];
+    
 } bemesh_gatts_handler;
 
 bemesh_gatts_handler* bemesh_gatts_handler_init(void);

@@ -6,6 +6,13 @@
 #include <stdint.h>
 #include "gap_device.h"
 
+#define KERNEL_EVT_NUM 3
+typedef enum {
+  ON_SCAN_END=0,
+  ON_MSG_RECV=1,
+  ON_INC_CONN=2,
+} bemesh_kernel_evt_t;
+
 typedef union {
   // Scan result params
   struct scan_result_param {
@@ -31,8 +38,40 @@ int foo(bemesh_evt_params_t param) {
 }
 */
 
+// Kernel callback definition
+typedef void (*kernel_cb)(bemesh_evt_params_t* param);
+
+/*
+ * Install the cb callback for the Event event.
+ * Parameters will be updated before launching the cb
+ * Refer to bemesh_kernel_evt_t enum to check how events are defined.
+ * Refer to bemesh_evt_params_t union to check how params are passed.
+ */
+void kernel_install_cb(bemesh_kernel_evt_t event, kernel_cb cb);
+
+/*
+ * Initializes the underlying kernel.
+ */
+int kernel_init(void);
+
+/*
+ * Transfer the src buffer of len bytes to another device with bda address.
+ */
+void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len);
+
+/*
+ * Tries to connect to a device with bda address.
+ * returns 0 if no error occurred
+ */
+uint8_t connect_to(esp_bd_addr_t bda);
+
 /*
  * Scan the environment
  * TODO
  */
 void scan_environment(uint8_t timeout);
+
+/*
+ * Get the device bda.
+ */
+esp_bd_addr_t get_own_bda(void);
