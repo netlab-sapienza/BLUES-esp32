@@ -119,10 +119,10 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
     char_descr_reg_cb(gatts_if, param, h);
     break;
     /* Not handling connection event as it creates collisions with gattc*/
-    //case ESP_GATTS_CONNECT_EVT:
+  case ESP_GATTS_CONNECT_EVT:
     // A new client connects to the server.
-    // connection_cb(gatts_if, param, h);
-    //break;
+    connection_cb(gatts_if, param, h);
+    break;
   case ESP_GATTS_DISCONNECT_EVT:
     disconnection_cb(gatts_if, param, h);
     break;
@@ -255,6 +255,12 @@ static void char_descr_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *
 
 // New incoming connection callback
 static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
+  if(h->flags&O_IGNCONN) {
+    ESP_LOGW(TAG, "Warning: SOMEBODY TOUCH MY connection event!");
+    // Re-enabling the connection handling
+    h->flags&=~O_IGNCONN;
+    return;
+  }
   // Generate a connection params struct for the new connection
   esp_ble_conn_update_params_t conn_params={0};
   // Commented because it might lock successive connections.

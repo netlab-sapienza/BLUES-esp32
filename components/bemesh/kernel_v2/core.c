@@ -108,7 +108,11 @@ uint8_t bemesh_core_is_advertising(bemesh_core_t* c) {
 /* establish a connection with a remote dev that has bda bda
  */
 int bemesh_core_connect(bemesh_core_t* c, esp_bd_addr_t bda) {
-  return bemesh_gattc_open(c->gattch, bda, 0);
+  // Obfuscate gatts connection event handler
+  ESP_LOGW(TAG, "Obfuscating gatts");
+  c->gattsh->flags|=O_IGNCONN;
+  int ret=bemesh_gattc_open(c->gattch, bda, 0);
+  return ret;
 }
 /* disconnects from a remote dev that has bda bda
  * TODO: Add descr

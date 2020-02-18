@@ -23,7 +23,11 @@ extern "C" {
 }
 
 void server_routine(bemesh_core_t *core) {
-  bemesh_core_start_advertising(core);
+  while(1) {
+    bemesh_core_start_advertising(core);
+    vTaskDelay(500);
+  }
+  
   return;
 }
 void client_routine(bemesh_core_t *core) {

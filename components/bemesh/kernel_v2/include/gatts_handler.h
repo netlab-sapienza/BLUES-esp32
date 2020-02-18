@@ -45,13 +45,18 @@ typedef struct {
  * In order to communicate with higher levels, the gatts_handler requires a callback handler
  */
 
+typedef enum {
+  O_IGNCONN = 1<<0, // Ignore connection event (used during gattc_open actions)
+} BemeshGattsFlags;
+
 struct bemesh_gatts_handler;
 
 typedef struct bemesh_gatts_handler{
   gatts_profile_inst profile_inst;
   esp_attr_value_t char1_val;
   uint8_t char_buffer[GATT_CHAR_BUF_SIZE];
-    
+
+  uint8_t flags;    
 } bemesh_gatts_handler;
 
 bemesh_gatts_handler* bemesh_gatts_handler_init(void);
