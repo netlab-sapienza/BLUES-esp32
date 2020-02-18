@@ -175,6 +175,66 @@ void bemesh_gap_handler_mode(bemesh_gap_handler* h, uint8_t m) {
   return;
 }
 
+//TODO add docs
+int bemesh_gap_handler_start_scanning(bemesh_gap_handler* h, uint8_t timeout) {
+  if(h->flags&O_ADV) {
+    // Cannot start scanning if the module is advertising
+    ESP_LOGE(TAG, "Error: could not start scan proc. The module is advertising");
+    return -1;
+  }
+  // Start scanning proc. and set the correct flag
+  esp_ble_gap_start_scanning(timeout);
+  h->flags&=~O_SCNCMPL; // Reset the scan complete flag.
+  h->flags|=O_SCN; // set O_SCN to true.
+  return 0;
+}
+//TODO add docs
+void bemesh_gap_handler_stop_scanning(bemesh_gap_handler* h) {
+  if(!(h->flags&O_SCN)) {
+    ESP_LOGV(TAG, "Warning: could not stop scan proc. The module is not scanning.");
+    return;
+  }
+  // Stop scanning proc.
+  esp_ble_gap_stop_scanning();
+  h->flags&=~O_SCN; // Reset the scan flag
+  h->flags|=O_SCNCMPL; // Set scan complete flag
+  return;
+}
+//TODO add docs
+uint8_t bemesh_gap_handler_scan_complete(bemesh_gap_handler* h) {
+  return h->flags&O_SCNCMPL;
+}
+//TODO add docs
+int bemesh_gap_handler_start_advertising(bemesh_gap_handler* h) {
+  if(h->flags&O_SCN) {
+    // Cannot start advertising if the module is scanning
+    ESP_LOGE(TAG, "Error: could not start adv proc. The module is scanning");
+    return -1;
+  }
+  // Start adv proc. and set the correct flag.
+  esp_ble_gap_start_advertising(&h->adv_params);
+  h->flags|=O_ADV;
+  return 0;
+}
+//TODO add docs
+void bemesh_gap_handler_stop_advertising(bemesh_gap_handler* h) {
+  if(!(h->flags&O_ADV)) {
+    ESP_LOGV(TAG, "Warning: could not stop adv proc. The module is not advertising.");
+    return;
+  }
+  esp_ble_gap_stop_advertising();
+  h->flags&=~O_ADV;
+  return;
+}
+//TODO add docs
+uint8_t bemesh_gap_handler_get_scan_res_len(bemesh_gap_handler* h) {
+  return h->found_devs;
+}
+//TODO add docs
+bemesh_dev_t *bemesh_gap_handler_get_scan_res(bemesh_gap_handler* h) {
+  return h->found_devs_vect;
+}
+
 // CENTRAL MODE callbacks (scan)
 static void scan_param_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
 static void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
@@ -318,6 +378,7 @@ static void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h)
       print_scanned_dev_info(param);
     }
   } else if(param->scan_rst.search_evt==ESP_GAP_SEARCH_INQ_CMPL_EVT) {
+    h->flags|=O_SCNCMPL;
     ESP_LOGI(TAG, "Scan procedure terminated.");
   }
   return;
@@ -356,7 +417,7 @@ static void conn_params_update_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_hand
 	   param->update_conn_params.conn_int,
 	   param->update_conn_params.latency,
 	   param->update_conn_params.timeout);
-  ESP_LOGI(TAG, "Starting new advertisement proc.");
-  esp_ble_gap_start_advertising(&h->adv_params);
+  //ESP_LOGI(TAG, "Starting new advertisement proc.");
+  //esp_ble_gap_start_advertising(&h->adv_params);
   return;
 }

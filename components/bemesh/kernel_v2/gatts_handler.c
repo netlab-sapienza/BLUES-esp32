@@ -70,7 +70,9 @@ bemesh_gatts_handler *bemesh_gatts_handler_init(void) {
   // Initialize the gatts profile, then install it.
   gatts_profile_init(&h->profile_inst);  
   esp_ble_gatts_app_register(GATTS_APP_ID);
-  
+
+  // Set the MTU size (Used GATTC mtu size for comodity).
+  esp_ble_gatt_set_local_mtu(GATTC_MTU_SIZE);
   return h;
 }
 
@@ -94,11 +96,7 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
 		     esp_gatt_if_t gatts_if,
 		     esp_ble_gatts_cb_param_t *param) {
   bemesh_gatts_handler *h=get_gatts1_ptr();
-  if(h->profile_inst.gatts_if!=ESP_GATT_IF_NONE &&
-     h->profile_inst.gatts_if!=gatts_if) {
-    ESP_LOGW(TAG, "Received unrelated event");
-    return;
-  }
+  //ESP_LOGI(TAG, "Received EVENT %02X, gatts_if: %02X", event, gatts_if);
   switch(event) {
   case ESP_GATTS_REG_EVT:
     // New Application is registered. (First event)
@@ -120,10 +118,11 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
     // New characteristid descriptor registered.
     char_descr_reg_cb(gatts_if, param, h);
     break;
-  case ESP_GATTS_CONNECT_EVT:
+    /* Not handling connection event as it creates collisions with gattc*/
+    //case ESP_GATTS_CONNECT_EVT:
     // A new client connects to the server.
-    connection_cb(gatts_if, param, h);
-    break;
+    // connection_cb(gatts_if, param, h);
+    //break;
   case ESP_GATTS_DISCONNECT_EVT:
     disconnection_cb(gatts_if, param, h);
     break;
@@ -137,7 +136,7 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
     //TODO
   default:
     //TODO
-    ESP_LOGI(TAG, "Received unhandled event no. %d", event);
+    ESP_LOGW(TAG, "Warning: received unhandled evt %d", event);
     break;
   }
   return;
@@ -149,7 +148,8 @@ static void app_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, 
   // Store the gatts_if in the application struct
   if(param->reg.status==ESP_GATT_OK) {
     h->profile_inst.gatts_if=gatts_if;
-    ESP_LOGI(TAG, "New application registered...Registering primary service.");
+    ESP_LOGI(TAG, "New application registered (gatts_if:%02x)...Registering primary service.",
+	     gatts_if);
     // Creating the primary service.
     esp_ble_gatts_create_service(gatts_if, &h->profile_inst.service_id, GATTS_NUM_HANDLES);
   } else {

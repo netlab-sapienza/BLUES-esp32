@@ -54,6 +54,7 @@ uint8_t *bemesh_core_get_bda(bemesh_core_t* c);
 // Scanning ops
 int bemesh_core_start_scanning(bemesh_core_t* c, uint16_t timeout); // start the scan proc.
 int bemesh_core_stop_scanning(bemesh_core_t* c); // stop the scan proc.
+uint8_t bemesh_core_is_scanning(bemesh_core_t* c); // returns the status of the scanning proc.
 uint8_t bemesh_core_scan_complete(bemesh_core_t* c); // returns the scan complete status flag of gaph
 /* returns the scan result array length.
  * bemesh_core_scan_complete function should be called first

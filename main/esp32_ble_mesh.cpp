@@ -22,14 +22,28 @@ extern "C" {
   void app_main();
 }
 
+void server_routine(bemesh_core_t *core) {
+  bemesh_core_start_advertising(core);
+  return;
+}
+void client_routine(bemesh_core_t *core) {
+  esp_bd_addr_t remote_bda1 = {0x24, 0x6f, 0x28, 0x96, 0x8c, 0xaa};
+  bemesh_core_start_scanning(core, 1);
+  while(!bemesh_core_scan_complete(core)) {}
+  bemesh_core_connect(core, remote_bda1);
+  return;
+}
+
+//#define SRV_BHV 1
+
 int main(void) {
   //bemesh::main_routine(NULL);
   bemesh_core_t *core1=bemesh_core_init();
-  bemesh_gap_handler_mode(core1->gaph, GAP_HANDLER_MODE_CENTRAL);
-  esp_bd_addr_t remote_bda1 = {0x24, 0x6f, 0x28, 0x97, 0x4c, 0x32};
-  vTaskDelay(500);
-  bemesh_gattc_open(core1->gattch, remote_bda1, BLE_ADDR_TYPE_PUBLIC);
-
+  #ifdef SRV_BHV
+  server_routine(core1);
+  #else
+  client_routine(core1);
+  #endif
   /*
     vTaskDelay(4000);
   esp_bd_addr_t server_bda={0x24,0x6f,0x28,0x96,0x8c,0xaa};

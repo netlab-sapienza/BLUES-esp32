@@ -16,7 +16,7 @@
  * GATT-Server (GATTS)
  */
 #define GATTS_APP_ID 0
-#define GATTS_NUM_HANDLES 1
+#define GATTS_NUM_HANDLES 4
 
 #define GATTS_SERV_UUID 0xDEAD // Generic Access UUID for main service of BEMesh
 #define GATTS_CHAR_UUID 0xBEB0 // Digital UUID for characteristic (n 2-bit values stored in the characteristic.)

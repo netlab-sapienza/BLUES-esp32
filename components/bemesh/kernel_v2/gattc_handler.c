@@ -53,17 +53,23 @@ bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
 
 // Open connection with a remote device. Returns -1 if no free gatt intefaces are available
 uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp_ble_addr_type_t remote_addr_type) {
+  char *bemesh_gattc_open_tag="[gattc_open]";
   esp_err_t ret=ESP_FAIL;
   for(int i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
     // If the current app profile is not bounded to any remote, use that to connect.
-    if(h->profile_inst_vect[i].conn_id==0 && h->profile_inst_vect[i].gattc_if!=ESP_GATT_IF_NONE) {
+    ESP_LOGV(bemesh_gattc_open_tag, "(%d) -> gattc_if:%d", i, h->profile_inst_vect[i].gattc_if);
+    if(h->profile_inst_vect[i].gattc_if!=ESP_GATT_IF_NONE) {
       // Open the connection with the remote bda.
       ESP_LOGI(TAG, "Opening connection with gattc_if: %d", h->profile_inst_vect[i].gattc_if);
       ret=esp_ble_gattc_open(h->profile_inst_vect[i].gattc_if,
 			     remote_bda, remote_addr_type, true);
+      if(ret!=ESP_OK) {
+	ESP_LOGW(TAG, "Warning: something went wrong during gattc_open, errcode=%d", ret);
+      }
       return ret;
     }
   }
+  ESP_LOGW(TAG, "Warning: no available app_profiles ready to host the connection.");
   return ret;
 }
 
@@ -89,15 +95,17 @@ static gattc_profile_inst *__get_gattc_profile(esp_gatt_if_t gattc_if, gattc_pro
 static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
 			    esp_ble_gattc_cb_param_t *param) {
   bemesh_gattc_handler *h=get_gattc1_ptr();
+  //ESP_LOGI(TAG, "Received EVENT %02X, gattc_if: %02X", event, gattc_if);
   switch(event) {
   case ESP_GATTC_REG_EVT:
     // New application is registered. (First event)
     app_reg_cb(gattc_if, param, h);
     break;
-  case ESP_GATTC_CONNECT_EVT:
+    /* Not handling connection event as it creates collisions with connect event in gatts */
+    //case ESP_GATTC_CONNECT_EVT:
     // Connection established with a new server
-    connection_cb(gattc_if, param, h);
-    break;
+    //connection_cb(gattc_if, param, h);
+    //break;
   case ESP_GATTC_OPEN_EVT:
     // Connection opened with a server
     copen_cb(gattc_if, param, h);
@@ -111,6 +119,7 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
     search_serv_cb(gattc_if, param, h);
     break;
   default:
+    ESP_LOGW(TAG, "Warning: received unhandled evt %d", event);
     //TODO
     break;
   }
@@ -118,8 +127,10 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
 } 
 static void app_reg_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   if(param->reg.status==ESP_GATT_OK) {
-    h->profile_inst_vect[param->reg.app_id].gattc_if=gattc_if;
-    ESP_LOGI(TAG, "New application registered.");
+    h->profile_inst_vect[param->reg.app_id].gattc_if=gattc_if;					       
+    ESP_LOGI(TAG, "New application registered (gattc_if:%02x, stored:%02x at app:%02x", gattc_if,
+	     h->profile_inst_vect[param->reg.app_id].gattc_if,
+	     param->reg.app_id);
   } else {
     ESP_LOGW(TAG, "Warning: Could not register new application.");
   }

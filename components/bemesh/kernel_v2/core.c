@@ -60,3 +60,62 @@ bemesh_core_t* bemesh_core_init(void) {
 uint8_t *bemesh_core_get_bda(bemesh_core_t* c) {
   return esp_bt_dev_get_address();
 }
+
+/* GAP HANDLING */
+// Scanning ops
+int bemesh_core_start_scanning(bemesh_core_t* c, uint16_t timeout) { // start the scan proc.
+  return bemesh_gap_handler_start_scanning(c->gaph, timeout);
+}
+
+int bemesh_core_stop_scanning(bemesh_core_t* c) { // stop the scan proc.
+  bemesh_gap_handler_stop_scanning(c->gaph);
+  return 0;
+}
+uint8_t bemesh_core_scan_complete(bemesh_core_t* c) { // returns the scan complete status flag of gaph
+  return bemesh_gap_handler_scan_complete(c->gaph);
+}
+uint8_t bemesh_core_is_scanning(bemesh_core_t* c) { // returns the status of the scanning proc.
+  return (c->gaph->flags&O_SCN);
+}
+/* returns the scan result array length.
+ * bemesh_core_scan_complete function should be called first
+ * to know if scan procedure is complete.
+ */
+uint8_t bemesh_core_get_scan_result_len(bemesh_core_t* c) {
+  return bemesh_gap_handler_get_scan_res_len(c->gaph);
+}
+/* Returns a pointer to an array containing the scan results.
+ * Refer to bemesh_dev_t definition to 
+ */
+bemesh_dev_t *bemesh_core_get_scan_result(bemesh_core_t* c) {
+  return bemesh_gap_handler_get_scan_res(c->gaph);
+}
+// Advertising ops
+int bemesh_core_start_advertising(bemesh_core_t* c) {
+  return bemesh_gap_handler_start_advertising(c->gaph);
+}
+// TODO: Add descr
+int bemesh_core_stop_advertising(bemesh_core_t* c) {
+  bemesh_gap_handler_stop_advertising(c->gaph);
+  return 0;
+}
+// TODO: Add descr
+uint8_t bemesh_core_is_advertising(bemesh_core_t* c) {
+  return (c->gaph->flags&O_ADV);
+}
+
+/* GATT HANDLING */
+/* establish a connection with a remote dev that has bda bda
+ */
+int bemesh_core_connect(bemesh_core_t* c, esp_bd_addr_t bda) {
+  return bemesh_gattc_open(c->gattch, bda, 0);
+}
+/* disconnects from a remote dev that has bda bda
+ * TODO: Add descr
+ */
+int bemesh_core_disconnect(bemesh_core_t* c, esp_bd_addr_t bda);
+// TODO: Add descr
+int bemesh_core_write(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *src, uint16_t len);
+// TODO: Add descr
+int bemesh_core_read(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *dest, uint16_t len);
+
