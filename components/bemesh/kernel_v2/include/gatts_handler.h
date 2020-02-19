@@ -14,6 +14,10 @@
 
 #include "gatt_def.h"
 
+// Core Interface
+#include "core_int.h"
+
+
 /*
  * gatts_profile_inst represent an Application Profile object
  * used to establish a GATT connection with one client application
@@ -55,8 +59,20 @@ typedef struct bemesh_gatts_handler{
   gatts_profile_inst profile_inst;
   esp_attr_value_t char1_val;
   uint8_t char_buffer[GATT_CHAR_BUF_SIZE];
+  // Response structure, used during write events
+  esp_gatt_rsp_t gatt_rsp;
+  // exec_write_buffer
+  uint8_t exec_write_buffer[EXEC_WRITE_BUF_LEN];
+  uint8_t exec_write_len;
 
-  uint8_t flags;    
+  uint8_t flags;
+
+  // Callback to pass events to the core lib.
+  kernel_cb core_cb;
+  // It will rely on params struct built inside the core.
+  bemesh_evt_params_t *core_cb_args;
 } bemesh_gatts_handler;
 
 bemesh_gatts_handler* bemesh_gatts_handler_init(void);
+void bemesh_gatts_handler_install_cb(bemesh_gatts_handler *h, kernel_cb cb, bemesh_evt_params_t *params);
+void bemesh_gatts_handler_uninstall_cb(bemesh_gatts_handler *h);

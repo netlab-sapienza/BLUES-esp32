@@ -76,6 +76,17 @@ bemesh_gatts_handler *bemesh_gatts_handler_init(void) {
   return h;
 }
 
+void bemesh_gatts_handler_install_cb(bemesh_gatts_handler *h, kernel_cb cb, bemesh_evt_params_t *params) {
+  h->core_cb=cb;
+  h->core_cb_args=params;
+  return;
+}
+void bemesh_gatts_handler_uninstall_cb(bemesh_gatts_handler *h) {
+  h->core_cb=NULL;
+  h->core_cb_args=NULL;
+  return;
+}
+
 // Event callbacks.
 static void app_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void serv_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
@@ -86,6 +97,7 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
 static void disconnection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void read_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
+static void exec_write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 //TODO
 
 /*
@@ -132,6 +144,9 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
     break;
   case ESP_GATTS_WRITE_EVT:
     write_cb(gatts_if, param, h);
+    break;
+  case ESP_GATTS_EXEC_WRITE_EVT:
+    exec_write_cb(gatts_if, param, h);
     break;
     //TODO
   default:
@@ -219,15 +234,19 @@ static void char_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param,
   // Testing the reading procedure for the attribute.
   uint16_t attr_len=0;
   const uint8_t *read_attr;
-  esp_err_t ret=esp_ble_gatts_get_attr_value(param->add_char.attr_handle,
-						      &attr_len,
-						      &read_attr);
+  /* esp_err_t ret=esp_ble_gatts_get_attr_value(param->add_char.attr_handle, */
+  /* 						      &attr_len, */
+  /* 						      &read_attr); */
+  esp_err_t ret=esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
+					     &attr_len, 
+					     &read_attr);
+  
   if(ret==ESP_FAIL) {
     ESP_LOGE(TAG, "Error: Illegal characteristic handle.");
   }
-  ESP_LOGV(TAG, "Current characteristic length: %x", attr_len);
+  ESP_LOGW(TAG, "Current characteristic length: %x", attr_len);
   for(int i=0;i<attr_len;++i) {
-    ESP_LOGV(TAG, "read_attr[%x] = %x", i, read_attr[i]);
+    ESP_LOGW(TAG, "read_attr[%x] = %x", i, read_attr[i]);
   }
   /*
   // Adding characteristic descriptor
@@ -256,7 +275,7 @@ static void char_descr_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *
 // New incoming connection callback
 static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
   if(h->flags&O_IGNCONN) {
-    ESP_LOGW(TAG, "Warning: SOMEBODY TOUCH MY connection event!");
+    ESP_LOGI(TAG, "Discarding connection evt. Disabling IGNCONN flag.");
     // Re-enabling the connection handling
     h->flags&=~O_IGNCONN;
     return;
@@ -277,12 +296,24 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
   h->profile_inst.conn_id=param->connect.conn_id;
   // Update the connection parameters to the peer device.  
   esp_ble_gap_update_conn_params(&conn_params);
+
+  // Execute core handler callback
+  if(h->core_cb!=NULL) {
+    // Fill the params struct.
+    memcpy(h->core_cb_args->conn.remote_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+    (*h->core_cb)(ON_INC_CONN, h->core_cb_args);
+  }
   return;
 }
 
 static void disconnection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
   ESP_LOGI(TAG, "Disconnected event.");
-  // Launch the gatts callback handler for higher order operations
+  // Execute core handler callback
+  if(h->core_cb!=NULL) {
+    // Fill the params struct.
+    memcpy(h->core_cb_args->conn.remote_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+    (*h->core_cb)(ON_DISCONN, h->core_cb_args);
+  }
   return;
 }
 
@@ -293,11 +324,16 @@ static void read_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bem
   // Construct the response
   esp_gatt_rsp_t rsp;
   memset(&rsp, 0, sizeof(rsp));
-  rsp.attr_value.handle=param->read.handle;
-  rsp.attr_value.len=h->char1_val.attr_len;
-  memcpy(rsp.attr_value.value,
-	 h->char1_val.attr_value,
-	 h->char1_val.attr_len);
+  /* rsp.attr_value.handle=param->read.handle; */
+  /* rsp.attr_value.len=h->char1_val.attr_len; */
+  /* memcpy(rsp.attr_value.value, */
+  /* 	 h->char1_val.attr_value, */
+  /* 	 h->char1_val.attr_len); */
+  uint8_t* char_value;
+  esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
+			       &rsp.attr_value.len,
+			       &char_value);
+  memcpy(rsp.attr_value.value, char_value, rsp.attr_value.len);
   esp_ble_gatts_send_response(gatts_if, param->read.conn_id,
 			      param->read.trans_id,
 			      ESP_GATT_OK, &rsp);
@@ -318,25 +354,44 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
   // Print some debug info.
   //ESP_LOGI(TAG, "Received write characteristic operation: len:%d, value:", param->write.len);
   //esp_log_buffer_hex(TAG, param->write.value, param->write.len);
+  // Check offset for the write
   if(param->write.need_rsp) {
-    ESP_LOGE(TAG, "Need to send a response!");
+    // Generate a response.
+    esp_err_t ret=esp_ble_gatts_send_response(gatts_if, param->write.conn_id,
+					      param->write.trans_id, ESP_GATT_OK,
+					      NULL);
+    if(ret!=ESP_OK) {
+      ESP_LOGE(TAG, "Error: send response error %d", ret);
+      return;
+    }
   }
   
-  char buf[64];
-  int wb=sprintf(buf, "Received write char op. len:%d, val: ", param->write.len);
-  for(int i=0;i<param->write.len;++i) {
-    wb+=sprintf(buf+wb, "%02X.", param->write.value[i]);
-  }
-  ESP_LOGI(TAG, "%s", buf);
-
+  ESP_LOGI(TAG, "Received write char op. len:%d", param->write.len);
   if(param->write.len>GATT_CHAR_BUF_SIZE) {
     ESP_LOGW(TAG, "Warning: received payload is too long.");
     return;
   }
   // Copy the stuff on the characteristic.
-  memcpy(h->char1_val.attr_value, param->write.value, param->write.len);
-  h->char1_val.attr_len=param->write.len;
-     
+  //memcpy(h->char1_val.attr_value, param->write.value, param->write.len);
+  //h->char1_val.attr_len=param->write.len;
+  // Try to use the ble stack function instead of memcpy
+  esp_ble_gatts_set_attr_value(h->profile_inst.char_handle,
+			       param->write.len,
+			       param->write.value);
+
+  // Execute core handler callback
+  if(h->core_cb!=NULL) {
+    // Fill the params struct.
+    memcpy(h->core_cb_args->recv.remote_bda, param->write.bda, sizeof(esp_bd_addr_t));
+    uint16_t payload_len;
+    uint8_t *payload_ptr;
+    esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
+				 &payload_len,
+				 &payload_ptr);
+    h->core_cb_args->recv.payload=payload_ptr;
+    h->core_cb_args->recv.len=param->write.len;
+    (*h->core_cb)(ON_MSG_RECV, h->core_cb_args);
+  }  
   return;
 }
 
@@ -344,6 +399,34 @@ static void _write_long_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_
   /*
    * Used for write long characteristic operation ( > one ATT MTU)
    */
+  ESP_LOGI(TAG, "Executing long write routine");
+  esp_gatt_status_t status=ESP_GATT_OK;
+  // Check if the sub-payload offset is in the buffer limits
+  if(param->write.offset>EXEC_WRITE_BUF_LEN) {
+    status=ESP_GATT_INVALID_OFFSET;
+  } else if(param->write.offset+param->write.len>EXEC_WRITE_BUF_LEN) {
+    status=ESP_GATT_INVALID_ATTR_LEN;
+  }
+  if(param->write.need_rsp) {
+    esp_gatt_rsp_t *gatt_rsp=&h->gatt_rsp;
+    gatt_rsp->attr_value.len=param->write.len;
+    gatt_rsp->attr_value.handle=param->write.handle;
+    gatt_rsp->attr_value.offset=param->write.offset;
+    gatt_rsp->attr_value.auth_req=ESP_GATT_AUTH_REQ_NONE;
+    memcpy(gatt_rsp->attr_value.value,
+	   param->write.value,
+	   param->write.len);
+    esp_err_t ret=esp_ble_gatts_send_response(gatts_if, param->write.conn_id,
+					      param->write.trans_id, status,
+					      gatt_rsp);
+    if(ret!=ESP_OK) {
+      ESP_LOGE(TAG, "Error: send response error %d", ret);
+      return;
+    }
+  }
+  // Copy the data in the characteristic.
+  memcpy(h->exec_write_buffer+param->write.offset, param->write.value, param->write.len);
+  h->exec_write_len+=param->write.len;
   return;
 }
 
@@ -354,5 +437,32 @@ static void write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, be
   } else {
     _write_long_characteristic(gatts_if, param, h);
   }
+  return;
+}
+
+// End long write sequence callback
+static void exec_write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
+  ESP_LOGI(TAG, "Received end execute write event.");
+  esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK,
+			      NULL);
+  // Copy the payload in the characteristic.
+  esp_ble_gatts_set_attr_value(h->profile_inst.char_handle,
+			       h->exec_write_len,
+			       h->exec_write_buffer);
+  // Execute core handler callback
+  if(h->core_cb!=NULL) {
+    // Fill the params struct.
+    memcpy(h->core_cb_args->recv.remote_bda, param->write.bda, sizeof(esp_bd_addr_t));
+    uint16_t payload_len;
+    uint8_t *payload_ptr;
+    esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
+				 &payload_len,
+				 &payload_ptr);
+    h->core_cb_args->recv.payload=payload_ptr;
+    h->core_cb_args->recv.len=h->exec_write_len;
+    (*h->core_cb)(ON_MSG_RECV, h->core_cb_args);
+  }
+  // Reset the exec_write variable for future long writes
+  h->exec_write_len=0;
   return;
 }

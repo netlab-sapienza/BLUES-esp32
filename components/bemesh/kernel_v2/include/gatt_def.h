@@ -10,6 +10,7 @@
  * Generic definitions
  */
 #define GATT_CHAR_BUF_SIZE 256
+#define EXEC_WRITE_BUF_LEN 256
 #define GATT_MAX_CONNECTIONS 7 // Maximum no. of connections (outgoing+incoming) of the current dev.
 
 /*

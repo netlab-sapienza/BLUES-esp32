@@ -10,6 +10,12 @@
 
 static const char* TAG = "gap_handler";
 
+// Define the service that ESP will advert.
+uint8_t bemesh_gap_service_uuid[GAP_SRV_UUID_LEN] = {
+  0xca, 0xd8, 0x1e, 0xed, 0xd2, 0x9b, 0x4a, 0x84,
+  0x91, 0x8e, 0xc1, 0xf7, 0xc6, 0x93, 0x60, 0x9b
+};
+
 // Since we want one and only one gap_handler we will statically define it.
 static bemesh_gap_handler gap1;
 static bemesh_gap_handler *get_gap1_ptr(void) {
@@ -129,7 +135,8 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
   h->rsp_man_buffer=rsp_buffer;
   h->rsp_man_buffer_len=rsp_buffer_len;
   // Setup the structures of gap handler
-  setup_advertising_data(&h->adv_data, h, srv_uuid_buffer, srv_uuid_len); // adv data
+  //setup_advertising_data(&h->adv_data, h, srv_uuid_buffer, srv_uuid_len); // adv data
+  setup_advertising_data(&h->adv_data, h, bemesh_gap_service_uuid, GAP_SRV_UUID_LEN); // adv data
   setup_resp_data(&h->rsp_data, h); // rsp data
   setup_advetising_params(&h->adv_params, h); // adv params
   setup_scanning_params(&h->scan_params, h); // scan params
@@ -235,6 +242,17 @@ bemesh_dev_t *bemesh_gap_handler_get_scan_res(bemesh_gap_handler* h) {
   return h->found_devs_vect;
 }
 
+void bemesh_gap_handler_install_cb(bemesh_gap_handler *h, kernel_cb cb, bemesh_evt_params_t *params) {
+  h->core_cb=cb;
+  h->core_cb_args=params;
+  return;
+}
+void bemesh_gap_handler_uninstall_cb(bemesh_gap_handler *h) {
+  h->core_cb=NULL;
+  h->core_cb_args=NULL;
+}
+
+
 // CENTRAL MODE callbacks (scan)
 static void scan_param_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
 static void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h);
@@ -307,13 +325,41 @@ void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h
   return;
 }
 
-
 /*
  * TODO
  * check validity of the entry (eg. check payload to confirm bemesh protocol
  * can be initialized).
- * static int entry_valid_esp_ble_gap_cb_param_t* param);
  */
+static int entry_valid(esp_ble_gap_cb_param_t* param) {
+  uint8_t* adv_data=param->scan_rst.ble_adv;
+  uint8_t adv_data_len=param->scan_rst.adv_data_len;
+  // Search for GAP_SRV_ER. After that byte we should find the advertised srv uuid
+  for(int i=0;i<adv_data_len;++i) {
+    if(adv_data[i]==GAP_SRV_ER) {
+      int valid=true;
+      uint8_t* srv_data=adv_data+i+1;
+      // Check the current possible srv_data payload.
+      // if it contains the bemesh_gap_service_uuid then
+      // the entry is valid
+      for(int j=0;j<GAP_SRV_UUID_LEN;++j) {
+	if(i+j >= adv_data_len) {
+	  // buffer exceeded
+	  valid=false;
+	  break;
+	}
+	if(srv_data[j] != bemesh_gap_service_uuid[j]) {
+	  // wrong element in the srv_data
+	  valid=false;
+	  break;
+	}
+      }
+      if(valid==true) {
+	return valid;
+      }
+    }
+  }
+  return false;
+}
 /*
  * Auxilary function to check and eventually store the new scanned dev into
  * found_devs_vect
@@ -326,7 +372,11 @@ static int insert_entry(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h) {
     // If the list is already full, no insertion is possible.
     return 0;
   }
+  // Check that the enty is a bemesh node
   
+  if(!entry_valid(param)) {
+    return 0;
+  }
   uint8_t *new_bda=param->scan_rst.bda;
   for(int i=0;i<h->found_devs;++i) {
     uint8_t* stored_bda=h->found_devs_vect[i].bda;
@@ -363,7 +413,7 @@ static void print_scanned_dev_info(esp_ble_gap_cb_param_t* param) {
   for(int i=0;i<ESP_BD_ADDR_LEN; ++i) {
     wb+=sprintf(buf+wb, "%02X.", param->scan_rst.bda[i]);
   }
-  sprintf(buf+wb, " with rssi: %d", param->scan_rst.rssi);
+  sprintf(buf+wb, " with rssi: %d ", param->scan_rst.rssi);
   ESP_LOGI(TAG, "%s", buf);
   return;
 }
@@ -378,8 +428,17 @@ static void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h)
       print_scanned_dev_info(param);
     }
   } else if(param->scan_rst.search_evt==ESP_GAP_SEARCH_INQ_CMPL_EVT) {
+    // set scan complete flag
     h->flags|=O_SCNCMPL;
     ESP_LOGI(TAG, "Scan procedure terminated.");
+    // Launch core callback handler
+    // setup the params
+    h->core_cb_args->scan.result=h->found_devs_vect;
+    h->core_cb_args->scan.len=h->found_devs;
+    // Launch ON_SCAN_END event to core.
+    if(h->core_cb!=NULL) {
+      (*h->core_cb)(ON_SCAN_END, h->core_cb_args);
+    }
   }
   return;
 }

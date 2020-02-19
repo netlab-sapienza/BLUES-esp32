@@ -73,6 +73,17 @@ uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp
   return ret;
 }
 
+void bemesh_gattc_handler_install_cb(bemesh_gattc_handler *h, kernel_cb cb, bemesh_evt_params_t *params) {
+  h->core_cb=cb;
+  h->core_cb_args=params;
+  return;
+}
+void bemesh_gattc_handler_uninstall_cb(bemesh_gattc_handler *h) {
+  h->core_cb=NULL;
+  h->core_cb_args=NULL;
+  return;
+}
+
 // Event callbacks.
 static void app_reg_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
@@ -105,7 +116,7 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
     //case ESP_GATTC_CONNECT_EVT:
     // Connection established with a new server
     //connection_cb(gattc_if, param, h);
-    //break;
+    //  break;
   case ESP_GATTC_OPEN_EVT:
     // Connection opened with a server
     copen_cb(gattc_if, param, h);
@@ -153,6 +164,7 @@ static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
 
   // Before going forward on copen_cb, reset the server validity flag
   h->server_valid_flag=false;
+
   return;
 }
 
@@ -162,6 +174,12 @@ static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, be
     ESP_LOGE(TAG, "Error: open failed, errcode=%X", param->open.status);
   }
   ESP_LOGI(TAG, "Open operation succesful.");
+  // Execute core handler callback
+  if(h->core_cb!=NULL) {
+    // Fill the params struct.
+    memcpy(h->core_cb_args->conn.remote_bda, param->open.remote_bda, sizeof(esp_bd_addr_t));
+    (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
+  }  
   return;
 }
 

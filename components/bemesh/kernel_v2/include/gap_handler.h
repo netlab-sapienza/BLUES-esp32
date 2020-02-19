@@ -14,6 +14,10 @@
 #include "gap_def.h" // GAP parameters definition
 #include "gap_device.h" // bemesh_dev_t struct
 
+// Core Interface
+#include "core_int.h"
+
+
 typedef enum {
   O_SCN = 1<<0,//Scan flag
   O_ADV = 1<<1,//Advertise flag
@@ -41,6 +45,11 @@ typedef struct {
   // Buffer for storing response customized payload (manufacturer)
   uint8_t *rsp_man_buffer;
   uint8_t rsp_man_buffer_len;
+
+  // Callback to pass events to the core lib.
+  kernel_cb core_cb;
+  // It will rely on params struct built inside the core.
+  bemesh_evt_params_t *core_cb_args;
 } bemesh_gap_handler;
 
 // Initializes the ble structures in the gap handler h.
@@ -64,3 +73,6 @@ void bemesh_gap_handler_stop_advertising(bemesh_gap_handler* h);
 uint8_t bemesh_gap_handler_get_scan_res_len(bemesh_gap_handler* h);
 //TODO add docs
 bemesh_dev_t *bemesh_gap_handler_get_scan_res(bemesh_gap_handler* h);
+
+void bemesh_gap_handler_install_cb(bemesh_gap_handler *h, kernel_cb cb, bemesh_evt_params_t *params);
+void bemesh_gap_handler_uninstall_cb(bemesh_gap_handler *h);

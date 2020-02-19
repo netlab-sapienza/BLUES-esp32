@@ -14,6 +14,10 @@
 
 #include "gatt_def.h"
 
+// Core Interface
+#include "core_int.h"
+
+
 typedef struct gattc_profile_inst {
   //esp_gattc_cb_t gattc_cb; // No gattc_cb. All profiles will share the same handler.
   uint16_t gattc_if; 
@@ -32,8 +36,16 @@ typedef struct bemesh_gattc_handler {
   // Flag to indicate if server is valid
   // a server is valid iff it contains a specific service.
   uint8_t server_valid_flag;
+
+  // Callback to pass events to the core lib.
+  kernel_cb core_cb;
+  // It will rely on params struct built inside the core.
+  bemesh_evt_params_t *core_cb_args;
 } bemesh_gattc_handler;
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void);
 // Open connection with a remote device. Returns -1 if no free gatt intefaces are available
 uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp_ble_addr_type_t remote_addr_type);
+
+void bemesh_gattc_handler_install_cb(bemesh_gattc_handler *h, kernel_cb cb, bemesh_evt_params_t *params);
+void bemesh_gattc_handler_uninstall_cb(bemesh_gattc_handler *h);

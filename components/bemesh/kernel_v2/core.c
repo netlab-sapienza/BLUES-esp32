@@ -17,6 +17,9 @@ static bemesh_core_t *get_core1_ptr(void) {
   return &core1;
 }
 
+// Handler for low level handlers. This callback should relaunch the higher level callbacks
+static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* params);
+
 
 void core_peripheral_init(void) {
   ESP_ERROR_CHECK(nvs_flash_init());
@@ -45,11 +48,13 @@ bemesh_core_t* bemesh_core_init(void) {
   bemesh_core_t *core=get_core1_ptr();
   // Link the gatts_handler to core1 and initialize it
   core->gattsh=bemesh_gatts_handler_init();
+  bemesh_gatts_handler_install_cb(core->gattsh, low_handlers_cb, &core->handler_cb_args);
   // Link the gattc_handler to core1 and initialize it
   core->gattch=bemesh_gattc_handler_init();
-  
+  bemesh_gattc_handler_install_cb(core->gattch, low_handlers_cb, &core->handler_cb_args);
   // Link the gap_handler to core1 and initialize it
   core->gaph=bemesh_gap_handler_init(NULL, 0, NULL, 0); // TODO: Add rsp and srv_uuid buffers
+  bemesh_gap_handler_install_cb(core->gaph, low_handlers_cb, &core->handler_cb_args);
   // Print device BDA.
   log_own_bda();
   //TODO
@@ -122,4 +127,39 @@ int bemesh_core_disconnect(bemesh_core_t* c, esp_bd_addr_t bda);
 int bemesh_core_write(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *src, uint16_t len);
 // TODO: Add descr
 int bemesh_core_read(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *dest, uint16_t len);
+
+// Install the handler for kernel events
+void bemesh_core_install_callback(bemesh_core_t *c, kernel_cb cb) {
+  c->handler_cb=cb;
+  return;
+}
+// Uninstall the handler for kernel events
+void bemesh_core_uninstall_callback(bemesh_core_t *c) {
+  c->handler_cb=NULL;
+  return;
+}
+
+// Handler for low level handlers. This callback should relaunch the higher level callbacks
+static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* params) {  
+  switch(event) {
+  case ON_SCAN_END:
+    ESP_LOGI(TAG, "ON_SCAN_END event");
+    break;
+  case ON_MSG_RECV:
+    ESP_LOGI(TAG, "ON_MSG_RECV event, len:%d", params->recv.len);
+    break;
+  case ON_INC_CONN:
+    ESP_LOGI(TAG, "ON_INC_CONN event");
+    break;
+  case ON_OUT_CONN:
+    ESP_LOGI(TAG, "ON_OUT_CONN event");
+    break;
+  case ON_DISCONN:
+    ESP_LOGI(TAG, "ON_DISCONN event");
+    break;
+  case ON_READ_REQ:
+    ESP_LOGI(TAG, "ON_READ_REQ event");
+    break;
+  }
+}
 

@@ -17,6 +17,9 @@
 #include "gattc_handler.h"
 #include "gatt_def.h"
 
+// Core Interface
+#include "core_int.h"
+
 /*
  * bda_id_tuple represent the pair <remote_bda,conn_id> where the conn_id 
  * may represent a incoming connection or outgoing connection.
@@ -44,6 +47,10 @@ typedef struct {
   // Incoming connections array.
   bda_id_tuple incoming_conn[GATTS_MAX_CONNECTIONS];
   uint8_t incoming_conn_len;
+
+  // Callback to execute for upper layers.
+  kernel_cb handler_cb;
+  bemesh_evt_params_t handler_cb_args;
 } bemesh_core_t;
 
 
@@ -84,4 +91,9 @@ int bemesh_core_disconnect(bemesh_core_t* c, esp_bd_addr_t bda);
 int bemesh_core_write(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *src, uint16_t len);
 // TODO: Add descr
 int bemesh_core_read(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *dest, uint16_t len);
+
+// Install the handler for kernel events
+void bemesh_core_install_callback(bemesh_core_t *c, kernel_cb cb);
+// Uninstall the handler for kernel events
+void bemesh_core_uninstall_callback(bemesh_core_t *c);
 

@@ -8,9 +8,12 @@
 
 #define KERNEL_EVT_NUM 3
 typedef enum {
-  ON_SCAN_END=0,
-  ON_MSG_RECV=1,
-  ON_INC_CONN=2,
+  ON_SCAN_END=0, // Scan end event
+  ON_MSG_RECV=1, // Message recv event
+  ON_INC_CONN=2, // Incoming connection event
+  ON_OUT_CONN=3, // Outgoing connection event
+  ON_DISCONN=4, // Disconnection event
+  ON_READ_REQ=5, // Read request event
 } bemesh_kernel_evt_t;
 
 typedef union {
@@ -25,7 +28,7 @@ typedef union {
     uint8_t* payload;
     uint16_t len;
   } recv;
-  // On incoming connection params
+  // On incoming/outgoing/ connection/disconnection params
   struct inc_conn_param {
     esp_bd_addr_t* remote_bda;
   } conn;
@@ -39,7 +42,7 @@ int foo(bemesh_evt_params_t param) {
 */
 
 // Kernel callback definition
-typedef void (*kernel_cb)(bemesh_evt_params_t* param);
+typedef void (*kernel_cb)(bemesh_kernel_evt_t evt, bemesh_evt_params_t* param);
 
 /*
  * Install the cb callback for the Event event.
@@ -74,4 +77,4 @@ void scan_environment(uint8_t timeout);
 /*
  * Get the device bda.
  */
-esp_bd_addr_t get_own_bda(void);
+uint8_t *get_own_bda(void);
