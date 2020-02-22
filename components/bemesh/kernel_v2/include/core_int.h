@@ -29,8 +29,9 @@ typedef union {
     uint16_t len;
   } recv;
   // On incoming/outgoing/ connection/disconnection params
-  struct inc_conn_param {
+  struct conn_param {
     esp_bd_addr_t* remote_bda;
+    uint8_t conn_id;    
   } conn;
 } bemesh_evt_params_t;
 /*

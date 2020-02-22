@@ -7,6 +7,11 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_bt_device.h" // esp_bt_dev_get_address
+#include <string.h> //memcpy
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 
 // logging tag
 static const char* TAG = "core";
@@ -62,7 +67,7 @@ bemesh_core_t* bemesh_core_init(void) {
 }
 
 // Returns the current dev bda. TODO: increase descr.
-uint8_t *bemesh_core_get_bda(bemesh_core_t* c) {
+const uint8_t *bemesh_core_get_bda(bemesh_core_t* c) {
   return esp_bt_dev_get_address();
 }
 
@@ -124,9 +129,11 @@ int bemesh_core_connect(bemesh_core_t* c, esp_bd_addr_t bda) {
  */
 int bemesh_core_disconnect(bemesh_core_t* c, esp_bd_addr_t bda);
 // TODO: Add descr
-int bemesh_core_write(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *src, uint16_t len);
+int bemesh_core_write(bemesh_core_t* c, uint16_t conn_id, uint8_t *src, uint16_t len) {
+  return 0;
+}
 // TODO: Add descr
-int bemesh_core_read(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *dest, uint16_t len);
+int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id, uint8_t *dest, uint16_t len);
 
 // Install the handler for kernel events
 void bemesh_core_install_callback(bemesh_core_t *c, kernel_cb cb) {
@@ -139,23 +146,74 @@ void bemesh_core_uninstall_callback(bemesh_core_t *c) {
   return;
 }
 
+// TEMP: use only for testing response op.
+static uint16_t __get_connid_from_bda(bda_id_tuple* arr,
+				      uint8_t len,
+				      uint8_t *bda) {
+  for(int i=0;i<len;++i) {
+    uint8_t *remote_bda=arr[i].bda;
+    int valid=true;
+    for(int j=0;j<ESP_BD_ADDR_LEN;++j) {
+      if(bda[j]!=remote_bda[j]) {
+	valid=false;
+	break;
+      }
+    }
+    if(valid) {
+      return arr[i].conn_id;
+    }      
+  }
+  return 0;
+}
+
 // Handler for low level handlers. This callback should relaunch the higher level callbacks
-static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* params) {  
+static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* params) {
+  bemesh_core_t *c=get_core1_ptr();
+  bda_id_tuple *entry=NULL;
   switch(event) {
   case ON_SCAN_END:
     ESP_LOGI(TAG, "ON_SCAN_END event");
     break;
   case ON_MSG_RECV:
     ESP_LOGI(TAG, "ON_MSG_RECV event, len:%d", params->recv.len);
+    // start: testing response op.
+    uint16_t conn_id=__get_connid_from_bda(c->incoming_conn,
+    					   c->incoming_conn_len,
+    					   params->recv.remote_bda);
+    bemesh_gatts_handler_send_notify(c->gattsh,
+    				     conn_id,
+    				     params->recv.payload,
+    				     params->recv.len);
+    ESP_LOGI(TAG, "Testing response op.");
+    // end: testing response op.
     break;
   case ON_INC_CONN:
     ESP_LOGI(TAG, "ON_INC_CONN event");
+    entry=&c->incoming_conn[c->incoming_conn_len++];
+    memcpy(entry->bda, params->conn.remote_bda, ESP_BD_ADDR_LEN);
+    entry->conn_id=params->conn.conn_id;
+    // start re-advertising:
+    bemesh_core_start_advertising(c);
     break;
   case ON_OUT_CONN:
     ESP_LOGI(TAG, "ON_OUT_CONN event");
+    // start: testing write op.
+    ESP_LOGI(TAG, "Testing write op.");
+    uint8_t test_write_buf[4]={0xAB, 0xAD, 0xC0, 0xDE};
+    entry=&c->outgoing_conn[c->outgoing_conn_len++];
+    memcpy(entry->bda, params->conn.remote_bda, ESP_BD_ADDR_LEN);
+    entry->conn_id=params->conn.conn_id;
+    /* bemesh_gattc_handler_write(get_core1_ptr()->gattch, */
+    /* 			       params->conn.conn_id, */
+    /* 			       test_write_buf, */
+    /* 			       4, */
+    /* 			       1); */
+    // end: testing write op
     break;
   case ON_DISCONN:
     ESP_LOGI(TAG, "ON_DISCONN event");
+    // start re-advertising:
+    bemesh_core_start_advertising(c);
     break;
   case ON_READ_REQ:
     ESP_LOGI(TAG, "ON_READ_REQ event");

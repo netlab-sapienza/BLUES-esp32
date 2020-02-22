@@ -76,3 +76,9 @@ typedef struct bemesh_gatts_handler{
 bemesh_gatts_handler* bemesh_gatts_handler_init(void);
 void bemesh_gatts_handler_install_cb(bemesh_gatts_handler *h, kernel_cb cb, bemesh_evt_params_t *params);
 void bemesh_gatts_handler_uninstall_cb(bemesh_gatts_handler *h);
+//TODO: add descr
+void bemesh_gatts_handler_send_notify(bemesh_gatts_handler *h,
+				      uint16_t conn_id,
+				      uint8_t *data,
+				      uint16_t data_len);
+				      

@@ -7,6 +7,9 @@
 #include "esp_log.h"
 #include <string.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 static const char* TAG = "gattc_handler";
 
 // Since we want one and only one bemesh_gattc_handler we will statically define it.
@@ -18,6 +21,28 @@ static bemesh_gattc_handler *get_gattc1_ptr(void) {
 // GATTC callback handler definition
 static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
 			    esp_ble_gattc_cb_param_t *param);
+
+// Extract the correct application profile, given a gattc_if
+static gattc_profile_inst *__get_gattc_profile(esp_gatt_if_t gattc_if, gattc_profile_inst* p_vect) {
+  // Assume that gattc_if is present in one of the app profiles in p_vect
+  for(uint8_t i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
+    if(p_vect[i].gattc_if==gattc_if) {
+      return &p_vect[i];
+    }
+  }
+  return NULL;
+}
+
+// Extract the correct application profile, given a conn_id
+static gattc_profile_inst *__get_gattc_profile_connid(uint16_t conn_id,
+						      gattc_profile_inst *p_vect) {
+  for(uint8_t i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
+    if(p_vect[i].conn_id==conn_id && p_vect[i].gattc_if!=ESP_GATT_IF_NONE) {
+      return &p_vect[i];
+    }
+  }
+  return NULL;
+}
 
 static void profile_inst_vect_init(gattc_profile_inst* p) {
   for(int i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
@@ -32,6 +57,11 @@ static void remote_filter_serv_uuid_init(esp_bt_uuid_t *r) {
   r->uuid.uuid16=GATTS_SERV_UUID;
 }
 
+static void remote_filter_char_uuid_init(esp_bt_uuid_t *r) {
+  r->len=ESP_UUID_LEN_16;
+  r->uuid.uuid16=GATTS_CHAR_UUID;
+}
+
 bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
   bemesh_gattc_handler *h=get_gattc1_ptr();
   // Initialize the app profile vect.
@@ -39,6 +69,8 @@ bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
 
   // Set gattc_handler vars
   h->server_valid_flag=false;
+  remote_filter_serv_uuid_init(&h->remote_filter_service_uuid);
+  remote_filter_char_uuid_init(&h->remote_filter_char_uuid);
 
   // register the callback function for the gattc module
   esp_ble_gattc_register_callback(bemesh_gattc_cb);
@@ -84,23 +116,42 @@ void bemesh_gattc_handler_uninstall_cb(bemesh_gattc_handler *h) {
   return;
 }
 
+//TODO descr
+void bemesh_gattc_handler_write(bemesh_gattc_handler *h, uint16_t conn_id,
+				uint8_t *data, uint16_t data_len, uint8_t resp) {
+  gattc_profile_inst *prof=__get_gattc_profile_connid(conn_id, h->profile_inst_vect);
+  if(!prof) {
+    ESP_LOGE(TAG, "Error: no profile applications contains conn_id %d", conn_id);
+    return;
+  }
+  uint16_t gattc_if=prof->gattc_if;
+  uint16_t char_handle=prof->char_handle;
+  esp_err_t ret=esp_ble_gattc_write_char(gattc_if,
+					 conn_id,
+					 char_handle,
+					 data_len,
+					 data,
+					 ESP_GATT_WRITE_TYPE_RSP,
+					 ESP_GATT_AUTH_REQ_NONE);
+  if(ret!=ESP_GATT_OK) {
+    ESP_LOGW(TAG, "Warning: could not write characteristic, errcode=%d", ret);
+  }
+  return;
+}
+
 // Event callbacks.
 static void app_reg_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void cfg_mtu_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
+static void search_serv_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
+static void write_chr_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
+static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
+static void recv_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 
-// Extract the correct application profile, given a gattc_if
-static gattc_profile_inst *__get_gattc_profile(esp_gatt_if_t gattc_if, gattc_profile_inst* p_vect) {
-  // Assume that gattc_if is present in one of the app profiles in p_vect
-  for(uint8_t i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
-    if(p_vect[i].gattc_if==gattc_if) {
-      return &p_vect[i];
-    }
-  }
-  return NULL;
-}
+
+
 
 // GATTC callback handler definition
 static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
@@ -128,6 +179,23 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
   case ESP_GATTC_SEARCH_RES_EVT:
     // Service search result
     search_serv_cb(gattc_if, param, h);
+    break;
+  case ESP_GATTC_SEARCH_CMPL_EVT:
+    // Service search complete.
+    search_serv_cmpl_cb(gattc_if, param, h);
+    break;
+  case ESP_GATTC_WRITE_CHAR_EVT:
+    // Write characteristic complete.
+    write_chr_cmpl_cb(gattc_if, param, h);
+    break;
+  case ESP_GATTC_REG_FOR_NOTIFY_EVT:
+    // Register to notify complete.
+    reg_notify_cb(gattc_if, param, h);
+    break;
+  case ESP_GATTC_NOTIFY_EVT:
+    // Receive notify.
+    ESP_LOGE(TAG, "ESP_GATTC_NOTIFY_EVT received.");
+    recv_notify_cb(gattc_if, param, h);
     break;
   default:
     ESP_LOGW(TAG, "Warning: received unhandled evt %d", event);
@@ -174,12 +242,25 @@ static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, be
     ESP_LOGE(TAG, "Error: open failed, errcode=%X", param->open.status);
   }
   ESP_LOGI(TAG, "Open operation succesful.");
+  // Get the correct app profile.
+  gattc_profile_inst *profile_inst=__get_gattc_profile(gattc_if, h->profile_inst_vect);
+  // Copy the remote BDA
+  profile_inst->conn_id=param->connect.conn_id;
+  memcpy(profile_inst->remote_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+  // Send local MTU to server
+  esp_err_t ret=esp_ble_gattc_send_mtu_req(gattc_if, param->connect.conn_id);
+  if(ret) {
+    ESP_LOGE(TAG, "Error: could not config MTU, errcode=%X", ret);
+  }
   // Execute core handler callback
   if(h->core_cb!=NULL) {
     // Fill the params struct.
     memcpy(h->core_cb_args->conn.remote_bda, param->open.remote_bda, sizeof(esp_bd_addr_t));
-    (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
-  }  
+    h->core_cb_args->conn.conn_id=profile_inst->conn_id;
+    // KEEP IN MIND THAT CONNECTION IS STILL NOT SECURED. The ON_OUT_CONN event may be launched
+    // after the service discovery complete event.
+    //(*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
+  }
   return;
 }
 
@@ -190,15 +271,17 @@ static void cfg_mtu_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, 
   }
   ESP_LOGI(TAG, "Configured MTU with size: %d", param->cfg_mtu.mtu);
   ESP_LOGI(TAG, "Starting search-service routine.");
+  // Search for the bemesh service
   esp_ble_gattc_search_service(gattc_if, param->cfg_mtu.conn_id, &h->remote_filter_service_uuid);
+  //esp_ble_gattc_search_service(gattc_if, param->cfg_mtu.conn_id, NULL);
   return;
 }
 
 // Search service callback
 static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   esp_gatt_srvc_id_t *srvc_id=&param->search_res.srvc_id;
-  ESP_LOGI(TAG, "Search res: conn_id:%d, is_primary:%d", param->search_res.conn_id, param->search_res.is_primary);
-
+  ESP_LOGI(TAG, "Search res: conn_id:%d, is_primary:%d", param->search_res.conn_id,
+	   param->search_res.is_primary);
    
   // Check if we found the service that we're looking for.
   if(srvc_id->id.uuid.len==h->remote_filter_service_uuid.len &&
@@ -209,8 +292,143 @@ static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *par
     // Setup start and end handle, used to get characteristics
     prof->service_start_handle=param->search_res.start_handle;
     prof->service_end_handle=param->search_res.end_handle;
-    ESP_LOGI(TAG, "Found UUID16: %d", srvc_id->id.uuid.uuid.uuid16);
+    ESP_LOGI(TAG, "Found UUID16: %X", srvc_id->id.uuid.uuid.uuid16);
   }
+  return;
+}
+
+static void search_serv_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
+  if(param->search_cmpl.status!=ESP_GATT_OK) {
+    ESP_LOGW(TAG, "Warning: could not complete service search succesfully, errcode=%d",
+	     param->search_cmpl.status);
+    return;
+  }
+  ESP_LOGI(TAG, "Service search complete. Getting characteristic value.");
+  uint16_t conn_id=param->search_cmpl.conn_id;
+  gattc_profile_inst* prof=__get_gattc_profile(gattc_if, h->profile_inst_vect);
+  // Get the attribute counts from the local db.
+  uint16_t att_count;
+  esp_gatt_status_t ret=esp_ble_gattc_get_attr_count(gattc_if,
+						     conn_id,
+						     ESP_GATT_DB_CHARACTERISTIC,
+						     prof->service_start_handle,
+						     prof->service_end_handle,
+						     ESP_GATT_INVALID_HANDLE,
+						     &att_count);
+  if(ret) {
+    ESP_LOGE(TAG, "Error: could not get attribute count: errcode=%d", ret);
+  }
+
+  if(att_count>0) {
+    esp_gattc_char_elem_t* char_elem_res=(esp_gattc_char_elem_t*)malloc(sizeof(esp_gattc_char_elem_t)* att_count);
+    if(!char_elem_res) {
+      ESP_LOGE(TAG, "Could not allocate space for char_elem_res.");
+    } else {
+      // Search for the characteristic whose uuid is signed in h->remote_filter_char_uuid
+      ret=esp_ble_gattc_get_char_by_uuid(gattc_if,
+					 conn_id,
+					 prof->service_start_handle,
+					 prof->service_end_handle,
+					 h->remote_filter_char_uuid,
+					 char_elem_res,
+					 &att_count);
+      if(ret!=ESP_GATT_OK) {
+	ESP_LOGE(TAG, "Error: could not get characteristics by uuid, errcode=%d", ret);
+      }
+      if(att_count>0) {
+	// We found the correct characteristic.
+	// In every case, we'll pick the first selection (even if only one exists)
+	ESP_LOGI(TAG, "Found the bemesh characteristic with UUID16: %04X", char_elem_res[0].uuid.uuid.uuid16);
+	//TODO: register for notifies.
+	// Check for notify propriety
+	if(char_elem_res[0].properties&ESP_GATT_CHAR_PROP_BIT_NOTIFY) {
+	  ESP_LOGI(TAG, "Requesting notify to the characteristic.");
+	  prof->char_handle=char_elem_res[0].char_handle;
+	  esp_ble_gattc_register_for_notify(gattc_if, prof->remote_bda,
+					    prof->char_handle);
+	}
+      }
+      free(char_elem_res);
+    }   
+  }
+  return;
+}
+
+static void write_chr_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
+  ESP_LOGI(TAG, "Write characteristic complete.");
+  return;
+}
+
+static esp_bt_uuid_t notify_descr_uuid = {
+  .len=ESP_UUID_LEN_16,
+  .uuid={.uuid16=ESP_GATT_UUID_CHAR_CLIENT_CONFIG},
+};
+
+static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
+  if(param->reg_for_notify.status!=ESP_GATT_OK) {
+    ESP_LOGE(TAG, "Error: could not register for notify, status=%d",
+	     param->reg_for_notify.status);
+  }
+  gattc_profile_inst* prof=__get_gattc_profile(gattc_if, h->profile_inst_vect);
+  uint16_t conn_id=prof->conn_id;
+  //uint16_t notify_enable=1; // Enable notifies (not indicates.)
+  uint16_t notify_enable=1; // Enable indicates (not notifies.)
+  uint16_t count=0; // number of attributes found.
+  esp_gatt_status_t ret=esp_ble_gattc_get_attr_count(gattc_if,
+						     conn_id,
+						     ESP_GATT_DB_DESCRIPTOR,
+						     prof->service_start_handle,
+						     prof->service_end_handle,
+						     prof->char_handle,
+						     &count);
+  if(ret!=ESP_GATT_OK) {
+    ESP_LOGE(TAG, "Error: could not execute get_attr_count, errcode=%d", ret);
+  }
+  if(count>0) {
+    esp_gattc_descr_elem_t *descr_elem_res=malloc(sizeof(esp_gattc_descr_elem_t)*count);
+    if(!descr_elem_res) {
+      ESP_LOGE(TAG, "Error: malloc error");
+    }
+    ret=esp_ble_gattc_get_descr_by_char_handle(gattc_if,
+					       conn_id,
+					       param->reg_for_notify.handle,
+					       notify_descr_uuid,
+					       descr_elem_res,
+					       &count);
+    if(count>0 && descr_elem_res[0].uuid.len==ESP_UUID_LEN_16 &&
+       descr_elem_res[0].uuid.uuid.uuid16==ESP_GATT_UUID_CHAR_CLIENT_CONFIG) {
+      // Write on the client config descriptor.
+      ret=esp_ble_gattc_write_char_descr(gattc_if,
+					 conn_id,
+					 descr_elem_res[0].handle,
+					 sizeof(notify_enable),
+					 (uint8_t*)&notify_enable,
+					 ESP_GATT_WRITE_TYPE_RSP,
+					 ESP_GATT_AUTH_REQ_NONE);
+      if(ret!=ESP_GATT_OK) {
+	ESP_LOGE(TAG, "Error: could not write in the client config descr.");
+      } else {
+	ESP_LOGI(TAG, "Write to client config descriptor with success.");
+      }
+    }
+    free(descr_elem_res);
+  } else {
+    ESP_LOGW(TAG, "Warning, could not find any attrs");
+  }
+  // Launch the ON_OUT_CONN event to core.
+  if(h->core_cb!=NULL) {
+    // Please refer to copen_cb for cb_args constructions.
+    (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
+  }
+}
+
+static void recv_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
+  if(param->notify.is_notify) {
+    ESP_LOGI(TAG, "Receivd notify.");
+  } else {
+    ESP_LOGI(TAG, "Received indicate.");
+  }
+  esp_log_buffer_hex(TAG, param->notify.value, param->notify.value_len);
   return;
 }
 

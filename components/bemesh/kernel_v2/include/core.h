@@ -56,7 +56,7 @@ typedef struct {
 
 bemesh_core_t* bemesh_core_init(void);
 // Returns the current dev bda. TODO: increase descr.
-uint8_t *bemesh_core_get_bda(bemesh_core_t* c);
+const uint8_t *bemesh_core_get_bda(bemesh_core_t* c);
 /* GAP HANDLING */
 // Scanning ops
 int bemesh_core_start_scanning(bemesh_core_t* c, uint16_t timeout); // start the scan proc.
@@ -88,9 +88,9 @@ int bemesh_core_connect(bemesh_core_t* c, esp_bd_addr_t bda);
  */
 int bemesh_core_disconnect(bemesh_core_t* c, esp_bd_addr_t bda);
 // TODO: Add descr
-int bemesh_core_write(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *src, uint16_t len);
+int bemesh_core_write(bemesh_core_t* c, uint16_t conn_id, uint8_t *src, uint16_t len);
 // TODO: Add descr
-int bemesh_core_read(bemesh_core_t* c, esp_bd_addr_t bda, uint8_t *dest, uint16_t len);
+int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id, uint8_t *dest, uint16_t len);
 
 // Install the handler for kernel events
 void bemesh_core_install_callback(bemesh_core_t *c, kernel_cb cb);

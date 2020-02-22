@@ -32,7 +32,7 @@ static void gatts_service_init(gatts_profile_inst* p) {
   p->service_id.id.inst_id=0x00; // set serv. instance as 0
   // Set UUID for generic access service.
   p->service_id.id.uuid.len=ESP_UUID_LEN_16;
-  p->service_id.id.uuid.uuid.uuid16=GATTS_SERV_UUID; 
+  p->service_id.id.uuid.uuid.uuid16=GATTS_SERV_UUID;
 }
 // Initialize the GATTS Profile struct.
 static void gatts_profile_init(gatts_profile_inst* p) {
@@ -87,6 +87,28 @@ void bemesh_gatts_handler_uninstall_cb(bemesh_gatts_handler *h) {
   return;
 }
 
+//TODO: add descr
+void bemesh_gatts_handler_send_notify(bemesh_gatts_handler *h,
+				      uint16_t conn_id,
+				      uint8_t *data,
+				      uint16_t data_len) {
+  // get the gatts_if
+  uint16_t gatts_if=h->profile_inst.gatts_if;
+  uint16_t char_handle=h->profile_inst.char_handle;
+  ESP_LOGI(TAG, "Preparing notify with params: gatts_if:%d, conn_id:%d, char_handle:%d",
+	   gatts_if, conn_id, char_handle);
+  esp_err_t ret=esp_ble_gatts_send_indicate(gatts_if,
+					    conn_id,
+					    char_handle,
+					    data_len,
+					    data,
+					    true); // false for notification, true for indicate
+  if(ret!=ESP_GATT_OK) {
+    ESP_LOGE(TAG, "Error: could not send indicate, errcode=%d", ret);
+  }
+  return;
+}
+
 // Event callbacks.
 static void app_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void serv_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
@@ -98,6 +120,7 @@ static void disconnection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *p
 static void read_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 static void exec_write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
+static void recv_conf_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h);
 //TODO
 
 /*
@@ -147,6 +170,15 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
     break;
   case ESP_GATTS_EXEC_WRITE_EVT:
     exec_write_cb(gatts_if, param, h);
+    break;
+  case ESP_GATTS_CONF_EVT:
+    recv_conf_cb(gatts_if, param, h);
+    break;
+  case ESP_GATTS_SET_ATTR_VAL_EVT:
+    ESP_LOGV(TAG, "Attribute set.");
+    break;
+  case ESP_GATTS_RESPONSE_EVT:
+    ESP_LOGV(TAG, "Send response.");
     break;
     //TODO
   default:
@@ -230,36 +262,18 @@ static void char_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param,
   // Setup the char handle
   h->profile_inst.char_handle=param->add_char.attr_handle;
   h->profile_inst.descr_uuid.len=ESP_UUID_LEN_16;
-  h->profile_inst.descr_uuid.uuid.uuid16=ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
-  // Testing the reading procedure for the attribute.
-  uint16_t attr_len=0;
-  const uint8_t *read_attr;
-  /* esp_err_t ret=esp_ble_gatts_get_attr_value(param->add_char.attr_handle, */
-  /* 						      &attr_len, */
-  /* 						      &read_attr); */
-  esp_err_t ret=esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
-					     &attr_len, 
-					     &read_attr);
-  
-  if(ret==ESP_FAIL) {
-    ESP_LOGE(TAG, "Error: Illegal characteristic handle.");
-  }
-  ESP_LOGW(TAG, "Current characteristic length: %x", attr_len);
-  for(int i=0;i<attr_len;++i) {
-    ESP_LOGW(TAG, "read_attr[%x] = %x", i, read_attr[i]);
-  }
-  /*
+  h->profile_inst.descr_uuid.uuid.uuid16=ESP_GATT_UUID_CHAR_CLIENT_CONFIG;  
   // Adding characteristic descriptor
-  ret=esp_ble_gatts_add_char_descr(h->profile_inst.service_handle,
-				   &h->profile_inst.descr_uuid,
-				   ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
-				   NULL, NULL);
+  esp_gatt_status_t ret=esp_ble_gatts_add_char_descr(h->profile_inst.service_handle,
+						     &h->profile_inst.descr_uuid,
+						     ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
+						     NULL, NULL);
   if(ret) {
     ESP_LOGE(TAG, "Error: could not add characteristic descriptor, errcode =%x", ret);
   } else {
     ESP_LOGI(TAG, "Characteristic descriptor registration succesful.");
   }
-  */
+  
   return;
 }
 
@@ -269,13 +283,15 @@ static void char_descr_reg_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *
   ESP_LOGI(TAG, "Succesfully installed characteristic descr: status %d, attr_handle %d, service_handle %d",
 	   param->add_char.status, param->add_char.attr_handle,
 	   param->add_char.service_handle);
+  // store the descriptor handle
+  h->profile_inst.descr_handle=param->add_char_descr.attr_handle;
   return;
 }
 
 // New incoming connection callback
 static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
   if(h->flags&O_IGNCONN) {
-    ESP_LOGI(TAG, "Discarding connection evt. Disabling IGNCONN flag.");
+    ESP_LOGV(TAG, "Discarding connection evt. Disabling IGNCONN flag.");
     // Re-enabling the connection handling
     h->flags&=~O_IGNCONN;
     return;
@@ -288,8 +304,8 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
   conn_params.max_int=0x30; // max_int = 0x30*1.25ms = 40ms
   conn_params.min_int=0x10; // min_int = 0x10*1.25ms = 20ms
   conn_params.timeout=400;  // timeout = 400*10ms  = 4000ms
-  ESP_LOGI(TAG, "Received new connection (%d) from %02x.%02x.%02x.%02x.%02x.%02x",
-	   param->connect.conn_id, param->connect.remote_bda[0], param->connect.remote_bda[1],
+  ESP_LOGV(TAG, "Received new connection conn_id:%d, gatts_if:%d, from %02x.%02x.%02x.%02x.%02x.%02x",
+	   param->connect.conn_id, gatts_if, param->connect.remote_bda[0], param->connect.remote_bda[1],
 	   param->connect.remote_bda[2], param->connect.remote_bda[3], param->connect.remote_bda[4],
 	   param->connect.remote_bda[5]);
   // update the profile connection id
@@ -307,7 +323,7 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
 }
 
 static void disconnection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
-  ESP_LOGI(TAG, "Disconnected event.");
+  ESP_LOGV(TAG, "Disconnected event.");
   // Execute core handler callback
   if(h->core_cb!=NULL) {
     // Fill the params struct.
@@ -332,7 +348,7 @@ static void read_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bem
   uint8_t* char_value;
   esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
 			       &rsp.attr_value.len,
-			       &char_value);
+			       (const uint8_t**)&char_value);
   memcpy(rsp.attr_value.value, char_value, rsp.attr_value.len);
   esp_ble_gatts_send_response(gatts_if, param->read.conn_id,
 			      param->read.trans_id,
@@ -351,6 +367,35 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
   /*
    * Used for write characteristic operation (one ATT MTU)
    */
+  // Check if the write request is related to the client config descriptor.
+  uint8_t client_config_flag=false;
+  if(h->profile_inst.descr_handle==param->write.handle&&
+     param->write.len==2) {
+    client_config_flag=true;
+    // Check the data sent by the peer
+    uint16_t descr_value=(param->write.value[1]<<8) | param->write.value[0];
+    if(descr_value==0x01) {
+      ESP_LOGI(TAG, "Notify enabled.");
+      uint8_t buf[15];
+      for(int i=0;i<15;++i) {
+	buf[i]=i;
+      }
+      esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, h->profile_inst.char_handle,
+				  15, buf, false);
+    } else if(descr_value==0x02) {
+      ESP_LOGI(TAG, "Indication enabled.");
+      uint8_t buf[15];
+      for(int i=0;i<15;++i) {
+	buf[i]=i;
+      }
+      esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, h->profile_inst.char_handle,
+				  15, buf, true);
+    } else if(descr_value==0x00) {
+      ESP_LOGI(TAG, "Notify/indications disabled.");
+    } else {
+      ESP_LOGW(TAG, "Unknown char descr value.");
+    }
+  }
   // Print some debug info.
   //ESP_LOGI(TAG, "Received write characteristic operation: len:%d, value:", param->write.len);
   //esp_log_buffer_hex(TAG, param->write.value, param->write.len);
@@ -365,8 +410,13 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
       return;
     }
   }
+
+  // We don't need to go further if the write was relative to the client configuration
+  if(client_config_flag) {
+    return;
+  }
   
-  ESP_LOGI(TAG, "Received write char op. len:%d", param->write.len);
+  ESP_LOGV(TAG, "Received write char op. len:%d", param->write.len);
   if(param->write.len>GATT_CHAR_BUF_SIZE) {
     ESP_LOGW(TAG, "Warning: received payload is too long.");
     return;
@@ -378,7 +428,7 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
   esp_ble_gatts_set_attr_value(h->profile_inst.char_handle,
 			       param->write.len,
 			       param->write.value);
-
+  
   // Execute core handler callback
   if(h->core_cb!=NULL) {
     // Fill the params struct.
@@ -387,7 +437,7 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
     uint8_t *payload_ptr;
     esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
 				 &payload_len,
-				 &payload_ptr);
+				 (const uint8_t**)&payload_ptr);
     h->core_cb_args->recv.payload=payload_ptr;
     h->core_cb_args->recv.len=param->write.len;
     (*h->core_cb)(ON_MSG_RECV, h->core_cb_args);
@@ -457,12 +507,21 @@ static void exec_write_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
     uint8_t *payload_ptr;
     esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
 				 &payload_len,
-				 &payload_ptr);
+				 (const uint8_t**)&payload_ptr);
     h->core_cb_args->recv.payload=payload_ptr;
     h->core_cb_args->recv.len=h->exec_write_len;
     (*h->core_cb)(ON_MSG_RECV, h->core_cb_args);
   }
   // Reset the exec_write variable for future long writes
   h->exec_write_len=0;
+  return;
+}
+
+static void recv_conf_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param, bemesh_gatts_handler* h) {
+  if(param->conf.status != ESP_GATT_OK) {
+    ESP_LOGE(TAG, "Error: Could not send indicate, errcod=%d", param->conf.status);
+  } else {
+    //ESP_LOGI(TAG, "Notify confirm received with success.");
+  }
   return;
 }
