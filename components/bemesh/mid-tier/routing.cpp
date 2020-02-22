@@ -19,8 +19,8 @@ namespace bemesh {
     os<<up.params<<up.update_state;
     return os;
   }
-  
-  Router::Router(dev_addr_t t_node_addr):m_rtable() {
+
+  Router::Router(dev_addr_t t_node_addr) : m_rtable(RoutingTable::getInstance()){
     m_node_addr=t_node_addr;
   }
 
@@ -36,13 +36,8 @@ namespace bemesh {
       return false;
     }
     if(rp1_reachable == 0) {
-      if(rp2_reachable == 1) {
-	// if new path is feasible and previous isnt, change
-	return true;
-      } else {
-	// if both paths are unfeasible, do not change
-	return false;
-      }
+      // if new path is feasible and previous isn't, change, if both paths are unfeasible, do not change
+      return rp2_reachable == 1;
     }
     // Optimality: ---------------------------------------------/
     if(rp1.num_hops > rp2.num_hops) {
@@ -60,10 +55,10 @@ namespace bemesh {
     new_params.hop_addr=t_hop_addr;
     new_params.num_hops=t_num_hops;
     new_params.flags=t_flags;
-    
+
     if(m_rtable.contains(t_target_addr)==Success) {
       // Do we need to update ?
-      routing_params_t& old_params=m_rtable.getRoutingParams(t_target_addr);
+      routing_params_t& old_params= m_rtable.get_routing_params(t_target_addr);
       if(RoutingParamsCompareFn(old_params, new_params)>0) {
 	// new_params is better than old_params, and should be changed
 	// replace the params in the routing table
@@ -96,7 +91,7 @@ namespace bemesh {
   ErrStatus Router::remove(dev_addr_t t_target_addr) {
     if(m_rtable.contains(t_target_addr)==Success) {
       // generate a stub for the update vector
-      routing_params_t old_params=m_rtable.getRoutingParams(t_target_addr);
+      routing_params_t old_params= m_rtable.get_routing_params(t_target_addr);
       routing_params_t stub_params;
       stub_params.target_addr=t_target_addr;
       stub_params.hop_addr=old_params.hop_addr;
@@ -112,11 +107,11 @@ namespace bemesh {
   }
 
   dev_addr_t& Router::nextHop(dev_addr_t t_target_addr) {
-    return m_rtable.getRoutingParams(t_target_addr).hop_addr;
+    return m_rtable.get_routing_params(t_target_addr).hop_addr;
   }
 
   uint8_t Router::targetFlags(dev_addr_t t_target_addr) {
-    return m_rtable.getRoutingParams(t_target_addr).flags;
+    return m_rtable.get_routing_params(t_target_addr).flags;
   }
 
   dev_addr_t& Router::addr(void) {
@@ -126,7 +121,7 @@ namespace bemesh {
     std::vector<routing_params_t> vectorized_rtable=m_rtable.exportTable();
     return vectorized_rtable;
   }
-  
+
   std::size_t Router::mergeUpdates(std::vector<routing_update_t>& t_update_vect,
 				   dev_addr_t t_sender) {
     std::size_t updated_rows=0;
@@ -166,7 +161,7 @@ namespace bemesh {
     }
     return updated_rows;
   }
-  
+
   // return true if there are updates that must be notified to other nodes.
   // False otherwhise.
   uint8_t Router::hasUpdates(void) {
@@ -188,7 +183,7 @@ namespace bemesh {
     std::vector<dev_addr_t> dev_vect;
     std::vector<dev_addr_t>::iterator dev_vect_it;
     std::vector<routing_params_t> vectorized_table=m_rtable.exportTable();
-    
+
     for(auto &it : vectorized_table) {
       dev_addr_t neighbour=it.hop_addr;
       dev_vect_it=std::find(dev_vect.begin(), dev_vect.end(), neighbour);
@@ -198,10 +193,14 @@ namespace bemesh {
     }
     return dev_vect;
   }
+  Router &Router::getInstance(dev_addr_t bda) {
+    Router instance = Router(bda);
+    return instance;
+  }
 
   bool isBroadcast(dev_addr_t& t_addr) {
     return (t_addr==BROADCAST_ADDR);
   }
-  
+
 }
 

@@ -8,7 +8,7 @@
 class Device {
 private:
   uint8_t timeout_sec = 5;
-  bemesh::RoutingTable routingTable;
+  bemesh::Router router;
 
   /**
    * Order function of the scan results  to attempt a connection with the
@@ -45,19 +45,25 @@ private:
    * @return true if connected
    */
   static bool connect_to_server(bemesh_dev_t target_server) {
-    return (bool)connect_to(target_server.bda);
+    return (bool)!connect_to(target_server.bda);
   }
 
   /**
    *
+   * @param bda
    */
-  void send_message() { bemesh::RoutingSyncMessage(); }
+  void send_message(bemesh_dev_t bda) {
+
+    //send_payload(); // TODO bda.nextHop()
+  }
 
 public:
   Role role;
   bool connected;
 
-  Device() {
+  Device()
+      : router(
+            bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))) {
     role = Role::UNDEFINED;
     connected = false;
   }
@@ -66,7 +72,7 @@ public:
    * Launcher function of the device
    */
   void startup() {
-    routingTable = bemesh::RoutingTable();
+    kernel_init();
     scan_environment(timeout_sec);
   }
 
@@ -139,12 +145,11 @@ public:
    * @param params
    */
   void on_incoming_connection(bemesh_evt_params_t *params) {
-    if (routingTable.get_number_of_clients(bemesh::to_dev_addr(get_own_bda())) <
-        GATTS_MAX_CONNECTIONS) {
+    if (router.getNeighbours().size() < GATTS_MAX_CONNECTIONS) {
       auto device = bemesh::to_dev_addr((uint8_t *)params->conn.remote_bda);
       uint8_t t_num_hops = 0;
       uint8_t t_flag = bemesh::Reachable;
-      routingTable.insert(device, device, t_num_hops, t_flag);
+    // routing_table.insert(device, device, t_num_hops, t_flag);
     } else {
       // disconnect the device
       send_message();

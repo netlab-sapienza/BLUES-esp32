@@ -56,22 +56,38 @@ void kernel_install_cb(bemesh_kernel_evt_t event, kernel_cb cb);
 
 /*
  * Initializes the underlying kernel.
+ * This function has to be called in the startup of the system.
  */
 int kernel_init(void);
 
-/*
- * Transfer the src buffer of len bytes to another device with bda address.
+/**
+ *  Transfer the src buffer of len bytes to another device with bda address.
+ *
+ * @param bda address of the device that has to receive the payload
+ * @param src array that contains the payload written in byte
+ * @param len length of the payload
  */
 void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len);
 
-/*
- * Tries to connect to a device with bda address.
- * returns 0 if no error occurred
+
+/**
+ * Tries to connect to a specific device
+ *
+ * @param bda address
+ * @return 0 if no error occurred
  */
 uint8_t connect_to(esp_bd_addr_t bda);
 
-/* Scan the environment */
+/**
+ * Scan the environment
+ *
+ * @param timeout length of the scan in seconds
+ */
 void scan_environment(uint8_t timeout);
 
-/* Get the device bda. */
+/**
+ * Get the device bda. It can be passed to bemesh::to_dev_addr() in order to get the correct address.
+ *
+ * @return the device bda in bytes
+ */
 uint8_t *get_own_bda(void);

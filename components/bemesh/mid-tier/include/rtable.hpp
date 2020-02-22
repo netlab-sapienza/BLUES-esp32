@@ -18,10 +18,7 @@ namespace bemesh {
 
   enum RoutingFlags {
     Reachable=0x01,
-    Passive=0x02,
-    Internet=0x04,
-    Gps=0x08
-    //... TODO
+    Internet=0x02
   };
 
   struct routing_params_t {
@@ -36,14 +33,17 @@ namespace bemesh {
     friend std::ostream& operator <<(std::ostream& os, const routing_params_t& up);
   };
 
-  int printDevAddr(char* buf, const dev_addr_t& addr);
-  void printRoutingParams(const routing_params_t& p);
+  int print_dev_addr(char* buf, const dev_addr_t& addr);
+  void print_routing_params(const routing_params_t& p);
 
-  struct RoutingTable {
-    std::map<dev_addr_t, routing_params_t> m_routing_table;
+  class RoutingTable {
+    RoutingTable();
+    std::map<dev_addr_t,routing_params_t > m_routing_table;
 
-    RoutingTable(void);
-    std::vector<routing_params_t> exportTable(void);
+  public:
+    static RoutingTable&getInstance();
+
+    std::vector<routing_params_t> exportTable();
 
     routing_params_t insert(routing_params_t t_target_params);
     routing_params_t insert(dev_addr_t t_target_addr, dev_addr_t t_hop_addr, uint8_t t_num_hops,
@@ -52,12 +52,14 @@ namespace bemesh {
     ErrStatus remove(dev_addr_t t_target_addr);
 
     ErrStatus contains(dev_addr_t& t_target_addr);
-    routing_params_t& getRoutingParams(dev_addr_t t_target_addr);
+    routing_params_t&get_routing_params(dev_addr_t t_target_addr);
 
-    uint16_t size(void);
+    uint16_t size();
     int get_number_of_clients(dev_addr_t t_target_addr);
+
+    std::size_t encodeTable(std::vector<routing_params_t>& t_src_vect, uint8_t* t_dest, std::size_t dest_len);
   };
 
-  std::size_t encodeTable(std::vector<routing_params_t>& t_src_vect, uint8_t* t_dest, std::size_t dest_len);
+
 }
 
