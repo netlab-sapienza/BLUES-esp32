@@ -140,13 +140,21 @@ int bemesh_core_write(bemesh_core_t* c, uint16_t conn_id, uint8_t *src, uint16_t
 int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id, uint8_t *dest, uint16_t len);
 
 // Install the handler for kernel events
-void bemesh_core_install_callback(bemesh_core_t *c, kernel_cb cb) {
-  c->handler_cb=cb;
+void bemesh_core_install_callback(bemesh_core_t *c, bemesh_kernel_evt_t evt, kernel_int_cb cb) {
+  if(evt>KERNEL_EVT_NUM) {
+    ESP_LOGW(TAG, "Warning: cannot install a callback for an unvalid event.");
+    return;
+  }
+  c->handler_cb[evt]=cb;
   return;
 }
 // Uninstall the handler for kernel events
-void bemesh_core_uninstall_callback(bemesh_core_t *c) {
-  c->handler_cb=NULL;
+void bemesh_core_uninstall_callback(bemesh_core_t *c, bemesh_kernel_evt_t evt) {
+  if(evt>KERNEL_EVT_NUM) {
+    ESP_LOGW(TAG, "Warning: cannot uninstall a callback for an unvalid event.");
+    return;
+  }
+  c->handler_cb[evt]=NULL;
   return;
 }
 
