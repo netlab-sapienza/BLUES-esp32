@@ -48,7 +48,6 @@ static void profile_inst_vect_init(gattc_profile_inst* p) {
   for(int i=0;i<GATTC_APP_PROFILE_INST_LEN;++i) {
     p[i].gattc_if=ESP_GATT_IF_NONE;
   }
-  return;
 }
 
 // We look for the bemesh digital service provided by the server
@@ -109,12 +108,10 @@ uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp
 void bemesh_gattc_handler_install_cb(bemesh_gattc_handler *h, kernel_cb cb, bemesh_evt_params_t *params) {
   h->core_cb=cb;
   h->core_cb_args=params;
-  return;
 }
 void bemesh_gattc_handler_uninstall_cb(bemesh_gattc_handler *h) {
   h->core_cb=NULL;
   h->core_cb_args=NULL;
-  return;
 }
 
 //TODO descr
@@ -137,7 +134,6 @@ void bemesh_gattc_handler_write(bemesh_gattc_handler *h, uint16_t conn_id,
   if(ret!=ESP_GATT_OK) {
     ESP_LOGW(TAG, "Warning: could not write characteristic, errcode=%d", ret);
   }
-  return;
 }
 
 // Event callbacks.
@@ -210,8 +206,8 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
     //TODO
     break;
   }
-  return;
-} 
+}
+
 static void app_reg_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   if(param->reg.status==ESP_GATT_OK) {
     h->profile_inst_vect[param->reg.app_id].gattc_if=gattc_if;					       
@@ -240,8 +236,6 @@ static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
 
   // Before going forward on copen_cb, reset the server validity flag
   h->server_valid_flag=false;
-
-  return;
 }
 
 // Connection opened callback
@@ -272,7 +266,6 @@ static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, be
     // after the service discovery complete event.
     //(*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
   }
-  return;
 }
 
 // MTU config done callback
@@ -284,8 +277,6 @@ static void cfg_mtu_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, 
   ESP_LOGI(TAG, "Starting search-service routine.");
   // Search for the bemesh service
   esp_ble_gattc_search_service(gattc_if, param->cfg_mtu.conn_id, &h->remote_filter_service_uuid);
-  //esp_ble_gattc_search_service(gattc_if, param->cfg_mtu.conn_id, NULL);
-  return;
 }
 
 // Search service callback
@@ -305,8 +296,7 @@ static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *par
     prof->service_end_handle=param->search_res.end_handle;
     ESP_LOGI(TAG, "Found UUID16: %X", srvc_id->id.uuid.uuid.uuid16);
   }
-  return;
-}
+  }
 
 static void search_serv_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   if(param->search_cmpl.status!=ESP_GATT_OK) {
@@ -369,12 +359,10 @@ static void search_serv_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t
       free(char_elem_res);
     }   
   }
-  return;
-}
+  }
 
 static void write_chr_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   ESP_LOGI(TAG, "Write characteristic complete.");
-  return;
 }
 
 static esp_bt_uuid_t notify_descr_uuid = {
@@ -444,16 +432,14 @@ static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
     // Please refer to copen_cb for cb_args constructions.
     (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
   }
-  return;
-}
+  }
 
 static void recv_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   if(param->notify.is_notify) {
-    ESP_LOGI(TAG, "Receivd notify.");
+    ESP_LOGI(TAG, "Received notify.");
   } else {
     ESP_LOGI(TAG, "Received indicate.");
   }
   esp_log_buffer_hex(TAG, param->notify.value, param->notify.value_len);
-  return;
 }
 

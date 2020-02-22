@@ -59,19 +59,12 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t *rsp_buffer,
 					    uint8_t srv_uuid_len);
 // Configure the operational mode on the gap handler h.
 void bemesh_gap_handler_mode(bemesh_gap_handler* h, uint8_t m);
-//TODO add docs
 int bemesh_gap_handler_start_scanning(bemesh_gap_handler* h, uint8_t timeout);
-//TODO add docs
 void bemesh_gap_handler_stop_scanning(bemesh_gap_handler* h);
-//TODO add docs
 uint8_t bemesh_gap_handler_scan_complete(bemesh_gap_handler* h);
-//TODO add docs
 int bemesh_gap_handler_start_advertising(bemesh_gap_handler* h);
-//TODO add docs
 void bemesh_gap_handler_stop_advertising(bemesh_gap_handler* h);
-//TODO add docs
 uint8_t bemesh_gap_handler_get_scan_res_len(bemesh_gap_handler* h);
-//TODO add docs
 bemesh_dev_t *bemesh_gap_handler_get_scan_res(bemesh_gap_handler* h);
 
 void bemesh_gap_handler_install_cb(bemesh_gap_handler *h, kernel_cb cb, bemesh_evt_params_t *params);

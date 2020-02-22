@@ -31,7 +31,7 @@ typedef union {
   // On incoming/outgoing/ connection/disconnection params
   struct conn_param {
     esp_bd_addr_t* remote_bda;
-    uint8_t conn_id;    
+    uint8_t conn_id;
   } conn;
 } bemesh_evt_params_t;
 /*
@@ -69,13 +69,8 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len);
  */
 uint8_t connect_to(esp_bd_addr_t bda);
 
-/*
- * Scan the environment
- * TODO
- */
+/* Scan the environment */
 void scan_environment(uint8_t timeout);
 
-/*
- * Get the device bda.
- */
+/* Get the device bda. */
 uint8_t *get_own_bda(void);

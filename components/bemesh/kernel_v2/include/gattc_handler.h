@@ -50,7 +50,6 @@ uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp
 
 void bemesh_gattc_handler_install_cb(bemesh_gattc_handler *h, kernel_cb cb, bemesh_evt_params_t *params);
 void bemesh_gattc_handler_uninstall_cb(bemesh_gattc_handler *h);
-//TODO descr
 void bemesh_gattc_handler_write(bemesh_gattc_handler *h, uint16_t conn_id,
 				uint8_t *data, uint16_t data_len, uint8_t resp);
 				
