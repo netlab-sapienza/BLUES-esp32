@@ -34,7 +34,6 @@ void core_peripheral_init(void) {
   esp_bt_controller_enable(ESP_BT_MODE_BLE);
   esp_bluedroid_init();
   esp_bluedroid_enable();
-  return;
 }
 
 static void log_own_bda(void) {
