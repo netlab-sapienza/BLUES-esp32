@@ -29,10 +29,11 @@ void server_routine(bemesh_core_t *core) {
   //   }
   //   bemesh_core_start_advertising(core);
   //   vTaskDelay(500);
+  // }
   if(bemesh_core_is_scanning(core)) {
     bemesh_core_stop_scanning(core);
   }
-  bemesh_core_start_advertising(core);  
+  bemesh_core_start_advertising(core);
   return;
 }
 void client_routine(bemesh_core_t *core) {
@@ -45,10 +46,12 @@ void client_routine(bemesh_core_t *core) {
   while(!bemesh_core_scan_complete(core)) {}
   uint8_t scan_res_len = bemesh_core_get_scan_result_len(core);
   if(!scan_res_len) {
+    printf("\nNo server found... launching server routine.\n");
     server_routine(core);
+  } else {
+    printf("\nFound a server, connecting...\n");
+    bemesh_core_connect(core, bemesh_core_get_scan_result(core)->bda);
   }
-  printf("\nFound a server, connecting...\n");
-  bemesh_core_connect(core, bemesh_core_get_scan_result(core)->bda);
   return;
 }
 

@@ -57,6 +57,7 @@ static void remote_filter_serv_uuid_init(esp_bt_uuid_t *r) {
   r->uuid.uuid16=GATTS_SERV_UUID;
 }
 
+// We look for the bemesh characteristic through this filter
 static void remote_filter_char_uuid_init(esp_bt_uuid_t *r) {
   r->len=ESP_UUID_LEN_16;
   r->uuid.uuid16=GATTS_CHAR_UUID;
@@ -344,8 +345,11 @@ static void search_serv_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t
 	if(char_elem_res[0].properties&ESP_GATT_CHAR_PROP_BIT_NOTIFY) {
 	  ESP_LOGI(TAG, "Requesting notify to the characteristic.");
 	  prof->char_handle=char_elem_res[0].char_handle;
-	  esp_ble_gattc_register_for_notify(gattc_if, prof->remote_bda,
-					    prof->char_handle);
+ 	  esp_err_t reg_notify_ret=esp_ble_gattc_register_for_notify(gattc_if, prof->remote_bda,
+								     char_elem_res[0].char_handle);
+	  if(reg_notify_ret!=ESP_OK) {
+	    ESP_LOGE(TAG, "Error: Could not register for notifies, errcode=%d", reg_notify_ret);
+	  }	  
 	}
       }
       free(char_elem_res);
@@ -371,8 +375,8 @@ static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
   }
   gattc_profile_inst* prof=__get_gattc_profile(gattc_if, h->profile_inst_vect);
   uint16_t conn_id=prof->conn_id;
-  //uint16_t notify_enable=1; // Enable notifies (not indicates.)
-  uint16_t notify_enable=1; // Enable indicates (not notifies.)
+  uint16_t notify_enable=1; // Enable notifies (not indicates.)
+  //uint16_t notify_enable=2; // Enable indicates (not notifies.)
   uint16_t count=0; // number of attributes found.
   esp_gatt_status_t ret=esp_ble_gattc_get_attr_count(gattc_if,
 						     conn_id,
@@ -420,6 +424,7 @@ static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
     // Please refer to copen_cb for cb_args constructions.
     (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
   }
+  return;
 }
 
 static void recv_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {

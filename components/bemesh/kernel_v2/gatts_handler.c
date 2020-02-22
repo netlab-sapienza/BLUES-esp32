@@ -5,6 +5,7 @@
 
 #include "esp_log.h"
 #include "gatts_handler.h"
+#include "esp_err.h"
 #include <string.h>
 
 static const char* TAG = "gatts_handler";
@@ -60,6 +61,9 @@ static void gatts_char_init(bemesh_gatts_handler *h) {
 }
 
 bemesh_gatts_handler *bemesh_gatts_handler_init(void) {
+  // SET LOGGING LEVEL TO DEBUG
+  esp_log_level_set(TAG, ESP_LOG_VERBOSE);
+  
   bemesh_gatts_handler *h=get_gatts1_ptr();
 
   // Install the gatts handler
@@ -102,7 +106,7 @@ void bemesh_gatts_handler_send_notify(bemesh_gatts_handler *h,
 					    char_handle,
 					    data_len,
 					    data,
-					    true); // false for notification, true for indicate
+					    false); // false for notification, true for indicate
   if(ret!=ESP_GATT_OK) {
     ESP_LOGE(TAG, "Error: could not send indicate, errcode=%d", ret);
   }
@@ -298,13 +302,12 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
   }
   // Generate a connection params struct for the new connection
   esp_ble_conn_update_params_t conn_params={0};
-  // Commented because it might lock successive connections.
   memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t)); // store bda
   conn_params.latency=0; 
   conn_params.max_int=0x30; // max_int = 0x30*1.25ms = 40ms
   conn_params.min_int=0x10; // min_int = 0x10*1.25ms = 20ms
   conn_params.timeout=400;  // timeout = 400*10ms  = 4000ms
-  ESP_LOGV(TAG, "Received new connection conn_id:%d, gatts_if:%d, from %02x.%02x.%02x.%02x.%02x.%02x",
+  ESP_LOGI(TAG, "Received new connection conn_id:%d, gatts_if:%d, from %02x.%02x.%02x.%02x.%02x.%02x",
 	   param->connect.conn_id, gatts_if, param->connect.remote_bda[0], param->connect.remote_bda[1],
 	   param->connect.remote_bda[2], param->connect.remote_bda[3], param->connect.remote_bda[4],
 	   param->connect.remote_bda[5]);
@@ -317,6 +320,7 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
   if(h->core_cb!=NULL) {
     // Fill the params struct.
     memcpy(h->core_cb_args->conn.remote_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+    h->core_cb_args->conn.conn_id=param->connect.conn_id;
     (*h->core_cb)(ON_INC_CONN, h->core_cb_args);
   }
   return;
@@ -375,13 +379,21 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
     // Check the data sent by the peer
     uint16_t descr_value=(param->write.value[1]<<8) | param->write.value[0];
     if(descr_value==0x01) {
-      ESP_LOGI(TAG, "Notify enabled.");
       uint8_t buf[15];
       for(int i=0;i<15;++i) {
 	buf[i]=i;
       }
-      esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, h->profile_inst.char_handle,
-				  15, buf, false);
+      esp_err_t ret=esp_ble_gatts_send_indicate(gatts_if,
+						param->write.conn_id,
+						h->profile_inst.char_handle,
+						15, buf, false);
+      if(ret!=ESP_OK) {
+	ESP_LOGE(TAG, "Error: could not send indicate, errcode=%d, %s",
+		 ret,
+		 esp_err_to_name(ret));
+      } else {
+	ESP_LOGI(TAG, "Notify enabled.");
+      }
     } else if(descr_value==0x02) {
       ESP_LOGI(TAG, "Indication enabled.");
       uint8_t buf[15];
@@ -428,6 +440,10 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
   esp_ble_gatts_set_attr_value(h->profile_inst.char_handle,
 			       param->write.len,
 			       param->write.value);
+  // TEST: Send a notification back to the client
+  /* esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, */
+  /* 			      h->profile_inst.char_handle, */
+  /* 			      param->write.len, param->write.value, false); */
   
   // Execute core handler callback
   if(h->core_cb!=NULL) {

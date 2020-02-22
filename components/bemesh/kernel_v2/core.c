@@ -48,9 +48,14 @@ static void log_own_bda(void) {
   return;
 }
 
-bemesh_core_t* bemesh_core_init(void) {
+bemesh_core_t* bemesh_core_init(void) {  
   core_peripheral_init();
   bemesh_core_t *core=get_core1_ptr();
+
+  // Setup core vars
+  core->outgoing_conn_len=0;
+  core->incoming_conn_len=0;
+    
   // Link the gatts_handler to core1 and initialize it
   core->gattsh=bemesh_gatts_handler_init();
   bemesh_gatts_handler_install_cb(core->gattsh, low_handlers_cb, &core->handler_cb_args);
@@ -149,7 +154,9 @@ void bemesh_core_uninstall_callback(bemesh_core_t *c) {
 // TEMP: use only for testing response op.
 static uint16_t __get_connid_from_bda(bda_id_tuple* arr,
 				      uint8_t len,
-				      uint8_t *bda) {
+				      uint8_t *bda,
+				      uint8_t *found) {
+  char alt_tag="conn_id finder";
   for(int i=0;i<len;++i) {
     uint8_t *remote_bda=arr[i].bda;
     int valid=true;
@@ -160,9 +167,11 @@ static uint16_t __get_connid_from_bda(bda_id_tuple* arr,
       }
     }
     if(valid) {
+      *found=true;
       return arr[i].conn_id;
     }      
   }
+  *found=false;  
   return 0;
 }
 
@@ -177,37 +186,52 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* para
   case ON_MSG_RECV:
     ESP_LOGI(TAG, "ON_MSG_RECV event, len:%d", params->recv.len);
     // start: testing response op.
+    ESP_LOGI(TAG, "Testing response op.");
+    uint8_t found_conn_id;
     uint16_t conn_id=__get_connid_from_bda(c->incoming_conn,
     					   c->incoming_conn_len,
-    					   params->recv.remote_bda);
-    bemesh_gatts_handler_send_notify(c->gattsh,
-    				     conn_id,
-    				     params->recv.payload,
-    				     params->recv.len);
-    ESP_LOGI(TAG, "Testing response op.");
-    // end: testing response op.
+    					   params->recv.remote_bda,
+					   &found_conn_id);
+    if(!found_conn_id) {
+      ESP_LOGE(TAG, "Could not find any conn_id associated with the given bda.");
+    } else {
+      bemesh_gatts_handler_send_notify(c->gattsh,
+				       conn_id,
+				       params->recv.payload,
+				       params->recv.len);
+    }
+    // end: testing response op.    
     break;
   case ON_INC_CONN:
     ESP_LOGI(TAG, "ON_INC_CONN event");
     entry=&c->incoming_conn[c->incoming_conn_len++];
     memcpy(entry->bda, params->conn.remote_bda, ESP_BD_ADDR_LEN);
     entry->conn_id=params->conn.conn_id;
+    ESP_LOGI(TAG, "Stored conn_id_bda_tuple: %d, %02X.%02X.%02X.%02X.%02X.%02X",
+	     entry->conn_id,
+	     entry->bda[0],
+	     entry->bda[1],
+	     entry->bda[2],
+	     entry->bda[3],
+	     entry->bda[4],
+	     entry->bda[5]);
     // start re-advertising:
     bemesh_core_start_advertising(c);
     break;
   case ON_OUT_CONN:
     ESP_LOGI(TAG, "ON_OUT_CONN event");
-    // start: testing write op.
-    ESP_LOGI(TAG, "Testing write op.");
+    
     uint8_t test_write_buf[4]={0xAB, 0xAD, 0xC0, 0xDE};
     entry=&c->outgoing_conn[c->outgoing_conn_len++];
     memcpy(entry->bda, params->conn.remote_bda, ESP_BD_ADDR_LEN);
     entry->conn_id=params->conn.conn_id;
-    /* bemesh_gattc_handler_write(get_core1_ptr()->gattch, */
-    /* 			       params->conn.conn_id, */
-    /* 			       test_write_buf, */
-    /* 			       4, */
-    /* 			       1); */
+    // start: testing write op.
+    ESP_LOGI(TAG, "Testing write op.");
+    bemesh_gattc_handler_write(get_core1_ptr()->gattch,
+    			       params->conn.conn_id,
+    			       test_write_buf,
+    			       4,
+    			       1);
     // end: testing write op
     break;
   case ON_DISCONN:
