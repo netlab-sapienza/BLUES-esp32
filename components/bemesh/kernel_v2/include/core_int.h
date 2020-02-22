@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "gap_device.h"
 
-#define KERNEL_EVT_NUM 3
+#define KERNEL_EVT_NUM 6
 typedef enum {
   ON_SCAN_END=0, // Scan end event
   ON_MSG_RECV=1, // Message recv event
@@ -44,6 +44,7 @@ int foo(bemesh_evt_params_t param) {
 
 // Kernel callback definition
 typedef void (*kernel_cb)(bemesh_kernel_evt_t evt, bemesh_evt_params_t* param);
+typedef void (*kernel_int_cb)(bemesh_evt_params_t* param);
 
 /*
  * Install the cb callback for the Event event.

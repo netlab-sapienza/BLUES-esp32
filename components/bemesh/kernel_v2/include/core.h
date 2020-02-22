@@ -49,7 +49,7 @@ typedef struct {
   uint8_t incoming_conn_len;
 
   // Callback to execute for upper layers.
-  kernel_cb handler_cb;
+  kernel_cb handler_cb[KERNEL_EVT_NUM];
   bemesh_evt_params_t handler_cb_args;
 } bemesh_core_t;
 
@@ -87,7 +87,7 @@ int bemesh_core_write(bemesh_core_t* c, uint16_t conn_id, uint8_t *src, uint16_t
 int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id, uint8_t *dest, uint16_t len);
 
 // Install the handler for kernel events
-void bemesh_core_install_callback(bemesh_core_t *c, kernel_cb cb);
+void bemesh_core_install_callback(bemesh_core_t *c, kernel_int_cb cb);
 // Uninstall the handler for kernel events
 void bemesh_core_uninstall_callback(bemesh_core_t *c);
 
