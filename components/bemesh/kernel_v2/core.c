@@ -182,65 +182,83 @@ static uint16_t __get_connid_from_bda(bda_id_tuple* arr,
   return 0;
 }
 
+/*
+ * Insert a new entry in the dest array
+ */
+static int insert_conn_entry(bda_id_tuple* dest, uint8_t* bda, uint16_t conn_id, uint8_t len) {
+  for(int i=0;i<len;++i) {
+    bda_id_tuple *entry=&dest[i];
+    if(entry->conn_id==CORE_UNUSED_CONN_ID) {
+      // Store the entry here
+      memcpy(entry->bda, bda, ESP_BD_ADDR_LEN);
+      entry->conn_id=conn_id;
+      return 0;
+    }
+  }
+  return 1;
+}
+/*
+ * Remove an entry from the dest array
+ */
+static int remove_conn_entry(bda_id_tuple* dest, uint8_t* bda, uint8_t len) {
+  for(int i=0;i<len;++i) {
+    bda_id_tuple *entry=&dest[i];
+    uint8_t *entry_bda=entry->bda;
+    uint8_t found=true;
+    for(int j=0;j<ESP_BD_ADDR_LEN;++j) {
+      if(entry_bda[j]!=bda[j]) {
+	found=false;
+	break;
+      }
+    }
+    if(found) {
+      // If the bda is found, clear the entry.
+      memset(entry_bda, 0, ESP_BD_ADDR_LEN);
+      entry->conn_id=CORE_UNUSED_CONN_ID;
+      return 0;
+    }
+  }
+  return 1;
+}
+
 // Handler for low level handlers. This callback should relaunch the higher level callbacks
 static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* params) {
   bemesh_core_t *c=get_core1_ptr();
   bda_id_tuple *entry=NULL;
+  int ret;
   switch(event) {
   case ON_SCAN_END:
     ESP_LOGI(TAG, "ON_SCAN_END event");
     break;
   case ON_MSG_RECV:
-    ESP_LOGI(TAG, "ON_MSG_RECV event, len:%d", params->recv.len);
-    // start: testing response op.
-    ESP_LOGI(TAG, "Testing response op.");
-    for(int i=0;i<c->incoming_conn_len;++i) {
-      ESP_LOGI(TAG, "Notifing data: %02X", *params->recv.payload);
-      uint16_t conn_id=c->incoming_conn[i].conn_id;
-      bemesh_gatts_handler_send_notify(c->gattsh,
-				       conn_id,
-				       params->recv.payload,
-				       params->recv.len);
-    }
-    // end: testing response op.    
+    ESP_LOGI(TAG, "ON_MSG_RECV event, len");
     break;
   case ON_INC_CONN:
     ESP_LOGI(TAG, "ON_INC_CONN event");
-    entry=&c->incoming_conn[c->incoming_conn_len++];
-    memcpy(entry->bda, params->conn.remote_bda, ESP_BD_ADDR_LEN);
-    entry->conn_id=params->conn.conn_id;
-    ESP_LOGI(TAG, "Stored conn_id_bda_tuple: %d, %02X.%02X.%02X.%02X.%02X.%02X",
-	     entry->conn_id,
-	     entry->bda[0],
-	     entry->bda[1],
-	     entry->bda[2],
-	     entry->bda[3],
-	     entry->bda[4],
-	     entry->bda[5]);
-    // start re-advertising:
-    bemesh_core_start_advertising(c);
+    // Store the new connection parameters in the incoming_conn buffer.
+    ret=insert_conn_entry(c->incoming_conn, (uint8_t*)params->conn.remote_bda,
+			  params->conn.conn_id, GATTS_MAX_CONNECTIONS);
+    if(ret) {
+      ESP_LOGE(TAG, "Error: could not insert the new entry in the core database.");
+    } else {
+      ++c->incoming_conn_len; // Increase the current number of connections.
+    }
     break;
   case ON_OUT_CONN:
     ESP_LOGI(TAG, "ON_OUT_CONN event");
-    
-    uint8_t test_write_buf[4]={0xAB, 0xAD, 0xC0, 0xDE};
-    entry=&c->outgoing_conn[c->outgoing_conn_len++];
-    memcpy(entry->bda, params->conn.remote_bda, ESP_BD_ADDR_LEN);
-    entry->conn_id=params->conn.conn_id;
-    // start: testing write op.
-    ESP_LOGI(TAG, "Testing write op.");
-    bemesh_gattc_handler_write(get_core1_ptr()->gattch,
-    			       params->conn.conn_id,
-    			       test_write_buf,
-    			       4,
-    			       1);
-    // end: testing write op
+    // Store the new connection parameters in the incoming_conn buffer.
+    ret=insert_conn_entry(c->outgoing_conn, (uint8_t*)params->conn.remote_bda,
+			  params->conn.conn_id, GATTC_MAX_CONNECTIONS);
+    if(ret) {
+      ESP_LOGE(TAG, "Error: could not insert the new entry in the core database.");
+    } else {
+      ++c->outgoing_conn_len; // Increase the current number of connections.
+    }    
     break;
   case ON_DISCONN:
     ESP_LOGI(TAG, "ON_DISCONN event");
     // TODO: Remove entry from outgoing_conn or incoming_conn
     // start re-advertising:
-    bemesh_core_start_advertising(c);
     break;
   case ON_READ_REQ:
     ESP_LOGI(TAG, "ON_READ_REQ event");
