@@ -200,11 +200,11 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
 	       param->write.status);
     }
     break;
-  /* case ESP_GATTC_NOTIFY_EVT: */
-  /*   // Receive notify. */
-  /*   ESP_LOGE(TAG, "ESP_GATTC_NOTIFY_EVT received."); */
-  /*   recv_notify_cb(gattc_if, param, h); */
-  /*   break; */
+  case ESP_GATTC_NOTIFY_EVT:
+     // Receive notify. */
+     ESP_LOGE(TAG, "ESP_GATTC_NOTIFY_EVT received.");
+     recv_notify_cb(gattc_if, param, h);
+    break;
   default:
     ESP_LOGW(TAG, "Warning: received unhandled evt %d", event);
     //TODO
@@ -249,14 +249,17 @@ static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, be
   if(param->open.status!=ESP_GATT_OK) {
     ESP_LOGE(TAG, "Error: open failed, errcode=%X", param->open.status);
   }
-  ESP_LOGI(TAG, "Open operation succesful. gattc_if:%d, conn_id:%d", gattc_if, param->connect.conn_id);
+  ESP_LOGI(TAG, "Open operation succesful. gattc_if:%d, conn_id:%d", gattc_if, param->open.conn_id);
   // Get the correct app profile.
   gattc_profile_inst *profile_inst=__get_gattc_profile(gattc_if, h->profile_inst_vect);
   // Copy the remote BDA
-  profile_inst->conn_id=param->connect.conn_id;
-  memcpy(profile_inst->remote_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+  profile_inst->conn_id=param->open.conn_id;
+  memcpy(profile_inst->remote_bda, param->open.remote_bda, sizeof(esp_bd_addr_t));
+  ESP_LOG_BUFFER_HEX(TAG,profile_inst->remote_bda,ESP_BD_ADDR_LEN);
+  ESP_LOG_BUFFER_HEX(TAG,param->open.remote_bda,ESP_BD_ADDR_LEN);
+  ESP_LOGI(TAG,"%d",(int) sizeof(esp_bd_addr_t));
   // Send local MTU to server
-  esp_err_t ret=esp_ble_gattc_send_mtu_req(gattc_if, param->connect.conn_id);
+  esp_err_t ret=esp_ble_gattc_send_mtu_req(gattc_if, param->open.conn_id);
   if(ret) {
     ESP_LOGE(TAG, "Error: could not config MTU, errcode=%X", ret);
   }
@@ -349,14 +352,18 @@ static void search_serv_cmpl_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t
 	ESP_LOGI(TAG, "Found the bemesh characteristic with UUID16: %04X", char_elem_res[0].uuid.uuid.uuid16);
 	//TODO: register for notifies.
 	// Check for notify propriety
-	if(char_elem_res[0].properties&ESP_GATT_CHAR_PROP_BIT_NOTIFY) {
+	if(char_elem_res[0].properties & ESP_GATT_CHAR_PROP_BIT_NOTIFY) {
 	  ESP_LOGI(TAG, "Requesting notify to the characteristic.");
 	  prof->char_handle=char_elem_res[0].char_handle;
  	  esp_err_t reg_notify_ret=esp_ble_gattc_register_for_notify(gattc_if, prof->remote_bda,
 								     char_elem_res[0].char_handle);
+ 	  ESP_LOG_BUFFER_HEX(TAG,prof->remote_bda,ESP_BD_ADDR_LEN);
 	  if(reg_notify_ret!=ESP_OK) {
-	    ESP_LOGE(TAG, "Error: Could not register for notifies, errcode=%d", reg_notify_ret);
-	  }	  
+            ESP_LOGE(TAG, "Error: Could not register for notifies, errcode=%d",
+                     reg_notify_ret);
+          }else{
+	    ESP_LOGI(TAG,"Registered notify");
+	  }
 	}
       }
       free(char_elem_res);
