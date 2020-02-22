@@ -158,7 +158,7 @@ static void recv_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *par
 static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
 			    esp_ble_gattc_cb_param_t *param) {
   bemesh_gattc_handler *h=get_gattc1_ptr();
-  //ESP_LOGI(TAG, "Received EVENT %02X, gattc_if: %02X", event, gattc_if);
+  ESP_LOGI(TAG, "Received EVENT %02X, gattc_if: %02X", event, gattc_if);
   switch(event) {
   case ESP_GATTC_REG_EVT:
     // New application is registered. (First event)
@@ -193,11 +193,18 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
     // Register to notify complete.
     reg_notify_cb(gattc_if, param, h);
     break;
-  case ESP_GATTC_NOTIFY_EVT:
-    // Receive notify.
-    ESP_LOGE(TAG, "ESP_GATTC_NOTIFY_EVT received.");
-    recv_notify_cb(gattc_if, param, h);
+  case ESP_GATTC_WRITE_DESCR_EVT:
+    // Write descriptor complete.
+    if(param->write.status!=ESP_GATT_OK) {
+      ESP_LOGE(TAG, "Error: could not write on the descriptor, errcode=%d",
+	       param->write.status);
+    }
     break;
+  /* case ESP_GATTC_NOTIFY_EVT: */
+  /*   // Receive notify. */
+  /*   ESP_LOGE(TAG, "ESP_GATTC_NOTIFY_EVT received."); */
+  /*   recv_notify_cb(gattc_if, param, h); */
+  /*   break; */
   default:
     ESP_LOGW(TAG, "Warning: received unhandled evt %d", event);
     //TODO
@@ -242,7 +249,7 @@ static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, be
   if(param->open.status!=ESP_GATT_OK) {
     ESP_LOGE(TAG, "Error: open failed, errcode=%X", param->open.status);
   }
-  ESP_LOGI(TAG, "Open operation succesful.");
+  ESP_LOGI(TAG, "Open operation succesful. gattc_if:%d, conn_id:%d", gattc_if, param->connect.conn_id);
   // Get the correct app profile.
   gattc_profile_inst *profile_inst=__get_gattc_profile(gattc_if, h->profile_inst_vect);
   // Copy the remote BDA
@@ -372,12 +379,15 @@ static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
   if(param->reg_for_notify.status!=ESP_GATT_OK) {
     ESP_LOGE(TAG, "Error: could not register for notify, status=%d",
 	     param->reg_for_notify.status);
+    return;
   }
   gattc_profile_inst* prof=__get_gattc_profile(gattc_if, h->profile_inst_vect);
   uint16_t conn_id=prof->conn_id;
   uint16_t notify_enable=1; // Enable notifies (not indicates.)
   //uint16_t notify_enable=2; // Enable indicates (not notifies.)
   uint16_t count=0; // number of attributes found.
+  ESP_LOGI(TAG, "Initializing notify registering proc. gattc_if:%d, conn_id:%d",
+	   gattc_if, conn_id);
   esp_gatt_status_t ret=esp_ble_gattc_get_attr_count(gattc_if,
 						     conn_id,
 						     ESP_GATT_DB_DESCRIPTOR,
@@ -399,6 +409,9 @@ static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
 					       notify_descr_uuid,
 					       descr_elem_res,
 					       &count);
+    if(ret!=ESP_GATT_OK) {
+      ESP_LOGE(TAG, "esp_ble_gattc_get_descr_by_char_handle failed.");
+    }
     if(count>0 && descr_elem_res[0].uuid.len==ESP_UUID_LEN_16 &&
        descr_elem_res[0].uuid.uuid.uuid16==ESP_GATT_UUID_CHAR_CLIENT_CONFIG) {
       // Write on the client config descriptor.

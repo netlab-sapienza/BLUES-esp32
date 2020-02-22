@@ -187,14 +187,23 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* para
     ESP_LOGI(TAG, "ON_MSG_RECV event, len:%d", params->recv.len);
     // start: testing response op.
     ESP_LOGI(TAG, "Testing response op.");
-    uint8_t found_conn_id;
-    uint16_t conn_id=__get_connid_from_bda(c->incoming_conn,
-    					   c->incoming_conn_len,
-    					   params->recv.remote_bda,
-					   &found_conn_id);
-    if(!found_conn_id) {
-      ESP_LOGE(TAG, "Could not find any conn_id associated with the given bda.");
-    } else {
+    
+    /* uint8_t found_conn_id; */
+    /* uint16_t conn_id=__get_connid_from_bda(c->incoming_conn, */
+    /* 					   c->incoming_conn_len, */
+    /* 					   params->recv.remote_bda, */
+    /* 					   &found_conn_id); */
+    /* if(!found_conn_id) { */
+    /*   ESP_LOGE(TAG, "Could not find any conn_id associated with the given bda."); */
+    /* } else { */
+    /*   bemesh_gatts_handler_send_notify(c->gattsh, */
+    /* 				       conn_id, */
+    /* 				       params->recv.payload, */
+    /* 				       params->recv.len); */
+    /* } */
+    for(int i=0;i<c->incoming_conn_len;++i) {
+      ESP_LOGI(TAG, "Notifing data: %02X", *params->recv.payload);
+      uint16_t conn_id=c->incoming_conn[i].conn_id;
       bemesh_gatts_handler_send_notify(c->gattsh,
 				       conn_id,
 				       params->recv.payload,
@@ -236,6 +245,7 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* para
     break;
   case ON_DISCONN:
     ESP_LOGI(TAG, "ON_DISCONN event");
+    // TODO: Remove entry from outgoing_conn or incoming_conn
     // start re-advertising:
     bemesh_core_start_advertising(c);
     break;

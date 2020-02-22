@@ -454,7 +454,7 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
     esp_ble_gatts_get_attr_value(h->profile_inst.char_handle,
 				 &payload_len,
 				 (const uint8_t**)&payload_ptr);
-    h->core_cb_args->recv.payload=payload_ptr;
+    h->core_cb_args->recv.payload=param->write.value;
     h->core_cb_args->recv.len=param->write.len;
     (*h->core_cb)(ON_MSG_RECV, h->core_cb_args);
   }  
