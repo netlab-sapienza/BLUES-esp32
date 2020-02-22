@@ -139,11 +139,9 @@ public:
    * @param params
    */
   void on_incoming_connection(bemesh_evt_params_t *params) {
-    // TODO
-    if (routingTable.get_number_of_clients(get_own_bda()) <
+    if (routingTable.get_number_of_clients(bemesh::to_dev_addr(get_own_bda())) <
         GATTS_MAX_CONNECTIONS) {
-      auto device = new bemesh::dev_addr_t(
-          params->conn.remote_bda); // TODO check the cast
+      auto device = bemesh::to_dev_addr((uint8_t *)params->conn.remote_bda);
       uint8_t t_num_hops = 0;
       uint8_t t_flag = bemesh::Reachable;
       routingTable.insert(device, device, t_num_hops, t_flag);
