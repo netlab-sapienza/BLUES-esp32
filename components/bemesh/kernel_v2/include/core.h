@@ -24,6 +24,7 @@
  * bda_id_tuple represent the pair <remote_bda,conn_id> where the conn_id 
  * may represent a incoming connection or outgoing connection.
  */
+#define CORE_UNUSED_CONN_ID 255
 typedef struct {
   esp_bd_addr_t bda;
   uint16_t conn_id;
