@@ -61,8 +61,8 @@ static void gatts_char_init(bemesh_gatts_handler *h) {
 }
 
 bemesh_gatts_handler *bemesh_gatts_handler_init(void) {
-  // SET LOGGING LEVEL TO DEBUG
-  esp_log_level_set(TAG, ESP_LOG_VERBOSE);
+  // SET LOGGING LEVEL TO WARNING
+  esp_log_level_set(TAG, ESP_LOG_WARN);
   
   bemesh_gatts_handler *h=get_gatts1_ptr();
 
@@ -379,29 +379,9 @@ static void _write_characteristic(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param
     // Check the data sent by the peer
     uint16_t descr_value=(param->write.value[1]<<8) | param->write.value[0];
     if(descr_value==0x01) {
-      uint8_t buf[15];
-      for(int i=0;i<15;++i) {
-	buf[i]=i;
-      }
-      esp_err_t ret=esp_ble_gatts_send_indicate(gatts_if,
-						param->write.conn_id,
-						h->profile_inst.char_handle,
-						15, buf, false);
-      if(ret!=ESP_OK) {
-	ESP_LOGE(TAG, "Error: could not send indicate, errcode=%d, %s",
-		 ret,
-		 esp_err_to_name(ret));
-      } else {
-	ESP_LOGI(TAG, "Notify enabled.");
-      }
+      ESP_LOGI(TAG, "Notify enabled.");
     } else if(descr_value==0x02) {
       ESP_LOGI(TAG, "Indication enabled.");
-      uint8_t buf[15];
-      for(int i=0;i<15;++i) {
-	buf[i]=i;
-      }
-      esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, h->profile_inst.char_handle,
-				  15, buf, true);
     } else if(descr_value==0x00) {
       ESP_LOGI(TAG, "Notify/indications disabled.");
     } else {

@@ -124,7 +124,7 @@ uint8_t bemesh_core_is_advertising(bemesh_core_t* c) {
  */
 int bemesh_core_connect(bemesh_core_t* c, esp_bd_addr_t bda) {
   // Obfuscate gatts connection event handler
-  ESP_LOGW(TAG, "Obfuscating gatts");
+  ESP_LOGV(TAG, "Obfuscating gatts");
   c->gattsh->flags|=O_IGNCONN;
   int ret=bemesh_gattc_open(c->gattch, bda, 0);
   return ret;
@@ -187,20 +187,6 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* para
     ESP_LOGI(TAG, "ON_MSG_RECV event, len:%d", params->recv.len);
     // start: testing response op.
     ESP_LOGI(TAG, "Testing response op.");
-    
-    /* uint8_t found_conn_id; */
-    /* uint16_t conn_id=__get_connid_from_bda(c->incoming_conn, */
-    /* 					   c->incoming_conn_len, */
-    /* 					   params->recv.remote_bda, */
-    /* 					   &found_conn_id); */
-    /* if(!found_conn_id) { */
-    /*   ESP_LOGE(TAG, "Could not find any conn_id associated with the given bda."); */
-    /* } else { */
-    /*   bemesh_gatts_handler_send_notify(c->gattsh, */
-    /* 				       conn_id, */
-    /* 				       params->recv.payload, */
-    /* 				       params->recv.len); */
-    /* } */
     for(int i=0;i<c->incoming_conn_len;++i) {
       ESP_LOGI(TAG, "Notifing data: %02X", *params->recv.payload);
       uint16_t conn_id=c->incoming_conn[i].conn_id;
