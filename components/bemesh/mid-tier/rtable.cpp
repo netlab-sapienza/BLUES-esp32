@@ -8,6 +8,12 @@
 #include <cstring>
 
 namespace bemesh {
+  // Conversion from uint8_t* to dev_addr_t
+  dev_addr_t to_dev_addr(uint8_t *data) {
+    dev_addr_t new_addr;
+    memcpy((void*)new_addr.data(), data, DEV_ADDR_LEN);
+    return new_addr;
+  }
 
   int printDevAddr(char* buf, const dev_addr_t& addr) {
     int wb=0;

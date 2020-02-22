@@ -14,6 +14,7 @@
 namespace bemesh {
   #define DEV_ADDR_LEN 6
   typedef std::array<uint8_t, DEV_ADDR_LEN> dev_addr_t;
+  dev_addr_t to_dev_addr(uint8_t *data);
 
   enum RoutingFlags {
     Reachable=0x01,
