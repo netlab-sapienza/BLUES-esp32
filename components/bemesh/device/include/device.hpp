@@ -94,7 +94,7 @@ public:
   bool isConnected() const;
   void setConnected(bool newConnected);
   uint8_t getTimeoutSec() const;
-  const bemesh::Router &getRouter() const;
+  bemesh::Router getRouter() const;
 };
 
 #endif // ESP32_BLE_MESH_DEVICE_HPP

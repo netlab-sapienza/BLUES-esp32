@@ -55,4 +55,4 @@ void Device::setConnected(bool newConnected) {
   Device::connected = newConnected;
 }
 uint8_t Device::getTimeoutSec() const { return timeout_sec; }
-const bemesh::Router &Device::getRouter() const { return router; }
+bemesh::Router Device::getRouter() const { return router; }

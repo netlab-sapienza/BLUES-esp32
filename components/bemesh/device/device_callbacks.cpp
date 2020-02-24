@@ -23,7 +23,7 @@ void on_scan_completed(bemesh_evt_params_t *params) {
 
   for (int i = 0; !instance.isConnected() && i < list_length;
        i++, *target = device_list[i + 1])
-    instance.setConnected(connect_to_server(*target));
+    instance.setConnected(instance.connect_to_server(*target));
 
   if (instance.isConnected())
     instance.client_routine();
