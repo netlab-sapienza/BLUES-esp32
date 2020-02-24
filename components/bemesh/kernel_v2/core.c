@@ -35,7 +35,7 @@ static void low_handlers_cb(bemesh_kernel_evt_t event,
 void core_peripheral_init(void) {
   ESP_ERROR_CHECK(nvs_flash_init());
   ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
-  esp_bt_controller_config_t bt_cfg=BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+  esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
   esp_bt_controller_init(&bt_cfg);
   esp_bt_controller_enable(ESP_BT_MODE_BLE);
   esp_bluedroid_init();
@@ -44,10 +44,10 @@ void core_peripheral_init(void) {
 
 static void log_own_bda(void) {
   char buf[64];
-  int wb=sprintf(buf, "Initializing device's core with BDA: ");
-  const uint8_t* bda=bemesh_core_get_bda(get_core1_ptr());
-  for(int i=0;i<ESP_BD_ADDR_LEN; ++i) {
-    wb+=sprintf(buf+wb, "%02X.", bda[i]);
+  int wb = sprintf(buf, "Initializing device's core with BDA: ");
+  const uint8_t* bda = bemesh_core_get_bda(get_core1_ptr());
+  for (int i = 0; i < ESP_BD_ADDR_LEN; ++i) {
+    wb += sprintf(buf+wb, "%02X.", bda[i]);
   }
   ESP_LOGI(TAG, "%s", buf);
   return;
@@ -173,6 +173,7 @@ int bemesh_core_write(bemesh_core_t* c,
 // TODO(Andrea): Add descr
 int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id,
                      uint8_t *dest, uint16_t len) {
+  return 0;
   // TODO(Emanuele): Complete the function.
 }
 

@@ -12,13 +12,13 @@
 #include "esp_gatt_defs.h" // GATT definitions.
 
 // GAP/GATT handlers.
-#include "include/gap_handler.h"
-#include "include/gatts_handler.h"
-#include "include/gattc_handler.h"
-#include "include/gatt_def.h"
+#include "gap_handler.h"
+#include "gatts_handler.h"
+#include "gattc_handler.h"
+#include "gatt_def.h"
 
 // Core Interface
-#include "include/core_int.h"
+#include "core_int.h"
 
 /*
  * bda_id_tuple represent the pair <remote_bda,conn_id> where the conn_id 
