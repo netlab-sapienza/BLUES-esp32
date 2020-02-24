@@ -41,8 +41,7 @@ public:
    * @param device_list list of the devices found in the scan
    * @return the first element of the list
    */
-  bemesh_dev_t *select_device_to_connect(bemesh_dev_t *device_list,
-                                                int length);
+  bemesh_dev_t *select_device_to_connect(bemesh_dev_t *device_list, int length);
 
   /**
    * Launcher function of the device
@@ -85,7 +84,7 @@ public:
    * @return
    */
   static Device &getInstance() {
-    Device instance = Device();
+    static Device instance = Device();
     return instance;
   }
 
