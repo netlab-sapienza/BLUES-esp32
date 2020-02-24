@@ -90,9 +90,9 @@ public:
   }
 
   Role getRole() const;
-  void setRole(Role role);
+  void setRole(Role newRole);
   bool isConnected() const;
-  void setConnected(bool connected);
+  void setConnected(bool newConnected);
   uint8_t getTimeoutSec() const;
   const bemesh::Router &getRouter() const;
 };
