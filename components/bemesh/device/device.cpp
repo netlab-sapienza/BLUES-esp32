@@ -130,14 +130,14 @@ public:
    *
    */
   void on_message_received(bemesh_evt_params_t *params) {
-    esp_bd_addr_t *sender = params->recv.remote_bda;
+    auto sender = bemesh::to_dev_addr((uint8_t*) params->recv.remote_bda);
     uint8_t *payload = params->recv.payload;
     uint16_t payload_len = params->recv.len;
 
-    // TODO message reader
-    bemesh::MessageHandler handler = bemesh::MessageHandler();
-    handler.read(payload);
-    handler.handle();
+//    // TODO message reader
+//    bemesh::MessageHandler handler = bemesh::MessageHandler();
+//    handler.read(payload);
+//    handler.handle();
   }
 
   /**
