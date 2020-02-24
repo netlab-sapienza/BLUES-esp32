@@ -50,7 +50,7 @@ typedef struct {
   uint8_t incoming_conn_len;
 
   // Callback to execute for upper layers.
-  kernel_cb handler_cb[KERNEL_EVT_NUM];
+  kernel_int_cb handler_cb[KERNEL_EVT_NUM];
   bemesh_evt_params_t handler_cb_args;
 } bemesh_core_t;
 

@@ -26,9 +26,11 @@
 /*
  * GATT-Client (GATTC)
  */
-#define GATTC_APP_ID 1
+#define GATTC_APP1_ID 0
+#define GATTC_APP2_ID 1
+#define GATTC_APP3_ID 2
 #define GATTC_MTU_SIZE 256
-#define GATTC_APP_PROFILE_INST_LEN 4
+#define GATTC_APP_PROFILE_INST_LEN 3
 #define GATTC_MAX_CONNECTIONS 0x03 // Maximum outgoing connections possible.(server)
 
 #if GATTS_MAX_CONNECTIONS + GATTC_MAX_CONNECTIONS > GATT_MAX_CONNECTIONS

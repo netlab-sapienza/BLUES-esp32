@@ -34,10 +34,6 @@ typedef struct bemesh_gattc_handler {
   esp_bt_uuid_t remote_filter_service_uuid;
   esp_bt_uuid_t remote_filter_char_uuid;
 
-  // Flag to indicate if server is valid
-  // a server is valid iff it contains a specific service.
-  uint8_t server_valid_flag;
-
   // Callback to pass events to the core lib.
   kernel_cb core_cb;
   // It will rely on params struct built inside the core.

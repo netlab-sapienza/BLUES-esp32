@@ -39,7 +39,7 @@ void core_peripheral_init(void) {
 static void log_own_bda(void) {
   char buf[64];
   int wb=sprintf(buf, "Initializing device's core with BDA: ");
-  uint8_t* bda=bemesh_core_get_bda(get_core1_ptr());
+  const uint8_t* bda=bemesh_core_get_bda(get_core1_ptr());
   for(int i=0;i<ESP_BD_ADDR_LEN; ++i) {
     wb+=sprintf(buf+wb, "%02X.", bda[i]);
   }
@@ -54,6 +54,15 @@ bemesh_core_t* bemesh_core_init(void) {
   // Setup core vars
   core->outgoing_conn_len=0;
   core->incoming_conn_len=0;
+  for (int i = 0; i < KERNEL_EVT_NUM; ++i) {
+    core->handler_cb[i]=NULL;
+  }
+  for (int i = 0; i < GATTC_MAX_CONNECTIONS; ++i) {
+    core->outgoing_conn[i].conn_id=CORE_UNUSED_CONN_ID;
+  }
+  for (int i = 0; i < GATTS_MAX_CONNECTIONS; ++i) {
+    core->incoming_conn[i].conn_id=CORE_UNUSED_CONN_ID;
+  }
     
   // Link the gatts_handler to core1 and initialize it
   core->gattsh=bemesh_gatts_handler_init();
@@ -158,30 +167,6 @@ void bemesh_core_uninstall_callback(bemesh_core_t *c, bemesh_kernel_evt_t evt) {
   return;
 }
 
-// TEMP: use only for testing response op.
-static uint16_t __get_connid_from_bda(bda_id_tuple* arr,
-				      uint8_t len,
-				      uint8_t *bda,
-				      uint8_t *found) {
-  char alt_tag="conn_id finder";
-  for(int i=0;i<len;++i) {
-    uint8_t *remote_bda=arr[i].bda;
-    int valid=true;
-    for(int j=0;j<ESP_BD_ADDR_LEN;++j) {
-      if(bda[j]!=remote_bda[j]) {
-	valid=false;
-	break;
-      }
-    }
-    if(valid) {
-      *found=true;
-      return arr[i].conn_id;
-    }      
-  }
-  *found=false;  
-  return 0;
-}
-
 /*
  * Insert a new entry in the dest array
  */
@@ -222,9 +207,8 @@ static int remove_conn_entry(bda_id_tuple* dest, uint8_t* bda, uint8_t len) {
 }
 
 // Handler for low level handlers. This callback should relaunch the higher level callbacks
-static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* params) {
+static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *params) {
   bemesh_core_t *c=get_core1_ptr();
-  bda_id_tuple *entry=NULL;
   int ret;
   switch(event) {
   case ON_SCAN_END:
@@ -236,8 +220,10 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* para
   case ON_INC_CONN:
     ESP_LOGI(TAG, "ON_INC_CONN event");
     // Store the new connection parameters in the incoming_conn buffer.
+    ESP_LOGI(TAG, "Preparing to insert new connection entry.");
     ret=insert_conn_entry(c->incoming_conn, (uint8_t*)params->conn.remote_bda,
-			  params->conn.conn_id, GATTS_MAX_CONNECTIONS);
+    			  params->conn.conn_id, GATTS_MAX_CONNECTIONS);
+    ESP_LOGI(TAG, "Done.");
     if(ret) {
       ESP_LOGE(TAG, "Error: could not insert the new entry in the core database.");
     } else {
@@ -257,12 +243,18 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* para
     break;
   case ON_DISCONN:
     ESP_LOGI(TAG, "ON_DISCONN event");
-    // TODO: Remove entry from outgoing_conn or incoming_conn
-    // start re-advertising:
+    // In theory the same bda cannot live both in outgoing_conn and incoming_conn
+    // hence try to remove the entry on both arrays.
+    remove_conn_entry(c->outgoing_conn, (uint8_t *)params->conn.remote_bda, GATTC_MAX_CONNECTIONS);
+    remove_conn_entry(c->incoming_conn, (uint8_t *)params->conn.remote_bda, GATTS_MAX_CONNECTIONS);
     break;
   case ON_READ_REQ:
     ESP_LOGI(TAG, "ON_READ_REQ event");
     break;
+  }
+  // After that, launch the higher level callback.
+  if(c->handler_cb[event]!=NULL) {
+    (*c->handler_cb[event])(params);
   }
 }
 

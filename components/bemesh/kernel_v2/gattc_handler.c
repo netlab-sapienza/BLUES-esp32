@@ -64,14 +64,13 @@ static void remote_filter_char_uuid_init(esp_bt_uuid_t *r) {
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
   // SET LOGGING LEVEL TO WARNING
-  esp_log_level_set(TAG, ESP_LOG_WARN);
+  //  esp_log_level_set(TAG, ESP_LOG_WARN);
   
   bemesh_gattc_handler *h=get_gattc1_ptr();
   // Initialize the app profile vect.
   profile_inst_vect_init(h->profile_inst_vect);
 
   // Set gattc_handler vars
-  h->server_valid_flag=false;
   remote_filter_serv_uuid_init(&h->remote_filter_service_uuid);
   remote_filter_char_uuid_init(&h->remote_filter_char_uuid);
 
@@ -82,7 +81,9 @@ bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
   esp_ble_gatt_set_local_mtu(GATTC_MTU_SIZE);
 
   // Install the app profile.
-  esp_ble_gattc_app_register(GATTC_APP_ID);  
+  esp_ble_gattc_app_register(GATTC_APP1_ID);
+  esp_ble_gattc_app_register(GATTC_APP2_ID);
+  esp_ble_gattc_app_register(GATTC_APP3_ID);
   return h;  
 }
 
@@ -141,7 +142,6 @@ void bemesh_gattc_handler_write(bemesh_gattc_handler *h, uint16_t conn_id,
 
 // Event callbacks.
 static void app_reg_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
-static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void cfg_mtu_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
 static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h);
@@ -163,11 +163,6 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
     // New application is registered. (First event)
     app_reg_cb(gattc_if, param, h);
     break;
-    /* Not handling connection event as it creates collisions with connect event in gatts */
-    //case ESP_GATTC_CONNECT_EVT:
-    // Connection established with a new server
-    //connection_cb(gattc_if, param, h);
-    //  break;
   case ESP_GATTC_OPEN_EVT:
     // Connection opened with a server
     copen_cb(gattc_if, param, h);
@@ -222,29 +217,11 @@ static void app_reg_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, 
   }
 }
 
-// Connection happening callback
-static void connection_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
-  ESP_LOGI(TAG, "Connection event: conn_id: %d, if %d",
-	   param->connect.conn_id, gattc_if);
-  // Get the correct app profile.
-  gattc_profile_inst *profile_inst=__get_gattc_profile(gattc_if, h->profile_inst_vect);
-  // Copy the remote BDA
-  profile_inst->conn_id=param->connect.conn_id;
-  memcpy(profile_inst->remote_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
-  // Send local MTU to server
-  esp_err_t ret=esp_ble_gattc_send_mtu_req(gattc_if, param->connect.conn_id);
-  if(ret) {
-    ESP_LOGE(TAG, "Error: could not config MTU, errcode=%X", ret);
-  }
-
-  // Before going forward on copen_cb, reset the server validity flag
-  h->server_valid_flag=false;
-}
-
 // Connection opened callback
 static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   if(param->open.status!=ESP_GATT_OK) {
     ESP_LOGE(TAG, "Error: open failed, errcode=%X", param->open.status);
+    return;
   }
   ESP_LOGI(TAG, "Open operation succesful. gattc_if:%d, conn_id:%d", gattc_if, param->open.conn_id);
   // Get the correct app profile.
@@ -284,7 +261,7 @@ static void cfg_mtu_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, 
 
 // Search service callback
 static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
-  esp_gatt_srvc_id_t *srvc_id=&param->search_res.srvc_id;
+  esp_gatt_srvc_id_t *srvc_id=(esp_gatt_srvc_id_t *)&param->search_res.srvc_id;
   ESP_LOGI(TAG, "Search res: conn_id:%d, is_primary:%d", param->search_res.conn_id,
 	   param->search_res.is_primary);
    
@@ -292,7 +269,6 @@ static void search_serv_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *par
   if(srvc_id->id.uuid.len==h->remote_filter_service_uuid.len &&
      srvc_id->id.uuid.uuid.uuid16==h->remote_filter_service_uuid.uuid.uuid16) {
     // Validity of the server confirmed.
-    h->server_valid_flag=true;
     gattc_profile_inst* prof=__get_gattc_profile(gattc_if, h->profile_inst_vect);
     // Setup start and end handle, used to get characteristics
     prof->service_start_handle=param->search_res.start_handle;

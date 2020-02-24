@@ -24,13 +24,13 @@ typedef union {
   } scan;
   // On message receive params
   struct message_recv_param {
-    esp_bd_addr_t* remote_bda;
+    esp_bd_addr_t remote_bda;
     uint8_t* payload;
     uint16_t len;
   } recv;
   // On incoming/outgoing/ connection/disconnection params
   struct conn_param {
-    esp_bd_addr_t* remote_bda;
+    esp_bd_addr_t remote_bda;
     uint8_t conn_id;
   } conn;
 } bemesh_evt_params_t;
@@ -43,8 +43,8 @@ int foo(bemesh_evt_params_t param) {
 */
 
 // Kernel callback definition
-typedef void (*kernel_cb)(bemesh_kernel_evt_t evt, bemesh_evt_params_t* param);
-typedef void (*kernel_int_cb)(bemesh_evt_params_t* param);
+typedef void (*kernel_cb)(bemesh_kernel_evt_t evt, bemesh_evt_params_t *param);
+typedef void (*kernel_int_cb)(bemesh_evt_params_t *param);
 
 /*
  * Install the cb callback for the Event event.
@@ -77,6 +77,14 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len);
  * @return 0 if no error occurred
  */
 uint8_t connect_to(esp_bd_addr_t bda);
+
+/**
+ * Disconnect from a connected device with bda
+ *
+ * @param bda address of the remote device.
+ * @return 0 if no error occurred.
+ */
+uint8_t disconnect_from(esp_bd_addr_t bda);
 
 /**
  * Scan the environment

@@ -127,7 +127,7 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
 					    uint8_t *srv_uuid_buffer,
 					    uint8_t srv_uuid_len) {
   // SET LOGGING LEVEL TO WARNING
-  esp_log_level_set(TAG, ESP_LOG_WARN);
+  //esp_log_level_set(TAG, ESP_LOG_WARN);
   
   // set callback function
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(bemesh_gap_cb));
@@ -192,6 +192,8 @@ int bemesh_gap_handler_start_scanning(bemesh_gap_handler* h, uint8_t timeout) {
     ESP_LOGE(TAG, "Error: could not start scan proc. The module is advertising");
     return -1;
   }
+  // Reset the number of found devices.
+  h->found_devs = 0;
   // Start scanning proc. and set the correct flag
   esp_ble_gap_start_scanning(timeout);
   h->flags&=~O_SCNCMPL; // Reset the scan complete flag.
@@ -433,6 +435,8 @@ static void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h)
   } else if(param->scan_rst.search_evt==ESP_GAP_SEARCH_INQ_CMPL_EVT) {
     // set scan complete flag
     h->flags|=O_SCNCMPL;
+    // clear scanning flag.
+    h->flags&=~O_SCN;
     ESP_LOGI(TAG, "Scan procedure terminated.");
     // Launch core callback handler
     // setup the params
