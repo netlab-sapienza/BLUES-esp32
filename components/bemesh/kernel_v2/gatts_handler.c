@@ -62,7 +62,7 @@ static void gatts_char_init(bemesh_gatts_handler *h) {
 
 bemesh_gatts_handler *bemesh_gatts_handler_init(void) {
   // SET LOGGING LEVEL TO WARNING
-  esp_log_level_set(TAG, ESP_LOG_WARN);
+  //esp_log_level_set(TAG, ESP_LOG_WARN);
   
   bemesh_gatts_handler *h=get_gatts1_ptr();
 
@@ -319,8 +319,11 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
   // Execute core handler callback
   if(h->core_cb!=NULL) {
     // Fill the params struct.
-    memcpy(h->core_cb_args->conn.remote_bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+    ESP_LOGI(TAG, "Copying remote bda into params.");
+    memcpy(h->core_cb_args->conn.remote_bda, param->connect.remote_bda, ESP_BD_ADDR_LEN);
+    ESP_LOGI(TAG, "Copying conn_id bda into params.");
     h->core_cb_args->conn.conn_id=param->connect.conn_id;
+    ESP_LOGI(TAG, "Launching callback.");
     (*h->core_cb)(ON_INC_CONN, h->core_cb_args);
   }
   return;

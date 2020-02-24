@@ -37,7 +37,7 @@ else()
   #add_library(BemeshMessages bemesh_messages_v2.cpp)
   #target_include_directories(BemeshMessages PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-  add_library(Routing rtable.cpp routing.cpp bemesh_messages_v2.cpp message_handler_v2.cpp)
+  add_library(Routing rtable.cpp routing.cpp bemesh_messages_v2.cpp message_handler_v2.cpp ../device/include/device_callbacks.hpp ../device/device_callbacks.cpp)
   target_include_directories(Routing PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
   #add_library(MessageHandler message_handler_v2.cpp)
