@@ -19,8 +19,9 @@
 
 
 typedef struct gattc_profile_inst {
-  //esp_gattc_cb_t gattc_cb; // No gattc_cb. All profiles will share the same handler.
-  uint16_t gattc_if; 
+  // No gattc_cb. All profiles will share the same handler.
+  // esp_gattc_cb_t gattc_cb;
+  uint16_t gattc_if;
   uint16_t app_id;
   uint16_t conn_id;
   uint16_t service_start_handle;
@@ -45,11 +46,16 @@ typedef struct bemesh_gattc_handler {
 } bemesh_gattc_handler;
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void);
-// Open connection with a remote device. Returns -1 if no free gatt intefaces are available
-uint8_t bemesh_gattc_open(bemesh_gattc_handler* h, esp_bd_addr_t remote_bda, esp_ble_addr_type_t remote_addr_type);
+// Open connection with a remote device.
+// Returns -1 if no free gatt intefaces are available
+uint8_t bemesh_gattc_open(bemesh_gattc_handler* h,
+                          esp_bd_addr_t remote_bda,
+                          esp_ble_addr_type_t remote_addr_type);
 
-void bemesh_gattc_handler_install_cb(bemesh_gattc_handler *h, kernel_cb cb, bemesh_evt_params_t *params);
+void bemesh_gattc_handler_install_cb(bemesh_gattc_handler *h,
+                                     kernel_cb cb, bemesh_evt_params_t *params);
+
 void bemesh_gattc_handler_uninstall_cb(bemesh_gattc_handler *h);
+
 void bemesh_gattc_handler_write(bemesh_gattc_handler *h, uint16_t conn_id,
-				uint8_t *data, uint16_t data_len, uint8_t resp);
-				
+                                uint8_t *data, uint16_t data_len, uint8_t resp);

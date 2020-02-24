@@ -12,13 +12,13 @@
 #include "esp_gatt_defs.h" // GATT definitions.
 
 // GAP/GATT handlers.
-#include "gap_handler.h"
-#include "gatts_handler.h"
-#include "gattc_handler.h"
-#include "gatt_def.h"
+#include "include/gap_handler.h"
+#include "include/gatts_handler.h"
+#include "include/gattc_handler.h"
+#include "include/gatt_def.h"
 
 // Core Interface
-#include "core_int.h"
+#include "include/core_int.h"
 
 /*
  * bda_id_tuple represent the pair <remote_bda,conn_id> where the conn_id 
@@ -29,6 +29,14 @@ typedef struct {
   esp_bd_addr_t bda;
   uint16_t conn_id;
 }bda_id_tuple;
+
+/**
+ *  Compares bda1 address with bda2 address.
+ *  @param bda1 first address
+ *  @param bda2 second address
+ *  @return 0 if bda1 equals bda2, 1 otherwise
+ */
+int bda_equals(esp_bd_addr_t bda1, esp_bd_addr_t bda2);
 
 /*
  * bemesh_core_t represent the main structure for BLE stack interaction.
@@ -60,10 +68,14 @@ bemesh_core_t* bemesh_core_init(void);
 const uint8_t *bemesh_core_get_bda(bemesh_core_t* c);
 /* GAP HANDLING */
 // Scanning ops
-int bemesh_core_start_scanning(bemesh_core_t* c, uint16_t timeout); // start the scan proc.
-int bemesh_core_stop_scanning(bemesh_core_t* c); // stop the scan proc.
-uint8_t bemesh_core_is_scanning(bemesh_core_t* c); // returns the status of the scanning proc.
-uint8_t bemesh_core_scan_complete(bemesh_core_t* c); // returns the scan complete status flag of gaph
+// start the scan proc.
+int bemesh_core_start_scanning(bemesh_core_t* c, uint16_t timeout);
+// stop the scan proc.
+int bemesh_core_stop_scanning(bemesh_core_t* c);
+// returns the status of the scanning proc.
+uint8_t bemesh_core_is_scanning(bemesh_core_t* c);
+// returns the scan complete status flag of gaph
+uint8_t bemesh_core_scan_complete(bemesh_core_t* c);
 /* returns the scan result array length.
  * bemesh_core_scan_complete function should be called first
  * to know if scan procedure is complete.
@@ -84,7 +96,7 @@ uint8_t bemesh_core_is_advertising(bemesh_core_t* c);
 int bemesh_core_connect(bemesh_core_t* c, esp_bd_addr_t bda);
 /* disconnects from a remote dev that has bda bda */
 int bemesh_core_disconnect(bemesh_core_t* c, esp_bd_addr_t bda);
-int bemesh_core_write(bemesh_core_t* c, uint16_t conn_id, uint8_t *src, uint16_t len);
+int bemesh_core_write(bemesh_core_t* c, uint16_t conn_id, uint8_t *src, uint16_t len, uint8_t is_notify);
 int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id, uint8_t *dest, uint16_t len);
 
 // Install the handler for kernel events

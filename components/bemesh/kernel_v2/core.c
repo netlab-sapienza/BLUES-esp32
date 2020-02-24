@@ -3,11 +3,14 @@
  * Handles operations directly with the ESP module.
  */
 
-#include "core.h"
+
+#include <string.h>  // memcpy
+
+#include "include/core.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_bt_device.h" // esp_bt_dev_get_address
-#include <string.h> //memcpy
+
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -22,8 +25,11 @@ static bemesh_core_t *get_core1_ptr(void) {
   return &core1;
 }
 
-// Handler for low level handlers. This callback should relaunch the higher level callbacks
-static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* params);
+// Handler for low level handlers.
+// This callback should relaunch the higher level callbacks
+
+static void low_handlers_cb(bemesh_kernel_evt_t event,
+                            bemesh_evt_params_t* params);
 
 
 void core_peripheral_init(void) {
@@ -77,18 +83,22 @@ const uint8_t *bemesh_core_get_bda(bemesh_core_t* c) {
 
 /* GAP HANDLING */
 // Scanning ops
-int bemesh_core_start_scanning(bemesh_core_t* c, uint16_t timeout) { // start the scan proc.
+int bemesh_core_start_scanning(bemesh_core_t* c, uint16_t timeout) {
+  // start the scan proc.
   return bemesh_gap_handler_start_scanning(c->gaph, timeout);
 }
 
-int bemesh_core_stop_scanning(bemesh_core_t* c) { // stop the scan proc.
+int bemesh_core_stop_scanning(bemesh_core_t* c) {
+  // stop the scan proc.
   bemesh_gap_handler_stop_scanning(c->gaph);
   return 0;
 }
-uint8_t bemesh_core_scan_complete(bemesh_core_t* c) { // returns the scan complete status flag of gaph
+uint8_t bemesh_core_scan_complete(bemesh_core_t* c) {
+  // returns the scan complete status flag of gaph
   return bemesh_gap_handler_scan_complete(c->gaph);
 }
-uint8_t bemesh_core_is_scanning(bemesh_core_t* c) { // returns the status of the scanning proc.
+uint8_t bemesh_core_is_scanning(bemesh_core_t* c) {
+  // returns the status of the scanning proc.
   return (c->gaph->flags&O_SCN);
 }
 /* returns the scan result array length.
@@ -108,12 +118,12 @@ bemesh_dev_t *bemesh_core_get_scan_result(bemesh_core_t* c) {
 int bemesh_core_start_advertising(bemesh_core_t* c) {
   return bemesh_gap_handler_start_advertising(c->gaph);
 }
-// TODO: Add descr
+// TODO(Andrea): Add descr
 int bemesh_core_stop_advertising(bemesh_core_t* c) {
   bemesh_gap_handler_stop_advertising(c->gaph);
   return 0;
 }
-// TODO: Add descr
+// TODO(Andrea): Add descr
 uint8_t bemesh_core_is_advertising(bemesh_core_t* c) {
   return (c->gaph->flags&O_ADV);
 }
@@ -125,36 +135,55 @@ int bemesh_core_connect(bemesh_core_t* c, esp_bd_addr_t bda) {
   // Obfuscate gatts connection event handler
   ESP_LOGV(TAG, "Obfuscating gatts");
   c->gattsh->flags|=O_IGNCONN;
-  int ret=bemesh_gattc_open(c->gattch, bda, 0);
+  int ret = bemesh_gattc_open(c->gattch, bda, 0);
   return ret;
 }
 /* disconnects from a remote dev that has bda bda
  * TODO: Add descr
  */
 int bemesh_core_disconnect(bemesh_core_t* c, esp_bd_addr_t bda);
-// TODO: Add descr
-int bemesh_core_write(bemesh_core_t* c, uint16_t conn_id, uint8_t *src, uint16_t len) {
+// TODO(Andrea): Add descr
+int bemesh_core_write(bemesh_core_t* c,
+                      uint16_t conn_id,
+                      uint8_t *src, uint16_t len, uint8_t is_notify) {
+  if (is_notify) {
+    // Must use notify system for communication.
+    bemesh_gatts_handler_send_notify(c->gattsh,
+                                     conn_id,
+                                     src,
+                                     len);
+  } else {
+    // Can rely on standard write proc.
+    bemesh_gattc_handler_write(c->gattch,
+                               conn_id,
+                               src, len,
+                               true);
+  }
   return 0;
 }
-// TODO: Add descr
-int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id, uint8_t *dest, uint16_t len);
+// TODO(Andrea): Add descr
+int bemesh_core_read(bemesh_core_t* c, uint16_t conn_id,
+                     uint8_t *dest, uint16_t len) {
+  // TODO(Emanuele): Complete the function.
+}
 
 // Install the handler for kernel events
-void bemesh_core_install_callback(bemesh_core_t *c, bemesh_kernel_evt_t evt, kernel_int_cb cb) {
-  if(evt>KERNEL_EVT_NUM) {
+void bemesh_core_install_callback(bemesh_core_t *c,
+                                  bemesh_kernel_evt_t evt, kernel_int_cb cb) {
+  if (evt > KERNEL_EVT_NUM) {
     ESP_LOGW(TAG, "Warning: cannot install a callback for an unvalid event.");
     return;
   }
-  c->handler_cb[evt]=cb;
+  c->handler_cb[evt] = cb;
   return;
 }
 // Uninstall the handler for kernel events
 void bemesh_core_uninstall_callback(bemesh_core_t *c, bemesh_kernel_evt_t evt) {
-  if(evt>KERNEL_EVT_NUM) {
+  if (evt > KERNEL_EVT_NUM) {
     ESP_LOGW(TAG, "Warning: cannot uninstall a callback for an unvalid event.");
     return;
   }
-  c->handler_cb[evt]=NULL;
+  c->handler_cb[evt] = NULL;
   return;
 }
 
@@ -266,3 +295,19 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t* para
   }
 }
 
+/**
+ *  Compares bda1 address with bda2 address.
+ *  @param bda1 first address
+ *  @param bda2 second address
+ *  @return 1 if bda1 equals bda2, 0 otherwise
+ */ 
+int bda_equals(esp_bd_addr_t bda1, esp_bd_addr_t bda2) {
+  int eq=true;
+  for(int i=0;i<ESP_BD_ADDR_LEN;++i) {
+    if(bda1[i]!=bda2[i]) {
+      eq=false;
+      break;
+    }
+  }
+  return eq;
+}
