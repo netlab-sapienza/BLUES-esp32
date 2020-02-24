@@ -91,7 +91,7 @@ public:
    */
   void client_routine() {
     for (int i = 0; i < 100; i++) {
-      send_message();
+      //send_message();
       vTaskDelay(timeout_sec / portTICK_RATE_MS);
     }
   }
@@ -152,7 +152,7 @@ public:
     // routing_table.insert(device, device, t_num_hops, t_flag);
     } else {
       // disconnect the device
-      send_message();
+     // send_message();
     }
   }
 };
