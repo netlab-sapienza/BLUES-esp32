@@ -24,7 +24,7 @@ bemesh_dev_t *Device::select_device_to_connect(bemesh_dev_t *device_list,
 }
 
 void Device::scan_the_environment() {
-  // kernel_install_cb(ON_SCAN_END, on_scan_completed);
+  kernel_install_cb(ON_SCAN_END, on_scan_completed);
   scan_environment(timeout_sec);
 }
 

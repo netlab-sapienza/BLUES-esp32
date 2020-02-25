@@ -15,6 +15,7 @@
 // just for the timeout
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "device_callbacks.hpp"
 
 enum class Role { UNDEFINED = 0, SERVER = 1, CLIENT = 2 };
 
@@ -41,7 +42,7 @@ public:
    * @param device_list list of the devices found in the scan
    * @return the first element of the list
    */
-  bemesh_dev_t *select_device_to_connect(bemesh_dev_t *device_list, int length);
+  static bemesh_dev_t *select_device_to_connect(bemesh_dev_t *device_list, int length);
 
   /**
    * Launcher function of the device
