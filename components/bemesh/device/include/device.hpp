@@ -7,15 +7,17 @@
 
 #include "core_int.h"
 #include "gap_device.h"
+#include <freertos/semphr.h>
 
 // Routing and messages
 #include "bemesh_messages_v2.hpp"
 #include "message_handler_v2.hpp"
 
 // just for the timeout
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "device_callbacks.hpp"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 
 enum class Role { UNDEFINED = 0, SERVER = 1, CLIENT = 2 };
 
@@ -42,7 +44,8 @@ public:
    * @param device_list list of the devices found in the scan
    * @return the first element of the list
    */
-  static bemesh_dev_t *select_device_to_connect(bemesh_dev_t *device_list, int length);
+  static bemesh_dev_t *select_device_to_connect(bemesh_dev_t *device_list,
+                                                int length);
 
   /**
    * Launcher function of the device
@@ -65,15 +68,16 @@ public:
    *
    */
   void client_routine();
+
   /**
    * Tries to connect to a server in order to become a client of that specific
    * server
    *
    * @param target_server device representing the active server previously
    * discovered
-   * @return true if connected
    */
-  bool connect_to_server(bemesh_dev_t target_server);
+  void connect_to_server(bemesh_dev_t target_server);
+
   /**
    *
    * @param bda

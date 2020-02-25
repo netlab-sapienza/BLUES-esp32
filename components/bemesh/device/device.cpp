@@ -41,8 +41,8 @@ void Device::client_routine() {
     vTaskDelay(timeout_sec / portTICK_RATE_MS);
   }
 }
-bool Device::connect_to_server(bemesh_dev_t target_server) {
-  return (bool)!connect_to(target_server.bda);
+void Device::connect_to_server(bemesh_dev_t target_server) {
+  connect_to(target_server.bda);
 }
 
 void Device::send_message(bemesh_dev_t bda) {

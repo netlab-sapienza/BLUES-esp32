@@ -4,6 +4,8 @@
 
 #include "device_callbacks.hpp"
 #include "device.hpp"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include <gatt_def.h>
 
 void on_scan_completed(bemesh_evt_params_t *params) {
@@ -14,10 +16,12 @@ void on_scan_completed(bemesh_evt_params_t *params) {
       Device::select_device_to_connect(device_list, list_length);
   instance.setRole(Role::CLIENT);
 
+  kernel_install_cb(ON_OUT_CONN, on_connection_response);
   for (int i = 0; !instance.isConnected() && i < list_length;
-       i++, *target = device_list[i + 1])
-    instance.setConnected(instance.connect_to_server(*target));
-
+       i++, *target = device_list[i + 1]) {
+    instance.connect_to_server(*target);
+    // sem_wait
+  }
   if (instance.isConnected())
     instance.client_routine();
   else {
@@ -26,7 +30,15 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   }
 }
 
-void on_connection_response(bemesh_evt_params_t *params) {}
+void on_connection_response(bemesh_evt_params_t *params) {
+  SemaphoreHandle_t xSemaphore = xSemaphoreCreateBinary();
+  Device instance = Device::getInstance();
+  if (params->conn.ack) {
+    instance.setConnected(true);
+  } else {
+    // sem_post
+  }
+}
 
 void on_incoming_connection(bemesh_evt_params_t *params) {
   Device instance = Device::getInstance();
