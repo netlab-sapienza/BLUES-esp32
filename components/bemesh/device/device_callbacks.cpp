@@ -6,7 +6,10 @@
 #include "device.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include <esp_log.h>
 #include <gatt_def.h>
+
+static const char *TAG = "device_callbacks";
 
 void on_scan_completed(bemesh_evt_params_t *params) {
   bemesh_dev_t *device_list = params->scan.result;
@@ -35,8 +38,8 @@ void on_connection_response(bemesh_evt_params_t *params) {
   Device instance = Device::getInstance();
   if (params->conn.ack) {
     instance.setConnected(true);
-  } else {
     // sem_post
+  } else {
   }
 }
 
@@ -58,6 +61,7 @@ void on_message_received(bemesh_evt_params_t *params) {
   uint8_t *payload = params->recv.payload;
   uint16_t payload_len = params->recv.len;
 
+  ESP_LOGI(TAG, "a message arrived");
   //    // TODO message reader
   //    bemesh::MessageHandler handler = bemesh::MessageHandler();
   //    handler.read(payload);

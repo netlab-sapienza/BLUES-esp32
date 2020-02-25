@@ -3,7 +3,10 @@
 //
 
 #include "device.hpp"
+#include <esp_log.h>
 #include <gatt_def.h>
+
+static const char *TAG = "device";
 
 bemesh_dev_t *Device::select_device_to_connect(bemesh_dev_t *device_list,
                                                int length) {
@@ -33,7 +36,10 @@ void Device::startup() {
   scan_the_environment();
 }
 
-void Device::server_routine() {}
+void Device::server_routine() {
+  kernel_install_cb(ON_INC_CONN, on_incoming_connection);
+  kernel_install_cb(ON_MSG_RECV, on_message_received);
+}
 
 void Device::client_routine() {
   for (int i = 0; i < 100; i++) {
@@ -46,6 +52,7 @@ void Device::connect_to_server(bemesh_dev_t target_server) {
 }
 
 void Device::send_message(bemesh_dev_t bda) {
+  ESP_LOGI(TAG, "Starting to send a message to ");
   // send_payload(); // TODO bda.nextHop()
 }
 Role Device::getRole() const { return role; }
