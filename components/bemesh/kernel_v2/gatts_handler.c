@@ -184,6 +184,9 @@ void bemesh_gatts_cb(esp_gatts_cb_event_t event,
   case ESP_GATTS_RESPONSE_EVT:
     ESP_LOGV(TAG, "Send response.");
     break;
+  case ESP_GATTS_MTU_EVT:
+    ESP_LOGV(TAG, "MTU config complete.");
+    break;
     //TODO
   default:
     //TODO

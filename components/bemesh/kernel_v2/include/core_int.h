@@ -55,7 +55,14 @@ typedef void (*kernel_int_cb)(bemesh_evt_params_t *param);
  * @param event
  * @param cb
  */
-void kernel_install_cb(bemesh_kernel_evt_t event, kernel_cb cb);
+void kernel_install_cb(bemesh_kernel_evt_t event, kernel_int_cb cb);
+
+/**
+ * Uninstall the callback associated with event, if its present.
+ *
+ * @param event
+ */
+void kernel_uninstall_cb(bemesh_kernel_evt_t event);
 
 /**
  * Initializes the underlying kernel.

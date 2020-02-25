@@ -86,7 +86,7 @@ bemesh_core_t* bemesh_core_init(void) {
 }
 
 // Returns the current dev bda. TODO: increase descr.
-const uint8_t *bemesh_core_get_bda(bemesh_core_t* c) {
+uint8_t *bemesh_core_get_bda(bemesh_core_t* c) {
   return esp_bt_dev_get_address();
 }
 

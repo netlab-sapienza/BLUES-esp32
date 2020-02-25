@@ -82,8 +82,8 @@ bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
 
   // Install the app profile.
   esp_ble_gattc_app_register(GATTC_APP1_ID);
-  esp_ble_gattc_app_register(GATTC_APP2_ID);
-  esp_ble_gattc_app_register(GATTC_APP3_ID);
+  //esp_ble_gattc_app_register(GATTC_APP2_ID);
+  //esp_ble_gattc_app_register(GATTC_APP3_ID);
   return h;  
 }
 
@@ -198,6 +198,10 @@ static void bemesh_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
      // Receive notify. */
      ESP_LOGI(TAG, "ESP_GATTC_NOTIFY_EVT received.");
      recv_notify_cb(gattc_if, param, h);
+    break;
+  case ESP_GATTC_CONNECT_EVT:
+    // new physical connecton established.
+    // TODO(Emanuele): Add more description and a debug print.
     break;
   default:
     ESP_LOGW(TAG, "Warning: received unhandled evt %d", event);

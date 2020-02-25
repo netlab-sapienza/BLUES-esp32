@@ -84,6 +84,12 @@ static void on_out_conn_cb(bemesh_evt_params_t *param) {
   }
   sprintf(buf+wb, " with conn_id: %d\n", param->conn.conn_id);
   printf("%s", buf);
+
+  // Test write event
+  uint8_t sample_data[3] = {0xAB, 0xCD, 0xEF};
+  printf("Testing write functionality.");
+  bemesh_gattc_handler_write(core1->gattch, param->conn.conn_id,
+			     sample_data, 3, true);
   next_conn_rdy=true;
   return;
 }
