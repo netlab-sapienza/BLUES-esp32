@@ -10,6 +10,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "core.h" // CORE_UNUSED_CONN_ID
+
 static const char* TAG = "gattc_handler";
 
 // Since we want one and only one bemesh_gattc_handler we will statically define it.
@@ -225,6 +227,12 @@ static void app_reg_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, 
 static void copen_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param, bemesh_gattc_handler* h) {
   if(param->open.status!=ESP_GATT_OK) {
     ESP_LOGE(TAG, "Error: open failed, errcode=%X", param->open.status);
+    // Execute the ON_OUT_CONN event with error parameters.
+    memcpy(h->core_cb_args->conn.remote_bda, param->open.remote_bda, ESP_BD_ADDR_LEN);
+    h->core_cb_args->conn.conn_id = CORE_UNUSED_CONN_ID;
+    h->core_cb_args->conn.ack=false; // Set ack to false as no connection was established
+    // Execute the callback function
+    (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
     return;
   }
   ESP_LOGI(TAG, "Open operation succesful. gattc_if:%d, conn_id:%d", gattc_if, param->open.conn_id);

@@ -322,11 +322,9 @@ static void connection_cb(esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *para
   // Execute core handler callback
   if(h->core_cb!=NULL) {
     // Fill the params struct.
-    ESP_LOGI(TAG, "Copying remote bda into params.");
     memcpy(h->core_cb_args->conn.remote_bda, param->connect.remote_bda, ESP_BD_ADDR_LEN);
-    ESP_LOGI(TAG, "Copying conn_id bda into params.");
     h->core_cb_args->conn.conn_id=param->connect.conn_id;
-    ESP_LOGI(TAG, "Launching callback.");
+    h->core_cb_args->conn.ack=true;
     (*h->core_cb)(ON_INC_CONN, h->core_cb_args);
   }
   return;

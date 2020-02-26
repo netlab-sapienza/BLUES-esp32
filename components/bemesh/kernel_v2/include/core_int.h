@@ -32,6 +32,7 @@ typedef union {
   struct conn_param {
     esp_bd_addr_t remote_bda;
     uint8_t conn_id;
+    uint8_t ack;
   } conn;
 } bemesh_evt_params_t;
 /*

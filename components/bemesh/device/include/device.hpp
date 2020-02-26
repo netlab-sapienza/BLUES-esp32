@@ -7,6 +7,7 @@
 
 #include "core_int.h"
 #include "gap_device.h"
+#include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
 // Routing and messages

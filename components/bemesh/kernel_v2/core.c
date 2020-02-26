@@ -236,6 +236,23 @@ static int remove_conn_entry(bda_id_tuple* dest, uint8_t* bda, uint8_t len) {
   return 1;
 }
 
+
+
+
+struct task_handler_params_t {
+  kernel_int_cb cb;
+  bemesh_evt_params_t *args;
+};
+
+static void task_handler_cb(void *task_params) {
+  struct task_handler_params_t *args=(struct task_handler_params_t *)task_params;
+  // execute the callback
+  (*args->cb)(args->args);
+  // Free the allocated structure.
+  free(task_params);
+  // Destroy the task.
+  vTaskDelete(NULL);
+}
 // Handler for low level handlers. This callback should relaunch the higher level callbacks
 static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *params) {
   bemesh_core_t *c=get_core1_ptr();
@@ -249,26 +266,30 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *para
     break;
   case ON_INC_CONN:
     ESP_LOGI(TAG, "ON_INC_CONN event");
-    // Store the new connection parameters in the incoming_conn buffer.
-    ESP_LOGI(TAG, "Preparing to insert new connection entry.");
-    ret=insert_conn_entry(c->incoming_conn, (uint8_t*)params->conn.remote_bda,
-    			  params->conn.conn_id, GATTS_MAX_CONNECTIONS);
-    ESP_LOGI(TAG, "Done.");
-    if(ret) {
-      ESP_LOGE(TAG, "Error: could not insert the new entry in the core database.");
-    } else {
-      ++c->incoming_conn_len; // Increase the current number of connections.
-    }
+    if(params->conn.ack) {
+      // Store the new connection parameters in the incoming_conn buffer.
+      ESP_LOGI(TAG, "Preparing to insert new connection entry.");
+      ret=insert_conn_entry(c->incoming_conn, (uint8_t*)params->conn.remote_bda,
+			    params->conn.conn_id, GATTS_MAX_CONNECTIONS);
+      ESP_LOGI(TAG, "Done.");
+      if(ret) {
+	ESP_LOGE(TAG, "Error: could not insert the new entry in the core database.");
+      } else {
+	++c->incoming_conn_len; // Increase the current number of connections.
+      }
+    }    
     break;
   case ON_OUT_CONN:
     ESP_LOGI(TAG, "ON_OUT_CONN event");
-    // Store the new connection parameters in the incoming_conn buffer.
-    ret=insert_conn_entry(c->outgoing_conn, (uint8_t*)params->conn.remote_bda,
-			  params->conn.conn_id, GATTC_MAX_CONNECTIONS);
-    if(ret) {
-      ESP_LOGE(TAG, "Error: could not insert the new entry in the core database.");
-    } else {
-      ++c->outgoing_conn_len; // Increase the current number of connections.
+    if(params->conn.ack) {
+      // Store the new connection parameters in the incoming_conn buffer.
+      ret=insert_conn_entry(c->outgoing_conn, (uint8_t*)params->conn.remote_bda,
+			    params->conn.conn_id, GATTC_MAX_CONNECTIONS);
+      if(ret) {
+	ESP_LOGE(TAG, "Error: could not insert the new entry in the core database.");
+      } else {
+	++c->outgoing_conn_len; // Increase the current number of connections.
+      }
     }    
     break;
   case ON_DISCONN:
@@ -284,8 +305,14 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *para
   }
   // After that, launch the higher level callback.
   if(c->handler_cb[event]!=NULL) {
-    (*c->handler_cb[event])(params);
+    struct task_handler_params_t* task_args=(struct task_handler_params_t *)malloc(sizeof(struct task_handler_params_t));
+    task_args->cb=c->handler_cb[event];
+    task_args->args=&c->handler_cb_args;
+    // Launch the task
+    xTaskCreate(&task_handler_cb, "core_cb_handler", 2048, task_args, tskIDLE_PRIORITY, NULL);
+    //(*c->handler_cb[event])(params);
   }
+  return;
 }
 
 /**
