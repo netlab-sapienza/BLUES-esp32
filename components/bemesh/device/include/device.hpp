@@ -86,7 +86,7 @@ public:
    *
    * @param bda
    */
-  void send_message(bemesh::MessageHeader *message);
+  ErrStatus send_message(bemesh::MessageHeader *message);
 
   /**
    *

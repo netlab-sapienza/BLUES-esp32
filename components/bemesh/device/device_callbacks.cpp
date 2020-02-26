@@ -28,7 +28,7 @@ void on_scan_completed(bemesh_evt_params_t *params) {
     for (int i = 0; !instance.isConnected() && i < list_length;
          i++, *target = device_list[i + 1]) {
       instance.connect_to_server(*target);
-      instance.getConnectionSemaphore();
+	    xSemaphoreTake( instance.getConnectionSemaphore(), 0 );
     }
     if (instance.isConnected())
       instance.client_routine();
@@ -39,10 +39,13 @@ void on_scan_completed(bemesh_evt_params_t *params) {
     }
   }
 
+  // This is the server behaviour when is already up.
+  //
   if (instance.getRole() == Role::SERVER) {
     for (int i = 0; i < list_length; i++) {
-      if (/*is the device */ device_list[i].bda !=
-          nullptr /*in routing table*/) {
+    	instance.getRouter().getRoutingTable();
+      if (/*is the device */device_list[i].bda !=
+          nullptr /*not in routing table*/) {
         // start merge request
       }
     }
@@ -53,9 +56,8 @@ void on_connection_response(bemesh_evt_params_t *params) {
   Device instance = Device::getInstance();
   if (params->conn.ack) {
     instance.setConnected(true);
-    // sem_post
-  } else {
   }
+  xSemaphoreGive(instance.getConnectionSemaphore());
 }
 
 void on_incoming_connection(bemesh_evt_params_t *params) {

@@ -13,8 +13,8 @@
 #include <esp_log.h>
 
 // Adding new inclusions.
-#include "message_handler_v3.hpp"
 #include "bemesh_status.hpp"
+#include "message_handler_v3.hpp"
 
 using namespace bemesh;
 
@@ -60,11 +60,12 @@ void Device::server_routine() {
 
 void Device::client_routine() {
   // send a message to every node into the routing table
+  ErrStatus ret;
   for (int i = 0; i < this->getRouter().getRoutingTable().size(); i++) {
     RoutingDiscoveryRequest request = RoutingDiscoveryRequest(
         this->getRouter().getRoutingTable()[i].target_addr,
         to_dev_addr(get_own_bda()));
-    send_message(&request);
+    ret = send_message(&request);
     vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
   }
 }
@@ -73,22 +74,17 @@ void Device::connect_to_server(bemesh_dev_t target_server) {
     ESP_LOGE(TAG, "Error in connection to server: ");
 }
 
-void Device::send_message(MessageHeader *message) {
+ErrStatus Device::send_message(MessageHeader *message) {
   dev_addr_t &final_dest = message->destination();
   uint8_t *tx_buffer_ptr;
   uint16_t tx_buffer_len;
   ErrStatus ret;
-  ret=MessageHandler::getInstance().serialize(message,
-					  &tx_buffer_ptr,
-					  &tx_buffer_len);
-  if(ret != Success) {
-    // TODO(Andrea): Handle failures.
-    return;
-  }
-
-  send_payload(this->getRouter().nextHop(final_dest),
-	       tx_buffer_ptr, tx_buffer_len);
-  return;
+  ret = MessageHandler::getInstance().serialize(message, &tx_buffer_ptr,
+                                                &tx_buffer_len);
+  if (ret == Success)
+    send_payload(this->getRouter().nextHop(final_dest).data(), tx_buffer_ptr,
+                 tx_buffer_len);
+  return ret;
 }
 
 Role Device::getRole() const { return role; }
