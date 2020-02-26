@@ -75,11 +75,12 @@ namespace bemesh {
    *  uint8_t message[message_len]
    * Where message_len is 
    *  (buffer_length-sizeof(std::size_t)-sizeof(uint8))
+   * PLEASE TAKE CARE: The returned message is heap-based therefore,
+   * it should be deallocated accordingly after its usage.
    *
    * @param src buffer of bytes containing a serialized message
    * @param len src buffer length
-   * @return pointer to a new allocated message of type message_id.
-   *         NULL pointer if errors occurred.
+   * @return 
    */
   MessageHeader *unserialize(uint8_t *src, uint16_t len) {
     std::stringstream dstream;
@@ -91,7 +92,7 @@ namespace bemesh {
       // Check for invalid messages before parsing them.
       return NULL;
     }
-    
+    // Fill the deserialize stream with the message bytes.
     for (int i = 0; i < buffer_length; ++i) {
       dstream.write(reinterpret_cast<char*>(src+i),
 		    sizeof(uint8_t));
