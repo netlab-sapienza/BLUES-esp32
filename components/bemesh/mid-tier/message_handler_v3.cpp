@@ -20,22 +20,89 @@ namespace bemesh {
   }
 
   /**
-     * Prepare a message referenced through its header h to be sent.
-     * After the serialization procedure is complete, the send callback 
-     * will be called.
-     *
-     * @param h Pointer to the message's header that has to be sent.
-     * @return Success if no errors occurred, !=Success otherwhise.
+   * Prepare a message referenced through its header h to be sent.
+   * Serialize will fill buf_ptr and buf_len with the correct values
+   * which can be used to access the transmission buffer later.
+   *
+   * @param h Pointer to the message's header that has to be sent.
+   * @param buf_ptr pointer to the serialized message buffer
+   * @param buf_len pointer to the serialized message buffer length value
+   * @return Success if no errors occurred, !=Success otherwhise.
+   */
+  ErrStatus serialize(MessageHeader *h, uint8_t **buf_ptr, uint16_t *buf_len) {
+    std::stringstream serialized_stream;
+    // Serialize the message h into serialized_stream
+    h->serialize(serialized_stream);
+    // Transfer the serialized payload into the internal transmission buffer.
+    // m_tx_buf;
+    // m_tx_buf_len
+    std::size_t payload_dim=h->psize()+MESSAGE_HEADER_DATA_SIZE;
+    /* The payload dim should also consider:
+     * sizeof(std::size_t) bytes from payload_dim
+     * sizeof(uint8_t) bytes from the copy of m->id() during serialization.
      */
-    ErrStatus serialize(MessageHeader *h);
-
-    /**
-     * Prepare to receive an incoming message through a buffer src
-     * of length len.
-     */
-  ErrStatus unserialize(uint8_t *src, uint16_t len) {
-
+    payload_dim += sizeof(std::size_t) + sizeof(uint8_t);
+    if (payload_dim > MESSAGE_HANDLER_TX_BUF_SIZE) {
+      // TODO(Emanuele): empty the serialized stream.
+      *buf_ptr = NULL;
+      *buf_len = 0;
+      return BufferFullError;
+    }
+    // Set the buffer len as payload dim.
+    *buf_len = payload_dim;
+    // Load operation will be execute in the following manner
+    // Load the total_buffer_dimension
+    // Load the serialized message data from the serialized_stream
+    // keep in mind that serialized_stream starts with the ID of the message
+    // followed by the ordered serialization data.
+    (std::size_t *)m_tx_buf[0] = payload_dim;
+    m_tx_buf_len += sizeof(std::size_t);
+    payload_dim -= sizeof(std:;size_t);
+    for(int i=0; i < payload_dim ; ++i) {
+      serialized_stream.read(reinterpret_cast<char*>(&m_tx_buf[m_tx_buf_len++]),
+			     sizeof(uint8_t));
+    }
+    // Setup the buffer pointer
+    *buf_ptr = &m_tx_buf;
+    return Success;
   }
 
-  
+  /**
+   * Reads a buffer src of length len and tries to parse a message from it.
+   * the src buffer format should be of the form:
+   *  std::size_t buffer_length
+   *  uint8_t message_id
+   *  uint8_t message[message_len]
+   * Where message_len is 
+   *  (buffer_length-sizeof(std::size_t)-sizeof(uint8))
+   *
+   * @param src buffer of bytes containing a serialized message
+   * @param len src buffer length
+   * @return pointer to a new allocated message of type message_id.
+   *         NULL pointer if errors occurred.
+   */
+  MessageHeader *unserialize(uint8_t *src, uint16_t len) {
+    std::stringstream dstream;
+    std::size_t buffer_length = (std::size_t)src[0];
+    buffer_length -= sizeof(std::size_t);
+    src += sizeof(std::size_t);
+    uint8_t message_id = src[0];
+    if (message_id >= MESSAGE_TYPE_MAX) {
+      // Check for invalid messages before parsing them.
+      return NULL;
+    }
+    
+    for (int i = 0; i < buffer_length; ++i) {
+      dstream.write(reinterpret_cast<char*>(src+i),
+		    sizeof(uint8_t));
+    }
+
+    // Launch the deserialization process.
+    MessageHeader* new_message = MessageHeader::unserialize(dstream);
+    if(!new_message) {
+      return NULL;
+    } else {
+      return new_message;
+    }
+  }
 }

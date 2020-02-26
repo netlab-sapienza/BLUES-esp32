@@ -37,12 +37,23 @@ namespace bemesh {
      * @param h Pointer to the message's header that has to be sent.
      * @return Success if no errors occurred, !=Success otherwhise.
      */
-    MessageHeader &serialize(MessageHeader *h);
+    ErrStatus serialize(MessageHeader *h, uint8_t **buf_ptr, uint16_t *buf_len);
 
     /**
-     * Prepare to receive an incoming message through a buffer src
-     * of length len.
+     * Reads a buffer src of length len and tries to parse a message from it.
+     * the src buffer format should be of the form:
+     *  std::size_t buffer_length
+     *  uint8_t message_id
+     *  uint8_t message[message_len]
+     * Where message_len is 
+     *  (buffer_length-sizeof(std::size_t)-sizeof(uint8))
+     * PLEASE TAKE CARE: The returned message is heap-based therefore,
+     * it should be deallocated accordingly after its usage.
+     *
+     * @param src buffer of bytes containing a serialized message
+     * @param len src buffer length
+     * @return 
      */
-    ErrStatus unserialize(uint8_t *src, uint16_t len);
+    MessageHeader *unserialize(uint8_t *src, uint16_t len);
   };
 }
