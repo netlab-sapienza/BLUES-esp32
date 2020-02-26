@@ -4,11 +4,10 @@
 
 #include "device_callbacks.hpp"
 #include "device.hpp"
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
 #include <esp_log.h>
 #include <gatt_def.h>
 
+#define TIMEOUT_DELAY 5
 static const char *TAG = "device_callbacks";
 
 void on_scan_completed(bemesh_evt_params_t *params) {
@@ -16,7 +15,9 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   uint16_t list_length = params->scan.len;
   Device &instance = Device::getInstance();
 
-  // this has to be performed only on the first scan. More scan can be launched
+  kernel_uninstall_cb(ON_SCAN_END);
+
+  // This has to be performed only on the first scan. More scan can be launched
   // during the lifecycle of a server
   if (instance.getRole() == Role::UNDEFINED) {
     bemesh_dev_t *target =
@@ -27,12 +28,13 @@ void on_scan_completed(bemesh_evt_params_t *params) {
     for (int i = 0; !instance.isConnected() && i < list_length;
          i++, *target = device_list[i + 1]) {
       instance.connect_to_server(*target);
-      // sem_wait
+      instance.getConnectionSemaphore();
     }
     if (instance.isConnected())
       instance.client_routine();
     else {
       instance.setRole(Role::SERVER);
+      instance.addTimeoutSec(TIMEOUT_DELAY);
       instance.server_routine();
     }
   }
@@ -48,7 +50,6 @@ void on_scan_completed(bemesh_evt_params_t *params) {
 }
 
 void on_connection_response(bemesh_evt_params_t *params) {
-  SemaphoreHandle_t xSemaphore = xSemaphoreCreateBinary();
   Device instance = Device::getInstance();
   if (params->conn.ack) {
     instance.setConnected(true);
@@ -86,6 +87,6 @@ void on_message_received(bemesh_evt_params_t *params) {
   //    handler.handle();
 
   // if i am the target of the message i'll log it.
-  // otherwise i forward the message to the address that the routing table gives me
-
+  // otherwise i forward the message to the address that the routing table gives
+  // me
 }
