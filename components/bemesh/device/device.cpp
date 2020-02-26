@@ -3,10 +3,16 @@
 //
 
 #include "device.hpp"
+
+#include "bemesh_messages_v2.hpp"
+#include <gatt_def.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
 #include <esp_log.h>
-#include <gatt_def.h>
+
+using namespace bemesh;
 
 static const char *TAG = "device";
 
@@ -49,9 +55,12 @@ void Device::server_routine() {
 }
 
 void Device::client_routine() {
-  for (int i = 0; i < 100; i++) {
-    // get a random address or compose a broadcast address
-    // send_message();
+  // send a message to every node into the routing table
+  for (int i = 0; i < this->getRouter().getRoutingTable().size(); i++) {
+    RoutingDiscoveryRequest request = RoutingDiscoveryRequest(
+        this->getRouter().getRoutingTable()[i].target_addr,
+        to_dev_addr(get_own_bda()));
+    send_message(&request);
     vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
   }
 }
@@ -60,11 +69,14 @@ void Device::connect_to_server(bemesh_dev_t target_server) {
     ESP_LOGE(TAG, "Error in connection to server: ");
 }
 
-void Device::send_message(bemesh_dev_t bda) {
-  // TODO need to add a payload
-  ESP_LOGI(TAG, "Starting to send a message to");
-  // send_payload(); // TODO bda.nextHop()
+void Device::send_message(MessageHeader *message) {
+  dev_addr_t &final_dest = message->destination();
+
+  message->serialize();
+  send_payload(this->getRouter().nextHop(final_dest),,
+               message->size());
 }
+
 Role Device::getRole() const { return role; }
 void Device::setRole(Role newRole) { Device::role = newRole; }
 bool Device::isConnected() const { return connected; }
@@ -74,7 +86,7 @@ void Device::setConnected(bool newConnected) {
 uint8_t Device::getTimeoutSec() const { return timeout_sec; }
 void Device::addTimeoutSec(uint8_t timeoutSec) { timeout_sec += timeoutSec; }
 void Device::setTimeoutSec(uint8_t timeoutSec) { timeout_sec = timeoutSec; }
-bemesh::Router Device::getRouter() const { return router; }
+Router Device::getRouter() const { return router; }
 SemaphoreHandle_t Device::getConnectionSemaphore() const {
   return connectionSemaphore;
 }

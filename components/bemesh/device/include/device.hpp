@@ -13,7 +13,7 @@
 
 // Routing and messages
 #include "bemesh_messages_v2.hpp"
-#include "message_handler_v2.hpp"
+#include "message_handler_v3.hpp"
 
 // just for the timeout
 #include "device_callbacks.hpp"
@@ -86,7 +86,7 @@ public:
    *
    * @param bda
    */
-  void send_message(bemesh_dev_t bda);
+  void send_message(bemesh::MessageHeader *message);
 
   /**
    *
