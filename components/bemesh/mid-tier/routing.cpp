@@ -106,6 +106,31 @@ namespace bemesh {
     return UpdateDiscarted;
   }
 
+  /**
+   * Search an entry, if it exists of a device with bda t_target_addr inside the
+   * routing table.
+   * 
+   * @param t_target_addr bda of the target device begin searched.
+   * @return true if the routing table contains the target device, false otherwise.
+   */
+  bool contains(dev_addr_t t_target_addr) {
+    return m_rtable.contains(t_target_addr)==Success;
+  }
+
+  /**
+   * Extracts the routing parameters for a device with bda t_target_addr inside
+   * the routing table.
+   * the contains() method should be called first in order to confirm that
+   * the target device is present in the routing table. Not doing so, will result
+   * in undefined behaviour.
+   *
+   * @param t_target_addr bda of the target device begin searched.
+   * @return reference to the routing params of t_target_addr.
+   */
+  routing_params_t &get(dev_addr_t t_target_addr) {
+    m_rtable.get_routing_params(t_target_addr);
+  }
+  
   dev_addr_t& Router::nextHop(dev_addr_t t_target_addr) {
     return m_rtable.get_routing_params(t_target_addr).hop_addr;
   }
