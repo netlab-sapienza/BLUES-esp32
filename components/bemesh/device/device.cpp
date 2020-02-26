@@ -12,6 +12,10 @@
 
 #include <esp_log.h>
 
+// Adding new inclusions.
+#include "message_handler_v3.hpp"
+#include "bemesh_status.hpp"
+
 using namespace bemesh;
 
 static const char *TAG = "device";
@@ -71,10 +75,20 @@ void Device::connect_to_server(bemesh_dev_t target_server) {
 
 void Device::send_message(MessageHeader *message) {
   dev_addr_t &final_dest = message->destination();
+  uint8_t *tx_buffer_ptr;
+  uint16_t tx_buffer_len;
+  ErrStatus ret;
+  ret=MessageHandler::getInstance().serialize(message,
+					  &tx_buffer_ptr,
+					  &tx_buffer_len);
+  if(ret != Success) {
+    // TODO(Andrea): Handle failures.
+    return;
+  }
 
-  message->serialize();
-  send_payload(this->getRouter().nextHop(final_dest),,
-               message->size());
+  send_payload(this->getRouter().nextHop(final_dest),
+	       tx_buffer_ptr, tx_buffer_len);
+  return;
 }
 
 Role Device::getRole() const { return role; }
