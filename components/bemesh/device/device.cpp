@@ -45,16 +45,19 @@ void Device::server_routine() {
 
 void Device::client_routine() {
   for (int i = 0; i < 100; i++) {
-    // send_message();
+    // get a random address or compose a broadcast address
+    //send_message();
     vTaskDelay(timeout_sec / portTICK_RATE_MS);
   }
 }
 void Device::connect_to_server(bemesh_dev_t target_server) {
-  connect_to(target_server.bda);
+  if (!connect_to(target_server.bda))
+    ESP_LOGE(TAG, "Error in connection to server: ");
 }
 
 void Device::send_message(bemesh_dev_t bda) {
-  ESP_LOGI(TAG, "Starting to send a message to ");
+  // TODO need to add a payload
+  ESP_LOGI(TAG, "Starting to send a message to");
   // send_payload(); // TODO bda.nextHop()
 }
 Role Device::getRole() const { return role; }

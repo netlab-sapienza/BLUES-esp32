@@ -15,21 +15,35 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   bemesh_dev_t *device_list = params->scan.result;
   uint16_t list_length = params->scan.len;
   Device &instance = Device::getInstance();
-  bemesh_dev_t *target =
-      Device::select_device_to_connect(device_list, list_length);
-  instance.setRole(Role::CLIENT);
 
-  kernel_install_cb(ON_OUT_CONN, on_connection_response);
-  for (int i = 0; !instance.isConnected() && i < list_length;
-       i++, *target = device_list[i + 1]) {
-    instance.connect_to_server(*target);
-    // sem_wait
+  // this has to be performed only on the first scan. More scan can be launched
+  // during the lifecycle of a server
+  if (instance.getRole() == Role::UNDEFINED) {
+    bemesh_dev_t *target =
+        Device::select_device_to_connect(device_list, list_length);
+    instance.setRole(Role::CLIENT);
+
+    kernel_install_cb(ON_OUT_CONN, on_connection_response);
+    for (int i = 0; !instance.isConnected() && i < list_length;
+         i++, *target = device_list[i + 1]) {
+      instance.connect_to_server(*target);
+      // sem_wait
+    }
+    if (instance.isConnected())
+      instance.client_routine();
+    else {
+      instance.setRole(Role::SERVER);
+      instance.server_routine();
+    }
   }
-  if (instance.isConnected())
-    instance.client_routine();
-  else {
-    instance.setRole(Role::SERVER);
-    instance.server_routine();
+
+  if (instance.getRole() == Role::SERVER) {
+    for (int i = 0; i < list_length; i++) {
+      if (/*is the device */ device_list[i].bda !=
+          nullptr /*in routing table*/) {
+        // start merge request
+      }
+    }
   }
 }
 
@@ -45,14 +59,18 @@ void on_connection_response(bemesh_evt_params_t *params) {
 
 void on_incoming_connection(bemesh_evt_params_t *params) {
   Device instance = Device::getInstance();
-  if (instance.getRouter().getNeighbours().size() < GATTS_MAX_CONNECTIONS) {
-    auto device = bemesh::to_dev_addr((uint8_t *)params->conn.remote_bda);
-    uint8_t t_num_hops = 0;
-    uint8_t t_flag = bemesh::Reachable;
-    // routing_table.insert(device, device, t_num_hops, t_flag);
-  } else {
-    // disconnect the device
-    // send_message();
+  auto remote_bda = params->conn.remote_bda;
+
+  if (instance.getRole() == Role::SERVER) {
+    if (instance.getRouter().getNeighbours().size() < GATTS_MAX_CONNECTIONS) {
+      auto device = bemesh::to_dev_addr((uint8_t *)remote_bda);
+      uint8_t t_num_hops = 0;
+      uint8_t t_flag = bemesh::Reachable;
+      // routing_table.insert(device, device, t_num_hops, t_flag);
+    } else {
+      // disconnect the device
+      // send_message();
+    }
   }
 }
 
@@ -66,4 +84,8 @@ void on_message_received(bemesh_evt_params_t *params) {
   //    bemesh::MessageHandler handler = bemesh::MessageHandler();
   //    handler.read(payload);
   //    handler.handle();
+
+  // if i am the target of the message i'll log it.
+  // otherwise i forward the message to the address that the routing table gives me
+
 }
