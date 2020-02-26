@@ -113,7 +113,7 @@ namespace bemesh {
    * @param t_target_addr bda of the target device begin searched.
    * @return true if the routing table contains the target device, false otherwise.
    */
-  bool contains(dev_addr_t t_target_addr) {
+  bool Router::contains(dev_addr_t t_target_addr) {
     return m_rtable.contains(t_target_addr)==Success;
   }
 
@@ -127,8 +127,8 @@ namespace bemesh {
    * @param t_target_addr bda of the target device begin searched.
    * @return reference to the routing params of t_target_addr.
    */
-  routing_params_t &get(dev_addr_t t_target_addr) {
-    m_rtable.get_routing_params(t_target_addr);
+  routing_params_t &Router::get(dev_addr_t t_target_addr) {
+    return m_rtable.get_routing_params(t_target_addr);
   }
   
   dev_addr_t& Router::nextHop(dev_addr_t t_target_addr) {
