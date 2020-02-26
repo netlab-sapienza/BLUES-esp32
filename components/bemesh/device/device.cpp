@@ -69,8 +69,8 @@ void Device::client_routine() {
     vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
   }
 }
-void Device::connect_to_server(bemesh_dev_t target_server) {
-  if (!connect_to(target_server.bda))
+void Device::connect_to_server(esp_bd_addr_t target_server) {
+  if (!connect_to(target_server))
     ESP_LOGE(TAG, "Error in connection to server: ");
 }
 

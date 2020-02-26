@@ -10,6 +10,8 @@
 #define TIMEOUT_DELAY 5
 static const char *TAG = "device_callbacks";
 
+using namespace bemesh;
+
 void on_scan_completed(bemesh_evt_params_t *params) {
   bemesh_dev_t *device_list = params->scan.result;
   uint16_t list_length = params->scan.len;
@@ -27,8 +29,8 @@ void on_scan_completed(bemesh_evt_params_t *params) {
     kernel_install_cb(ON_OUT_CONN, on_connection_response);
     for (int i = 0; !instance.isConnected() && i < list_length;
          i++, *target = device_list[i + 1]) {
-      instance.connect_to_server(*target);
-	    xSemaphoreTake( instance.getConnectionSemaphore(), 0 );
+      instance.connect_to_server(target->bda);
+      xSemaphoreTake(instance.getConnectionSemaphore(), 0);
     }
     if (instance.isConnected())
       instance.client_routine();
@@ -43,10 +45,8 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   //
   if (instance.getRole() == Role::SERVER) {
     for (int i = 0; i < list_length; i++) {
-    	instance.getRouter().getRoutingTable();
-      if (/*is the device */device_list[i].bda !=
-          nullptr /*not in routing table*/) {
-        // start merge request
+      if (!instance.getRouter().contains(to_dev_addr(device_list[i].bda))) {
+        instance.connect_to_server(device_list->bda);
       }
     }
   }
@@ -54,8 +54,15 @@ void on_scan_completed(bemesh_evt_params_t *params) {
 
 void on_connection_response(bemesh_evt_params_t *params) {
   Device instance = Device::getInstance();
-  if (params->conn.ack) {
-    instance.setConnected(true);
+
+  if (instance.getRole() == Role::UNDEFINED) {
+    if (params->conn.ack) {
+      instance.setConnected(true);
+    }
+  } else if (instance.getRole() == Role::SERVER) {
+    RoutingDiscoveryRequest request = RoutingDiscoveryRequest(
+        to_dev_addr(params->conn.remote_bda), to_dev_addr(get_own_bda()));
+    instance.send_message(&request);
   }
   xSemaphoreGive(instance.getConnectionSemaphore());
 }
@@ -66,7 +73,7 @@ void on_incoming_connection(bemesh_evt_params_t *params) {
 
   if (instance.getRole() == Role::SERVER) {
     if (instance.getRouter().getNeighbours().size() < GATTS_MAX_CONNECTIONS) {
-      auto device = bemesh::to_dev_addr((uint8_t *)remote_bda);
+      auto device = to_dev_addr((uint8_t *)remote_bda);
       uint8_t t_num_hops = 0;
       uint8_t t_flag = bemesh::Reachable;
       // routing_table.insert(device, device, t_num_hops, t_flag);
@@ -78,15 +85,34 @@ void on_incoming_connection(bemesh_evt_params_t *params) {
 }
 
 void on_message_received(bemesh_evt_params_t *params) {
-  auto sender = bemesh::to_dev_addr((uint8_t *)params->recv.remote_bda);
+  auto sender = to_dev_addr((uint8_t *)params->recv.remote_bda);
   uint8_t *payload = params->recv.payload;
   uint16_t payload_len = params->recv.len;
+  Device instance = Device::getInstance();
 
-  ESP_LOGI(TAG, "a message arrived");
-  //    // TODO message reader
-  //    bemesh::MessageHandler handler = bemesh::MessageHandler();
-  //    handler.read(payload);
-  //    handler.handle();
+  if (instance.getRole() == Role::SERVER) {
+    MessageHeader *message =
+        MessageHandler::getInstance().unserialize(payload, payload_len);
+    switch (message->id()) {
+    case ROUTING_DISCOVERY_REQ_ID:
+      std::vector<routing_params_t> routing_table =
+          instance.getRouter().getRoutingTable();
+      RoutingDiscoveryResponse response = RoutingDiscoveryResponse(
+          message->source(), to_dev_addr(get_own_bda()), routing_table,
+          routing_table.size());
+      break;
+    case ROUTING_DISCOVERY_RES_ID:
+      break;
+    case ROUTING_PING_ID:
+      break;
+    case ROUTING_SYNC_ID:
+      break;
+    case ROUTING_UPDATE_ID:
+      break;
+    default:
+      ESP_LOGE(TAG, "Cannot identify message");
+    }
+  }
 
   // if i am the target of the message i'll log it.
   // otherwise i forward the message to the address that the routing table gives

@@ -80,13 +80,13 @@ public:
    * @param target_server device representing the active server previously
    * discovered
    */
-  void connect_to_server(bemesh_dev_t target_server);
+  void connect_to_server(esp_bd_addr_t target_server);
 
   /**
    *
    * @param bda
    */
-  ErrStatus send_message(bemesh::MessageHeader *message);
+  bemesh::ErrStatus send_message(bemesh::MessageHeader *message);
 
   /**
    *
