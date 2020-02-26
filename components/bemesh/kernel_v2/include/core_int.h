@@ -84,7 +84,8 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len);
 
 
 /**
- * Tries to connect to a specific device
+ * Tries to connect to a specific device.
+ * After the connection is established a callback XX is raised
  *
  * @param bda address
  * @return 0 if no error occurred
