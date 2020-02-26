@@ -5,6 +5,7 @@
  */
 
 #include "message_handler_v3.hpp"
+#include <sstream>
 
 namespace bemesh {
   // Private constructor.
@@ -15,7 +16,7 @@ namespace bemesh {
    * the program.
    * @return reference to m_inst.
    */
-  static MessageHandler &MessageHandler::getInstance(void) {
+  MessageHandler &MessageHandler::getInstance(void) {
     return m_inst;
   }
 
@@ -29,7 +30,7 @@ namespace bemesh {
    * @param buf_len pointer to the serialized message buffer length value
    * @return Success if no errors occurred, !=Success otherwhise.
    */
-  ErrStatus serialize(MessageHeader *h, uint8_t **buf_ptr, uint16_t *buf_len) {
+  ErrStatus MessageHandler::serialize(MessageHeader *h, uint8_t **buf_ptr, uint16_t *buf_len) {
     std::stringstream serialized_stream;
     // Serialize the message h into serialized_stream
     h->serialize(serialized_stream);
@@ -55,15 +56,15 @@ namespace bemesh {
     // Load the serialized message data from the serialized_stream
     // keep in mind that serialized_stream starts with the ID of the message
     // followed by the ordered serialization data.
-    (std::size_t *)m_tx_buf[0] = payload_dim;
+    ((std::size_t *)m_tx_buf)[0] = payload_dim;
     m_tx_buf_len += sizeof(std::size_t);
-    payload_dim -= sizeof(std:;size_t);
+    payload_dim -= sizeof(std::size_t);
     for(int i=0; i < payload_dim ; ++i) {
       serialized_stream.read(reinterpret_cast<char*>(&m_tx_buf[m_tx_buf_len++]),
 			     sizeof(uint8_t));
     }
     // Setup the buffer pointer
-    *buf_ptr = &m_tx_buf;
+    *buf_ptr = (uint8_t *)&m_tx_buf;
     return Success;
   }
 
@@ -82,7 +83,7 @@ namespace bemesh {
    * @param len src buffer length
    * @return 
    */
-  MessageHeader *unserialize(uint8_t *src, uint16_t len) {
+  MessageHeader *MessageHandler::unserialize(uint8_t *src, uint16_t len) {
     std::stringstream dstream;
     std::size_t buffer_length = (std::size_t)src[0];
     buffer_length -= sizeof(std::size_t);

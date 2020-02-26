@@ -5,7 +5,7 @@ if(NOT DEFINED ESP32_SIMULATION)
 
 
   #In this variable we keep track of source files needed by the component.
-  list(APPEND SOURCES "bemesh_messages_v2.cpp" "message_handler_v2.cpp" "routing.cpp" "rtable.cpp")
+  list(APPEND SOURCES "bemesh_messages_v2.cpp" "message_handler_v2.cpp" "routing.cpp" "rtable.cpp" "message_handler_v3.cpp")
 
 
   #All header files will be located inside the "include" directory of the component "component" reachable from "../"
