@@ -35,7 +35,7 @@ namespace bemesh {
      * will be called.
      *
      * @param h Pointer to the message's header that has to be sent.
-     * @return Success if no errors occurred, !=Success otherwhise.
+     * @return Success if no errors occurred, !=Success otherwise.
      */
     ErrStatus serialize(MessageHeader *h, uint8_t **buf_ptr, uint16_t *buf_len);
 

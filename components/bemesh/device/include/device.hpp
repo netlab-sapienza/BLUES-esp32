@@ -7,6 +7,7 @@
 
 #include "core_int.h"
 #include "gap_device.h"
+#include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
@@ -27,6 +28,7 @@ class Device {
   bemesh::Router router;
   Role role;
   bool connected;
+  SemaphoreHandle_t connectionSemaphore;
 
   Device()
       : router(
@@ -34,6 +36,7 @@ class Device {
     role = Role::UNDEFINED;
     connected = false;
     timeout_sec = 5;
+    connectionSemaphore = xSemaphoreCreateBinary();
   }
 
 public:
@@ -100,6 +103,9 @@ public:
   void setConnected(bool newConnected);
   uint8_t getTimeoutSec() const;
   bemesh::Router getRouter() const;
+  void addTimeoutSec(uint8_t timeoutSec);
+  void setTimeoutSec(uint8_t timeoutSec);
+  SemaphoreHandle_t getConnectionSemaphore() const;
 };
 
 #endif // ESP32_BLE_MESH_DEVICE_HPP

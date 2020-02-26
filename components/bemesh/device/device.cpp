@@ -41,13 +41,18 @@ void Device::startup() {
 void Device::server_routine() {
   kernel_install_cb(ON_INC_CONN, on_incoming_connection);
   kernel_install_cb(ON_MSG_RECV, on_message_received);
+
+  while (true) {
+    this->scan_the_environment();
+    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
+  }
 }
 
 void Device::client_routine() {
   for (int i = 0; i < 100; i++) {
     // get a random address or compose a broadcast address
-    //send_message();
-    vTaskDelay(timeout_sec / portTICK_RATE_MS);
+    // send_message();
+    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
   }
 }
 void Device::connect_to_server(bemesh_dev_t target_server) {
@@ -67,4 +72,9 @@ void Device::setConnected(bool newConnected) {
   Device::connected = newConnected;
 }
 uint8_t Device::getTimeoutSec() const { return timeout_sec; }
+void Device::addTimeoutSec(uint8_t timeoutSec) { timeout_sec += timeoutSec; }
+void Device::setTimeoutSec(uint8_t timeoutSec) { timeout_sec = timeoutSec; }
 bemesh::Router Device::getRouter() const { return router; }
+SemaphoreHandle_t Device::getConnectionSemaphore() const {
+  return connectionSemaphore;
+}
