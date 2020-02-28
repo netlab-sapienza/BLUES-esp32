@@ -17,7 +17,6 @@ namespace bemesh {
    * operations related to message serialization and deserialization.
    */
   class MessageHandler {
-    static MessageHandler m_inst;
     uint8_t m_tx_buf[MESSAGE_HANDLER_TX_BUF_SIZE];
     uint16_t m_tx_buf_len;
     MessageHandler(void);

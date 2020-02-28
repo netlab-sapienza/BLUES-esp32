@@ -45,7 +45,7 @@ static bda_id_tuple *find_tuple(bda_id_tuple* vect,
                                 uint8_t len, esp_bd_addr_t bda,
                                 uint8_t *found_flag) {
   for (int i = 0; i < len; ++i) {
-    bda_id_tuple *entry = vect[i];
+    bda_id_tuple *entry = &vect[i];
     if (bda_equals(bda, entry->bda)) {
       *found_flag = true;
       return entry;
@@ -67,7 +67,7 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len) {
   uint8_t notify_flag = false;
   uint16_t conn_id = CORE_UNUSED_CONN_ID;
   for (int i = 0; i < GATTC_MAX_CONNECTIONS; ++i) {
-    bda_id_tuple *entry=core->outgoing_conn[i];
+    bda_id_tuple *entry=&core->outgoing_conn[i];
     if (bda_equals(bda, entry->bda)) {
       conn_id = entry->conn_id;
       break;
@@ -75,7 +75,7 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len) {
   }
   if(conn_id == CORE_UNUSED_CONN_ID) {
     for(int i = 0; i < GATTS_MAX_CONNECTIONS; ++i) {
-      bda_id_tuple *entry=core->outgoing_conn[i];
+      bda_id_tuple *entry=&core->outgoing_conn[i];
       if(bda_equals(bda, entry->bda)) {
 	notify_flag = true;
 	conn_id = entry->conn_id;

@@ -5,7 +5,9 @@
 #ifndef ESP32_BLE_MESH_DEVICE_CALLBACKS_HPP
 #define ESP32_BLE_MESH_DEVICE_CALLBACKS_HPP
 
+extern "C" {
 #include "core_int.h"
+}
 
 /**
  * Callback to be launched after a scan has been completed

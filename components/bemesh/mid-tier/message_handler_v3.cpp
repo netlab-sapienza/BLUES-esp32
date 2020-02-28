@@ -17,6 +17,7 @@ namespace bemesh {
    * @return reference to m_inst.
    */
   MessageHandler &MessageHandler::getInstance(void) {
+    static MessageHandler m_inst;
     return m_inst;
   }
 

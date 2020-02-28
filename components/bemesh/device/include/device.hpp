@@ -5,9 +5,14 @@
 #ifndef ESP32_BLE_MESH_DEVICE_HPP
 #define ESP32_BLE_MESH_DEVICE_HPP
 
+extern "C" {
 #include "core_int.h"
 #include "gap_device.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 #include <esp_log.h>
+}
 
 // Routing and messages
 #include "bemesh_messages_v2.hpp"
@@ -15,9 +20,6 @@
 
 // just for the timeout
 #include "device_callbacks.hpp"
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
 
 enum class Role { UNDEFINED = 0, SERVER = 1, CLIENT = 2 };
 
@@ -90,10 +92,7 @@ public:
    *
    * @return
    */
-  static Device &getInstance() {
-    static Device instance = Device();
-    return instance;
-  }
+  static Device &getInstance();
 
   Role getRole() const;
   void setRole(Role newRole);

@@ -4,8 +4,11 @@
 
 #include "device_callbacks.hpp"
 #include "device.hpp"
+
+extern "C" {
 #include <esp_log.h>
 #include <gatt_def.h>
+}
 
 #define TIMEOUT_DELAY 10
 static const char *TAG = "device_callbacks";

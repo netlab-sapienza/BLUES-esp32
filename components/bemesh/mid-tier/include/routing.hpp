@@ -169,6 +169,14 @@ public:
    * @return
    */
   static Router &getInstance(dev_addr_t bda);
+
+  /**
+   * Preprocess the incoming routing table, through a 
+   * RoutingDiscoveryResponse message, by updating its
+   * parameters.
+   */
+  static void preprocessRoutingTable(dev_addr_t t_remote_bda,
+				     std::vector<routing_params_t>& t_rtable);
 };
 
 /**

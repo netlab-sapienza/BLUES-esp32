@@ -4,17 +4,12 @@
 
 #include "device.hpp"
 
+extern "C" {
+  #include <gatt_def.h>
+}
 #include "bemesh_messages_v2.hpp"
-#include <gatt_def.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-#include <esp_log.h>
-
 // Adding new inclusions.
 #include "bemesh_status.hpp"
-#include "message_handler_v3.hpp"
 
 using namespace bemesh;
 
@@ -87,6 +82,11 @@ ErrStatus Device::send_message(MessageHeader *message) {
     send_payload(this->getRouter().nextHop(final_dest).data(), tx_buffer_ptr,
                  tx_buffer_len);
   return ret;
+}
+
+Device &Device::getInstance() {
+  static Device instance = Device();
+  return instance;
 }
 
 Role Device::getRole() const { return role; }
