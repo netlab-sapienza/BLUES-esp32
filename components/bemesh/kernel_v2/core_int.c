@@ -111,6 +111,51 @@ void scan_environment(uint8_t timeout) {
 }
 
 /**
+ * Stop the scanning procedure.
+ * After the timeout has expired, the scan mode will
+ * stop autonomously.
+ */
+void stop_scan(void) {
+  bemesh_core_stop_scanning(core);
+  return;
+}
+
+/**
+ * Returns the state of the GAP module regarding scan.
+ * @return 1 if the kernel is in scan mode, 0 otherwise.
+ */
+uint8_t is_scanning(void) {
+  return bemesh_core_is_scanning(core);
+}
+
+/**
+ * Start the advertising procedure.
+ * Advertising and scanning should not be executed
+ * concurrently. Check if scanning is in act before
+ * starting the advertisment procedure.
+ */
+void start_advertising(void) {
+  bemesh_core_start_advertising(core);
+  return;
+}
+
+/**
+ * Stop the advertising procedure.
+ */
+void stop_advertising(void) {
+  bemesh_core_stop_advertising(core);
+  return;
+}
+
+/**
+ * Returns the state of the GAP module regarding advertisement.
+ * @return 1 if the kernel is in advertisement mode, 0 otherwise.
+ */
+uint8_t is_advertising(void) {
+  return bemesh_core_is_advertising(core);
+}
+
+/**
  * Get the device bda. It can be passed to bemesh::to_dev_addr() in order to get the correct address.
  *
  * @return the device bda in bytes

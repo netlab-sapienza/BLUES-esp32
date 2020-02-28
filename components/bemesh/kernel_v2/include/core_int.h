@@ -108,6 +108,38 @@ uint8_t disconnect_from(esp_bd_addr_t bda);
 void scan_environment(uint8_t timeout);
 
 /**
+ * Stop the scanning procedure.
+ * After the timeout has expired, the scan mode will
+ * stop autonomously.
+ */
+void stop_scan(void);
+
+/**
+ * Returns the state of the GAP module regarding scan.
+ * @return 1 if the kernel is in scan mode, 0 otherwise.
+ */
+uint8_t is_scanning(void);
+
+/**
+ * Start the advertising procedure.
+ * Advertising and scanning should not be executed
+ * concurrently. Check if scanning is in act before
+ * starting the advertisment procedure.
+ */
+void start_advertising(void);
+
+/**
+ * Stop the advertising procedure.
+ */
+void stop_advertising(void);
+
+/**
+ * Returns the state of the GAP module regarding advertisement.
+ * @return 1 if the kernel is in advertisement mode, 0 otherwise.
+ */
+uint8_t is_advertising(void);
+
+/**
  * Get the device bda. It can be passed to bemesh::to_dev_addr() in order to get the correct address.
  *
  * @return the device bda in bytes
