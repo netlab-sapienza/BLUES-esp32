@@ -8,8 +8,6 @@
 #include "core_int.h"
 #include "gap_device.h"
 #include <esp_log.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
 
 // Routing and messages
 #include "bemesh_messages_v2.hpp"
@@ -54,7 +52,7 @@ public:
   /**
    * Launcher function of the device
    */
-  void startup();
+  void start();
   /**
    * Launcher for the scan of the environment
    */

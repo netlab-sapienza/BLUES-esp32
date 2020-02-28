@@ -43,7 +43,7 @@ void Device::scan_the_environment() {
   scan_environment(timeout_sec);
 }
 
-void Device::startup() {
+void Device::start() {
   kernel_init();
   scan_the_environment();
 }

@@ -1,5 +1,5 @@
 
-list(APPEND REQUIRED_COMPS "mid-tier" "kernel_v2")
+list(APPEND REQUIRED_COMPS "mid-tier" "kernel_v2" "device")
 
 
 #In this variable we keep track of source files needed by the component.
