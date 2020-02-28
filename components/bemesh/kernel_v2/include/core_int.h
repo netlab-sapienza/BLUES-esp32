@@ -145,3 +145,15 @@ uint8_t is_advertising(void);
  * @return the device bda in bytes
  */
 uint8_t *get_own_bda(void);
+
+/**
+ * Returns the current number of handled
+ * outgoing connections.
+ */
+uint8_t get_num_out_conn(void);
+
+/**
+ * Returns the current number of handled
+ * incoming connections.
+ */
+uint8_t get_num_inc_conn(void);

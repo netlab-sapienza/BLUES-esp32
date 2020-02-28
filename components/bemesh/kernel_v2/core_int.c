@@ -163,3 +163,19 @@ uint8_t is_advertising(void) {
 uint8_t *get_own_bda(void) {
   return bemesh_core_get_bda(core);
 }
+
+/**
+ * Returns the current number of handled
+ * outgoing connections.
+ */
+uint8_t get_num_out_conn(void) {
+  return core->outgoing_conn_len;
+}
+
+/**
+ * Returns the current number of handled
+ * incoming connections.
+ */
+uint8_t get_num_inc_conn(void) {
+  return core->incoming_conn_len;
+}
