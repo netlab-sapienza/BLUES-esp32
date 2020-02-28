@@ -5,7 +5,7 @@
 #include "device.hpp"
 
 extern "C" {
-  #include <gatt_def.h>
+#include <gatt_def.h>
 }
 #include "bemesh_messages_v2.hpp"
 // Adding new inclusions.
@@ -39,8 +39,11 @@ void Device::scan_the_environment() {
 }
 
 void Device::start() {
+  ESP_LOGI(TAG, "kernel init");
   kernel_init();
+  ESP_LOGI(TAG, "kernel init finished");
   scan_the_environment();
+  ESP_LOGI(TAG, "scan_environment");
 }
 
 void Device::server_routine() {
@@ -48,11 +51,11 @@ void Device::server_routine() {
   kernel_install_cb(ON_MSG_RECV, on_message_received);
   start_advertising();
 
-//  while (true) {
-//    stop_advertising();
-//    this->scan_the_environment();
-//    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
-//  }
+  //  while (true) {
+  //    stop_advertising();
+  //    this->scan_the_environment();
+  //    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
+  //  }
 }
 
 void Device::client_routine() {

@@ -122,6 +122,7 @@ int main(void) {
   // client_routine(core1);
   // #endif
 
+  ESP_LOGI("startup","start");
   Device device = Device::getInstance();
 
   device.start();
