@@ -66,7 +66,7 @@ static void remote_filter_char_uuid_init(esp_bt_uuid_t *r) {
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
   // SET LOGGING LEVEL TO WARNING
-  //  esp_log_level_set(TAG, ESP_LOG_WARN);
+  esp_log_level_set(TAG, ESP_LOG_WARN);
   
   bemesh_gattc_handler *h=get_gattc1_ptr();
   // Initialize the app profile vect.
@@ -420,6 +420,8 @@ static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
   }
   // Launch the ON_OUT_CONN event to core.
   if(h->core_cb!=NULL) {
+    // Set succesful connection.
+    h->core_cb_args->conn.ack=true;
     // Please refer to copen_cb for cb_args constructions.
     (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
   }

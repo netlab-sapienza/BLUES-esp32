@@ -59,12 +59,17 @@ void Device::server_routine() {
 }
 
 void Device::client_routine() {
+  ESP_LOGI(TAG, "Preparing to launch routing discovery requests.");
   // send a message to every node into the routing table
   ErrStatus ret;
-  for (int i = 0; i < this->getRouter().getRoutingTable().size(); i++) {
-    RoutingDiscoveryRequest request = RoutingDiscoveryRequest(
-        this->getRouter().getRoutingTable()[i].target_addr,
-        to_dev_addr(get_own_bda()));
+  std::vector<routing_params_t> rtable=this->getRouter().getRoutingTable();
+  for (int i = 0; i < rtable.size(); i++) {
+    RoutingDiscoveryRequest request =
+      RoutingDiscoveryRequest(rtable[i].target_addr,
+			      to_dev_addr(get_own_bda()));
+    ESP_LOGI(TAG, "Sending routing discovery request to:");
+    ESP_LOG_BUFFER_HEX(TAG, rtable[i].target_addr.data(), 6);
+    
     ret = send_message(&request);
     vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
   }
@@ -88,7 +93,6 @@ ErrStatus Device::send_message(MessageHeader *message) {
 }
 
 Device &Device::getInstance() {
-  ESP_LOGI(TAG, "Creating instance.");
   static Device instance = Device();
   return instance;
 }

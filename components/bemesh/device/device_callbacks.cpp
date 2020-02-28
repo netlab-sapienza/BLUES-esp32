@@ -4,6 +4,7 @@
 
 #include "device_callbacks.hpp"
 #include "device.hpp"
+#include <cstring>
 
 extern "C" {
 #include <esp_log.h>
@@ -21,6 +22,11 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   uint16_t list_length = params->scan.len;
   Device &instance = Device::getInstance();
 
+  // connection target which will be copied from the params
+  // used to add an entry in the routing table.
+  bemesh_dev_t conn_target;
+
+
   kernel_uninstall_cb(ON_SCAN_END);
 
   // This has to be performed only on the first scan. More scan can be launched
@@ -29,11 +35,12 @@ void on_scan_completed(bemesh_evt_params_t *params) {
     if (list_length > 0) {
       ESP_LOGI(TAG, "scancmpl: executing undefined role routine.");
       bemesh_dev_t *target =
-          Device::select_device_to_connect(device_list, list_length);
-      instance.setRole(Role::CLIENT);
+	Device::select_device_to_connect(device_list, list_length);
       // debug infos.
       ESP_LOGI(TAG, "Choosen server with rssi:%d and bda:", target->rssi);
       ESP_LOG_BUFFER_HEX(TAG, target->bda, ESP_BD_ADDR_LEN);
+      // copy the target in the conn_target support object.
+      memcpy(&conn_target, target, sizeof(bemesh_dev_t));
 
       kernel_install_cb(ON_OUT_CONN, on_connection_response);
       for (int i = 0; !instance.isConnected() && i < list_length;
@@ -45,10 +52,21 @@ void on_scan_completed(bemesh_evt_params_t *params) {
         ESP_LOGI(TAG, "Semaphore unlocked.");
       }
     }
-
-    if (instance.isConnected())
+    if (instance.isConnected()) {
+      ESP_LOGI(TAG, "Starting client routine...");
+      // TODO(Andrea): Set the client role where you please.
+      instance.setRole(Role::CLIENT);
+      // Add the new entry to the routing table
+      ESP_LOGI(TAG, "Adding to routing table the new entry:");
+      ESP_LOG_BUFFER_HEX(TAG, conn_target.bda, ESP_BD_ADDR_LEN);
+      auto device = to_dev_addr(conn_target.bda);
+      ESP_LOG_BUFFER_HEX(TAG, device.data(), ESP_BD_ADDR_LEN);
+      instance.getRouter().add(device, device, 0, Reachable);
+      // Launch client routine
       instance.client_routine();
+    }
     else {
+      ESP_LOGI(TAG, "Could not connect to server. Initializing server routine.");
       instance.setRole(Role::SERVER);
       instance.addTimeoutSec(TIMEOUT_DELAY);
       instance.server_routine();
@@ -67,15 +85,20 @@ void on_scan_completed(bemesh_evt_params_t *params) {
 }
 
 void on_connection_response(bemesh_evt_params_t *params) {
-  Device instance = Device::getInstance();
+  ESP_LOGI(TAG, "Connection response callback.");
+  Device &instance = Device::getInstance();
 
   if (instance.getRole() == Role::UNDEFINED) {
+    ESP_LOGI(TAG, "Starting undefined role routine.");
     if (params->conn.ack) {
+      ESP_LOGI(TAG, "Setting connected flag to true.");
       instance.setConnected(true);
     }
   } else if (instance.getRole() == Role::SERVER) {
+    ESP_LOGI(TAG, "Starting server role routine.");
     RoutingDiscoveryRequest request = RoutingDiscoveryRequest(
         to_dev_addr(params->conn.remote_bda), to_dev_addr(get_own_bda()));
+    ESP_LOGI(TAG, "Sending routing discovery request.");
     instance.send_message(&request);
   }
   xSemaphoreGive(instance.getConnectionSemaphore());

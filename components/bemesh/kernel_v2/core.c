@@ -53,7 +53,10 @@ static void log_own_bda(void) {
   return;
 }
 
-bemesh_core_t* bemesh_core_init(void) {  
+bemesh_core_t* bemesh_core_init(void) {
+  // SET LOGGING LEVEL TO WARNING
+  esp_log_level_set(TAG, ESP_LOG_WARN);
+  
   core_peripheral_init();
   bemesh_core_t *core=get_core1_ptr();
 
