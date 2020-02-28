@@ -101,16 +101,16 @@ void on_message_received(bemesh_evt_params_t *params) {
           message->source(), to_dev_addr(get_own_bda()), routing_table,
           routing_table.size());
       break;
-    case ROUTING_DISCOVERY_RES_ID:
-      break;
-    case ROUTING_PING_ID:
-      break;
-    case ROUTING_SYNC_ID:
-      break;
-    case ROUTING_UPDATE_ID:
-      break;
-    default:
-      ESP_LOGE(TAG, "Cannot identify message");
+//    case ROUTING_DISCOVERY_RES_ID:
+//      break;
+//    case ROUTING_PING_ID:
+//      break;
+//    case ROUTING_SYNC_ID:
+//      break;
+//    case ROUTING_UPDATE_ID:
+//      break;
+//    default:
+//      ESP_LOGE(TAG, "Cannot identify message");
     }
   }
 
