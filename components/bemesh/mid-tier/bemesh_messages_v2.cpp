@@ -126,6 +126,16 @@ namespace bemesh {
     // Update the payload size based on t_payload used size
     m_psize+=sizeof(routing_update_t)*t_pentries;
   }
+
+  RoutingUpdateMessage::RoutingUpdateMessage(dev_addr_t t_dest, dev_addr_t t_src,
+					     std::vector<routing_update_t> t_payload,
+					     std::size_t t_pentries):
+    IndexedMessage(t_pentries, t_dest, t_src, ROUTING_UPDATE_ID, 0, 0, 0){
+    // Copy the payload from t_payload (vector) into m_payload (array)
+    std::copy_n(t_payload.begin(), t_pentries, m_payload.begin());
+    // Update the payload size based on t_payload used size
+    m_psize+=sizeof(routing_params_t)*t_pentries;
+  }
   
 
   std::array<routing_update_t, ROUTING_UPDATE_ENTRIES_MAX> RoutingUpdateMessage::payload(void) {
