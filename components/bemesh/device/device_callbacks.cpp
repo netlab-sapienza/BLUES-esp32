@@ -26,24 +26,26 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   // This has to be performed only on the first scan. More scan can be launched
   // during the lifecycle of a server
   if (instance.getRole() == Role::UNDEFINED) {
-    ESP_LOGI(TAG, "scancmpl: executing undefined role routine.");
-    bemesh_dev_t *target =
-        Device::select_device_to_connect(device_list, list_length);
-    instance.setRole(Role::CLIENT);
-    // debug infos.
-    ESP_LOGI(TAG, "Choosen server with rssi:%d and bda:",
-	     target->rssi);
-    ESP_LOG_BUFFER_HEX(TAG, target->bda, ESP_BD_ADDR_LEN);
-    
-    kernel_install_cb(ON_OUT_CONN, on_connection_response);
-    for (int i = 0; !instance.isConnected() && i < list_length;
-         i++, *target = device_list[i + 1]) {
-      ESP_LOGI(TAG, "Attempt to connect to server.");
-      instance.connect_to_server(target->bda);
-      ESP_LOGI(TAG, "Locking the connection semaphore.");
-      xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
-      ESP_LOGI(TAG, "Semaphore unlocked.");
+    if (list_length > 0) {
+      ESP_LOGI(TAG, "scancmpl: executing undefined role routine.");
+      bemesh_dev_t *target =
+          Device::select_device_to_connect(device_list, list_length);
+      instance.setRole(Role::CLIENT);
+      // debug infos.
+      ESP_LOGI(TAG, "Choosen server with rssi:%d and bda:", target->rssi);
+      ESP_LOG_BUFFER_HEX(TAG, target->bda, ESP_BD_ADDR_LEN);
+
+      kernel_install_cb(ON_OUT_CONN, on_connection_response);
+      for (int i = 0; !instance.isConnected() && i < list_length;
+           i++, *target = device_list[i + 1]) {
+        ESP_LOGI(TAG, "Attempt to connect to server.");
+        instance.connect_to_server(target->bda);
+        ESP_LOGI(TAG, "Locking the connection semaphore.");
+        xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
+        ESP_LOGI(TAG, "Semaphore unlocked.");
+      }
     }
+
     if (instance.isConnected())
       instance.client_routine();
     else {
@@ -80,13 +82,16 @@ void on_connection_response(bemesh_evt_params_t *params) {
 }
 
 void on_incoming_connection(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "start incoming connection");
   Device instance = Device::getInstance();
+  ESP_LOGI(TAG, "start incoming connection");
   auto remote_bda = params->conn.remote_bda;
   auto device = to_dev_addr((uint8_t *)remote_bda);
   uint8_t t_num_hops = 0;
   uint8_t t_flag = Reachable;
-
+  ESP_LOGI(TAG, "add device to router");
   instance.getRouter().add(device, device, t_num_hops, t_flag);
+  ESP_LOGI(TAG, "device added");
 
   if (get_num_inc_conn() < GATTS_MAX_CONNECTIONS)
     start_advertising();

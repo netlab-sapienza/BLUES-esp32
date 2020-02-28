@@ -55,12 +55,11 @@ namespace bemesh {
 
   ErrStatus Router::add(dev_addr_t t_target_addr, dev_addr_t t_hop_addr,
 		       uint8_t t_num_hops, uint8_t t_flags) {
-    routing_params_t new_params;
+    routing_params_t new_params{};
     new_params.target_addr=t_target_addr;
     new_params.hop_addr=t_hop_addr;
     new_params.num_hops=t_num_hops;
     new_params.flags=t_flags;
-
     if(m_rtable.contains(t_target_addr)==Success) {
       // Do we need to update ?
       routing_params_t& old_params= m_rtable.get_routing_params(t_target_addr);
@@ -83,7 +82,6 @@ namespace bemesh {
       m_update_vect.push_back(routing_update_t(new_params, UpdateState::Added));
       return Success;
     }
-    return Success;
   }
 
   ErrStatus Router::add(routing_params_t& t_target_params) {
@@ -114,7 +112,7 @@ namespace bemesh {
   /**
    * Search an entry, if it exists of a device with bda t_target_addr inside the
    * routing table.
-   * 
+   *
    * @param t_target_addr bda of the target device begin searched.
    * @return true if the routing table contains the target device, false otherwise.
    */
@@ -135,7 +133,7 @@ namespace bemesh {
   routing_params_t &Router::get(dev_addr_t t_target_addr) {
     return m_rtable.get_routing_params(t_target_addr);
   }
-  
+
   dev_addr_t& Router::nextHop(dev_addr_t t_target_addr) {
     return m_rtable.get_routing_params(t_target_addr).hop_addr;
   }
@@ -225,7 +223,7 @@ namespace bemesh {
   }
   Router &Router::getInstance(dev_addr_t bda) {
     ESP_LOGI("router", "Taking instance.");
-    Router instance = Router(bda);
+    static Router instance = Router(bda);
     return instance;
   }
 
