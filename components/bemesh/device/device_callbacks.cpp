@@ -7,7 +7,7 @@
 #include <esp_log.h>
 #include <gatt_def.h>
 
-#define TIMEOUT_DELAY 5
+#define TIMEOUT_DELAY 10
 static const char *TAG = "device_callbacks";
 
 using namespace bemesh;
@@ -89,28 +89,43 @@ void on_message_received(bemesh_evt_params_t *params) {
   uint8_t *payload = params->recv.payload;
   uint16_t payload_len = params->recv.len;
   Device instance = Device::getInstance();
+  MessageHandler handler = MessageHandler::getInstance();
 
   if (instance.getRole() == Role::SERVER) {
-    MessageHeader *message =
-        MessageHandler::getInstance().unserialize(payload, payload_len);
+    MessageHeader *message = handler.unserialize(payload, payload_len);
     switch (message->id()) {
-    case ROUTING_DISCOVERY_REQ_ID:
+    case ROUTING_DISCOVERY_REQ_ID: {
       std::vector<routing_params_t> routing_table =
           instance.getRouter().getRoutingTable();
       RoutingDiscoveryResponse response = RoutingDiscoveryResponse(
           message->source(), to_dev_addr(get_own_bda()), routing_table,
           routing_table.size());
+      instance.send_message(&response);
       break;
-//    case ROUTING_DISCOVERY_RES_ID:
-//      break;
-//    case ROUTING_PING_ID:
-//      break;
-//    case ROUTING_SYNC_ID:
-//      break;
-//    case ROUTING_UPDATE_ID:
-//      break;
-//    default:
-//      ESP_LOGE(TAG, "Cannot identify message");
+    }
+    case ROUTING_DISCOVERY_RES_ID: {
+      auto *res_packet = (RoutingDiscoveryResponse *)message;
+      for (int i = 0; i < res_packet->entries(); ++i) {
+        auto &entry = res_packet->payload()[i];
+        instance.getRouter().add(entry);
+      }
+      break;
+    }
+    case ROUTING_PING_ID: {
+      ESP_LOGI(TAG, "ping received");
+      break;
+    }
+    case ROUTING_SYNC_ID: {
+      ESP_LOGI(TAG, "routing sync id");
+      break;
+    }
+    case ROUTING_UPDATE_ID: {
+      ESP_LOGI(TAG, "update id");
+      break;
+    }
+    default: {
+      ESP_LOGE(TAG, "Cannot identify message");
+    }
     }
   }
 

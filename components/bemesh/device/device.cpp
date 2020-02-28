@@ -52,10 +52,10 @@ void Device::server_routine() {
   kernel_install_cb(ON_INC_CONN, on_incoming_connection);
   kernel_install_cb(ON_MSG_RECV, on_message_received);
 
-  while (true) {
-    this->scan_the_environment();
-    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
-  }
+//  while (true) {
+//    this->scan_the_environment();
+//    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
+//  }
 }
 
 void Device::client_routine() {
