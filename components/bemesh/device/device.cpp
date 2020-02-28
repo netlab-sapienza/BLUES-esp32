@@ -51,8 +51,10 @@ void Device::startup() {
 void Device::server_routine() {
   kernel_install_cb(ON_INC_CONN, on_incoming_connection);
   kernel_install_cb(ON_MSG_RECV, on_message_received);
+  start_advertising();
 
 //  while (true) {
+//    stop_advertising();
 //    this->scan_the_environment();
 //    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
 //  }

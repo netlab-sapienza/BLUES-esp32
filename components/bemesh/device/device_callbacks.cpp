@@ -70,18 +70,14 @@ void on_connection_response(bemesh_evt_params_t *params) {
 void on_incoming_connection(bemesh_evt_params_t *params) {
   Device instance = Device::getInstance();
   auto remote_bda = params->conn.remote_bda;
+  auto device = to_dev_addr((uint8_t *)remote_bda);
+  uint8_t t_num_hops = 0;
+  uint8_t t_flag = Reachable;
 
-  if (instance.getRole() == Role::SERVER) {
-    if (instance.getRouter().getNeighbours().size() < GATTS_MAX_CONNECTIONS) {
-      auto device = to_dev_addr((uint8_t *)remote_bda);
-      uint8_t t_num_hops = 0;
-      uint8_t t_flag = bemesh::Reachable;
-      // routing_table.insert(device, device, t_num_hops, t_flag);
-    } else {
-      // disconnect the device
-      // send_message();
-    }
-  }
+  instance.getRouter().add(device, device, t_num_hops, t_flag);
+
+  if (get_num_inc_conn() < GATTS_MAX_CONNECTIONS)
+    start_advertising();
 }
 
 void on_message_received(bemesh_evt_params_t *params) {
