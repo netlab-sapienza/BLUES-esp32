@@ -97,7 +97,7 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len) {
  * @return 0 if no error occurred
  */
 uint8_t connect_to(esp_bd_addr_t bda) {
-  return bemesh_core_connect(core, bda);
+  return bemesh_core_connect(core, bda)==ESP_GATT_OK;
 }
 
 /**

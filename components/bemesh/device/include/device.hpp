@@ -25,19 +25,12 @@ enum class Role { UNDEFINED = 0, SERVER = 1, CLIENT = 2 };
 
 class Device {
   uint8_t timeout_sec;
-  bemesh::Router router;
+  bemesh::Router &router;
   Role role;
   bool connected;
   SemaphoreHandle_t connectionSemaphore;
 
-  Device()
-      : router(
-            bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))) {
-    role = Role::UNDEFINED;
-    connected = false;
-    timeout_sec = 5;
-    connectionSemaphore = xSemaphoreCreateBinary();
-  }
+  Device();
 
 public:
   /**

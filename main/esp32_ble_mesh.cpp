@@ -22,8 +22,6 @@ extern "C" {
 void app_main();
 }
 
-static bemesh_core_t *core1;
-
 // void server_routine(bemesh_core_t *core) {
 //  // while(1) {
 //  //   if(bemesh_core_is_scanning(core)) {
@@ -122,10 +120,13 @@ int main(void) {
   // client_routine(core1);
   // #endif
 
-  ESP_LOGI("startup","start");
+  // ESP_LOGI("startup","start");
+  kernel_init();
   Device device = Device::getInstance();
 
   device.start();
+  //kernel_init();
+  //bemesh::Router &router=bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()));
 
   return 0;
 }

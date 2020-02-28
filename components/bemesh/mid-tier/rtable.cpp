@@ -7,6 +7,12 @@
 #include <cassert>
 #include <cstring>
 
+// TEMPORARY (Used for debug).
+extern "C" {
+#include "esp_log.h"
+}
+const char TAG[] = "rtable";
+
 namespace bemesh {
 // Conversion from uint8_t* to dev_addr_t
 dev_addr_t to_dev_addr(uint8_t *data) {
@@ -103,6 +109,7 @@ int RoutingTable::get_number_of_clients(dev_addr_t t_target_addr) {
 }
 
 RoutingTable &RoutingTable::getInstance() {
+  ESP_LOGI(TAG, "Heyo im here.");
   static RoutingTable instance;
   return instance;
 }

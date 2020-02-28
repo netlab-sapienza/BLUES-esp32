@@ -16,6 +16,7 @@ static const char *TAG = "device_callbacks";
 using namespace bemesh;
 
 void on_scan_completed(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "Starting OnScanComplete operation.");
   bemesh_dev_t *device_list = params->scan.result;
   uint16_t list_length = params->scan.len;
   Device &instance = Device::getInstance();
@@ -25,15 +26,23 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   // This has to be performed only on the first scan. More scan can be launched
   // during the lifecycle of a server
   if (instance.getRole() == Role::UNDEFINED) {
+    ESP_LOGI(TAG, "scancmpl: executing undefined role routine.");
     bemesh_dev_t *target =
         Device::select_device_to_connect(device_list, list_length);
     instance.setRole(Role::CLIENT);
-
+    // debug infos.
+    ESP_LOGI(TAG, "Choosen server with rssi:%d and bda:",
+	     target->rssi);
+    ESP_LOG_BUFFER_HEX(TAG, target->bda, ESP_BD_ADDR_LEN);
+    
     kernel_install_cb(ON_OUT_CONN, on_connection_response);
     for (int i = 0; !instance.isConnected() && i < list_length;
          i++, *target = device_list[i + 1]) {
+      ESP_LOGI(TAG, "Attempt to connect to server.");
       instance.connect_to_server(target->bda);
-      xSemaphoreTake(instance.getConnectionSemaphore(), 0);
+      ESP_LOGI(TAG, "Locking the connection semaphore.");
+      xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
+      ESP_LOGI(TAG, "Semaphore unlocked.");
     }
     if (instance.isConnected())
       instance.client_routine();

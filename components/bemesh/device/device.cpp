@@ -39,9 +39,9 @@ void Device::scan_the_environment() {
 }
 
 void Device::start() {
-  ESP_LOGI(TAG, "kernel init");
-  kernel_init();
-  ESP_LOGI(TAG, "kernel init finished");
+  // ESP_LOGI(TAG, "kernel init");
+  // kernel_init();
+  // ESP_LOGI(TAG, "kernel init finished");
   scan_the_environment();
   ESP_LOGI(TAG, "scan_environment");
 }
@@ -88,6 +88,7 @@ ErrStatus Device::send_message(MessageHeader *message) {
 }
 
 Device &Device::getInstance() {
+  ESP_LOGI(TAG, "Creating instance.");
   static Device instance = Device();
   return instance;
 }
@@ -104,4 +105,12 @@ void Device::setTimeoutSec(uint8_t timeoutSec) { timeout_sec = timeoutSec; }
 Router Device::getRouter() const { return router; }
 SemaphoreHandle_t Device::getConnectionSemaphore() const {
   return connectionSemaphore;
+}
+
+Device::Device(): timeout_sec(5),
+		  router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
+		  role(Role::UNDEFINED),
+		  connected(false),
+		  connectionSemaphore(xSemaphoreCreateBinary()){
+  ESP_LOGI(TAG, "Nothing to do here...");
 }

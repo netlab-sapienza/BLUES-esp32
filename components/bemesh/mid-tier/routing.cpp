@@ -8,6 +8,11 @@
 #include <algorithm>
 #include "bemesh_messages_v2.hpp"
 
+// TEMPORARY (Used for debug).
+extern "C" {
+#include "esp_log.h"
+}
+
 namespace bemesh {
   routing_update_t::routing_update_t(void):params(), update_state() {}
   routing_update_t::routing_update_t(routing_params_t t_params, UpdateState t_state) {
@@ -219,6 +224,7 @@ namespace bemesh {
     return dev_vect;
   }
   Router &Router::getInstance(dev_addr_t bda) {
+    ESP_LOGI("router", "Taking instance.");
     Router instance = Router(bda);
     return instance;
   }
