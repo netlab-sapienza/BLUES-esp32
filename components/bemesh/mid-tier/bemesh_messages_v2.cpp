@@ -6,6 +6,7 @@
 
 #include "bemesh_messages_v2.hpp"
 #include <map>
+#include <algorithm>
 
 namespace bemesh {
 
@@ -96,6 +97,16 @@ namespace bemesh {
 						     std::size_t t_pentries):
     IndexedMessage(t_pentries, t_dest, t_src, ROUTING_DISCOVERY_RES_ID, 0, 0, 0),
     m_payload(t_payload){
+    // Update the payload size based on t_payload used size
+    m_psize+=sizeof(routing_params_t)*t_pentries;
+  }
+  
+  RoutingDiscoveryResponse::RoutingDiscoveryResponse(dev_addr_t t_dest, dev_addr_t t_src,
+			   std::vector<routing_params_t> &t_payload,
+			   std::size_t t_pentries):
+    IndexedMessage(t_pentries, t_dest, t_src, ROUTING_DISCOVERY_RES_ID, 0, 0, 0) {
+    // Copy the payload from t_payload (vector) into m_payload (array)
+    std::copy_n(t_payload.begin(), t_pentries, m_payload.begin());
     // Update the payload size based on t_payload used size
     m_psize+=sizeof(routing_params_t)*t_pentries;
   }
