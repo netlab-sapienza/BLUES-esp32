@@ -8,6 +8,12 @@
 #include <map>
 #include <algorithm>
 
+extern "C" {
+  #include "esp_log.h"
+}
+
+static const char *TAG="messages";
+
 namespace bemesh {
 
 
@@ -232,7 +238,7 @@ namespace bemesh {
   MessageHeader* MessageHeader::unserialize(std::istream& istr) {
     uint8_t incoming_id;
     istr.read(reinterpret_cast<char*>(&incoming_id), 1);
-    printf("[unserialize] received id no. %02x\n", incoming_id);
+    ESP_LOGI(TAG, "received id no. %02x\n", incoming_id);
     
     return _serial_ctor_map[incoming_id]->create(istr);
   }

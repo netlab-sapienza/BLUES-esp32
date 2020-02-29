@@ -6,6 +6,11 @@
 
 #include "message_handler_v3.hpp"
 #include <sstream>
+extern "C" {
+#include "esp_log.h"
+}
+
+static const char *TAG="message_handler";
 
 namespace bemesh {
   // Private constructor.
@@ -85,10 +90,13 @@ namespace bemesh {
    * @return 
    */
   MessageHeader *MessageHandler::unserialize(uint8_t *src, uint16_t len) {
+    // TODO(Emanuele): Use len to cross-check the buffer_length value.
+    ESP_LOGI(TAG, "unserialized called.");
     std::stringstream dstream;
     std::size_t buffer_length = (std::size_t)src[0];
     buffer_length -= sizeof(std::size_t);
     src += sizeof(std::size_t);
+    ESP_LOGI(TAG, "need to read %d bytes.", buffer_length);
     uint8_t message_id = src[0];
     if (message_id >= MESSAGE_TYPE_MAX) {
       // Check for invalid messages before parsing them.

@@ -121,6 +121,7 @@ void on_message_received(bemesh_evt_params_t *params) {
   MessageHandler handler = MessageHandler::getInstance();
   ESP_LOGI(TAG, "Starting unserialize procedure.");
   MessageHeader *message = handler.unserialize(payload, payload_len);
+  // DEBUG ONLY (Print the message header)
   if (message->destination() != to_dev_addr(get_own_bda())) {
     ESP_LOGI(TAG, "This message is not for me.");
   }
@@ -165,7 +166,7 @@ void on_message_received(bemesh_evt_params_t *params) {
     ESP_LOGE(TAG, "Cannot identify message");
   }
   }
-
+  
   // if i am the target of the message i'll log it.
   // otherwise i forward the message to the address that the routing table gives
   // me
