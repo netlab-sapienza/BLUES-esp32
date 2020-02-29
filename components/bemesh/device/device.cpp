@@ -48,6 +48,7 @@ void Device::start() {
 
 void Device::server_first_routine() {
   kernel_install_cb(ON_MSG_RECV, on_message_received);
+  this->setRole(Role::SERVER);
   this->server_routine();
 }
 
