@@ -75,6 +75,8 @@ namespace bemesh {
     }
     // Setup the buffer pointer
     *buf_ptr = (uint8_t *)&m_tx_buf;
+    ESP_LOGI(TAG, "built payload:");
+    ESP_LOG_BUFFER_HEX(TAG, *buf_ptr, *buf_len);
     return Success;
   }
 
