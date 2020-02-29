@@ -120,6 +120,13 @@ void on_message_received(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "Starting unserialize procedure.");
   MessageHeader *message = handler.unserialize(payload, payload_len);
   // DEBUG ONLY (Print the message header)
+  ESP_LOGI(TAG, "@@@ Printing received message header @@@");
+  ESP_LOGI(TAG, "Destination:");
+  ESP_LOG_BUFFER_HEX(TAG, message->destination().data(), ESP_BD_ADDR_LEN);
+  ESP_LOGI(TAG, "Source:");
+  ESP_LOG_BUFFER_HEX(TAG, message->source().data(), ESP_BD_ADDR_LEN);
+  ESP_LOGI(TAG, "Payload size: %d", message->psize());
+  
   if (message->destination() != to_dev_addr(get_own_bda())) {
     ESP_LOGI(TAG, "This message is not for me.");
   }
