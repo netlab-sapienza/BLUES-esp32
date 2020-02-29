@@ -7,10 +7,10 @@
 
 extern "C" {
 #include "core_int.h"
-#include "gap_device.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "gap_device.h"
 #include <esp_log.h>
 }
 
@@ -53,9 +53,15 @@ public:
    */
   void scan_the_environment();
   /**
+   * Operations performed as a server only the first time;
+   */
+  void server_first_routine();
+
+  /**
    * Operations performed as a server;
    */
   void server_routine();
+
   /**
    * Operations performed as a client;
    *

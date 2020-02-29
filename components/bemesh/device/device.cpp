@@ -46,16 +46,18 @@ void Device::start() {
   ESP_LOGI(TAG, "scan_environment");
 }
 
-void Device::server_routine() {
+void Device::server_first_routine() {
   kernel_install_cb(ON_INC_CONN, on_incoming_connection);
   kernel_install_cb(ON_MSG_RECV, on_message_received);
-  start_advertising();
+  this->server_routine();
+}
 
-  //  while (true) {
-  //    stop_advertising();
-  //    this->scan_the_environment();
-  //    vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
-  //  }
+void Device::server_routine() {
+  start_advertising();
+  vTaskDelay(25000 / portTICK_PERIOD_MS);
+  stop_advertising();
+  this->setConnected(false);
+  this->scan_the_environment();
 }
 
 void Device::client_routine() {

@@ -28,47 +28,53 @@ void on_scan_completed(bemesh_evt_params_t *params) {
 
   kernel_uninstall_cb(ON_SCAN_END);
 
-  // This has to be performed only on the first scan. More scan can be launched
-  // during the lifecycle of a server
-  if (instance.getRole() == Role::UNDEFINED) {
-    if (list_length > 0) {
-      bemesh_dev_t *target =
-          Device::select_device_to_connect(device_list, list_length);
-      ESP_LOGI(TAG, "onscancmpl: starting undefined routine.");
-      // copy the target in the conn_target support object.
-      memcpy(&conn_target, target, sizeof(bemesh_dev_t));
-      kernel_install_cb(ON_OUT_CONN, on_connection_response);
-      for (int i = 0; !instance.isConnected() && i < list_length;
-           i++, *target = device_list[i + 1]) {
-        ESP_LOGI(TAG, "Attempt to connect to server.");
-        instance.connect_to_server(target->bda);
-        ESP_LOGI(TAG, "Locking the connection semaphore.");
-        xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
-        ESP_LOGI(TAG, "Semaphore unlocked.");
-      }
+  if (list_length > 0) {
+    bemesh_dev_t *target =
+        Device::select_device_to_connect(device_list, list_length);
+    ESP_LOGI(TAG, "onscancmpl: starting undefined routine.");
+    // copy the target in the conn_target support object.
+    memcpy(&conn_target, target, sizeof(bemesh_dev_t));
+    kernel_install_cb(ON_OUT_CONN, on_connection_response);
+    for (int i = 0; !instance.isConnected() && i < list_length;
+         i++, *target = device_list[i + 1]) {
+      ESP_LOGI(TAG, "Attempt to connect to server.");
+      instance.connect_to_server(target->bda);
+      ESP_LOGI(TAG, "Locking the connection semaphore.");
+      xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
+      ESP_LOGI(TAG, "Semaphore unlocked.");
     }
+
     if (instance.isConnected()) {
       ESP_LOGI(TAG, "onscancmpl: starting client routine.");
       // Add the new entry to the routing table
       ESP_LOGI(TAG, "Adding to routing table the new entry:");
       auto device = to_dev_addr(conn_target.bda);
       instance.getRouter().add(device, device, 0, Reachable);
-      // Launch client routine
-      instance.client_routine();
+      if (instance.getRole() == Role::UNDEFINED) {
+        // Launch client routine
+        instance.client_routine();
+      }
+      if (instance.getRole() == Role::SERVER) {
+        RoutingDiscoveryRequest request =
+            RoutingDiscoveryRequest(device, to_dev_addr(get_own_bda()));
+        ESP_LOGI(TAG, "Sending routing discovery request to:");
+        ESP_LOG_BUFFER_HEX(TAG, device.data(), 6);
+
+        ErrStatus ret = instance.send_message(&request);
+        if (ret != Success) {
+          ESP_LOGE(TAG, "Something went wrong on the send message!");
+        }
+      }
     } else {
       ESP_LOGI(TAG, "onscancmpl: starting server routine.");
-      instance.setRole(Role::SERVER);
       instance.addTimeoutSec(TIMEOUT_DELAY);
-      instance.server_routine();
-    }
-  }
-
-  // This is the server behaviour when is already up.
-  //
-  if (instance.getRole() == Role::SERVER) {
-    for (int i = 0; i < list_length; i++) {
-      if (!instance.getRouter().contains(to_dev_addr(device_list[i].bda))) {
-        instance.connect_to_server(device_list->bda);
+      if (instance.getRole() == Role::UNDEFINED) {
+        instance.setRole(Role::SERVER);
+        instance.server_first_routine();
+      } else {
+        // i am already a server i do not need to instantiate the callbacks
+        // again
+        instance.server_routine();
       }
     }
   }
