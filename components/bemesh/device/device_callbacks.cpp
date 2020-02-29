@@ -59,7 +59,6 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   if (list_length > 0) {
     bemesh_dev_t *target =
         Device::select_device_to_connect(device_list, list_length);
-    ESP_LOGI(TAG, "onscancmpl: starting undefined routine.");
     // copy the target in the conn_target support object.
     memcpy(&conn_target, target, sizeof(bemesh_dev_t));
     kernel_install_cb(ON_OUT_CONN, on_connection_response);
@@ -131,7 +130,7 @@ void on_connection_response(bemesh_evt_params_t *params) {
 
 void on_incoming_connection(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "Incoming connection callback.");
-  Device instance = Device::getInstance();
+  Device &instance = Device::getInstance();
   auto remote_bda = params->conn.remote_bda;
   auto device = to_dev_addr((uint8_t *)remote_bda);
   uint8_t t_num_hops = 0;
@@ -147,7 +146,7 @@ void on_message_received(bemesh_evt_params_t *params) {
   //  auto sender = to_dev_addr((uint8_t *)params->recv.remote_bda);
   uint8_t *payload = params->recv.payload;
   uint16_t payload_len = params->recv.len;
-  Device instance = Device::getInstance();
+  Device &instance = Device::getInstance();
   MessageHandler handler = MessageHandler::getInstance();
   MessageHeader *message = handler.unserialize(payload, payload_len);
   // DEBUG ONLY (Print the message header)

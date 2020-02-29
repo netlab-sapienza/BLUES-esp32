@@ -105,7 +105,7 @@ ErrStatus Device::send_message(MessageHeader *message) {
 }
 
 Device &Device::getInstance() {
-  static Device instance = Device();
+  static Device instance;
   return instance;
 }
 
