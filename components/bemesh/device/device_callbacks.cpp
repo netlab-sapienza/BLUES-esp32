@@ -26,7 +26,6 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   // used to add an entry in the routing table.
   bemesh_dev_t conn_target;
 
-
   kernel_uninstall_cb(ON_SCAN_END);
 
   // This has to be performed only on the first scan. More scan can be launched
@@ -34,7 +33,7 @@ void on_scan_completed(bemesh_evt_params_t *params) {
   if (instance.getRole() == Role::UNDEFINED) {
     if (list_length > 0) {
       bemesh_dev_t *target =
-	Device::select_device_to_connect(device_list, list_length);
+          Device::select_device_to_connect(device_list, list_length);
       ESP_LOGI(TAG, "onscancmpl: starting undefined routine.");
       // copy the target in the conn_target support object.
       memcpy(&conn_target, target, sizeof(bemesh_dev_t));
@@ -58,8 +57,7 @@ void on_scan_completed(bemesh_evt_params_t *params) {
       instance.getRouter().add(device, device, 0, Reachable);
       // Launch client routine
       instance.client_routine();
-    }
-    else {
+    } else {
       ESP_LOGI(TAG, "onscancmpl: starting server routine.");
       instance.setRole(Role::SERVER);
       instance.addTimeoutSec(TIMEOUT_DELAY);
@@ -123,15 +121,18 @@ void on_message_received(bemesh_evt_params_t *params) {
   MessageHandler handler = MessageHandler::getInstance();
   ESP_LOGI(TAG, "Starting unserialize procedure.");
   MessageHeader *message = handler.unserialize(payload, payload_len);
+  if (message->source() != to_dev_addr(get_own_bda())) {
+    ESP_LOGI(TAG, "This message is not for me.");
+  }
   switch (message->id()) {
   case ROUTING_DISCOVERY_REQ_ID: {
     ESP_LOGI(TAG, "Received routing discovery request from:");
     ESP_LOG_BUFFER_HEX(TAG, message->source().data(), ESP_BD_ADDR_LEN);
     std::vector<routing_params_t> routing_table =
-      instance.getRouter().getRoutingTable();
-    RoutingDiscoveryResponse response = RoutingDiscoveryResponse(
-								 message->source(), to_dev_addr(get_own_bda()), routing_table,
-								 routing_table.size());
+        instance.getRouter().getRoutingTable();
+    RoutingDiscoveryResponse response =
+        RoutingDiscoveryResponse(message->source(), to_dev_addr(get_own_bda()),
+                                 routing_table, routing_table.size());
     ESP_LOGI(TAG, "Preparing to send response.");
     instance.send_message(&response);
     break;
@@ -141,7 +142,7 @@ void on_message_received(bemesh_evt_params_t *params) {
     ESP_LOG_BUFFER_HEX(TAG, message->source().data(), ESP_BD_ADDR_LEN);
     auto *res_packet = (RoutingDiscoveryResponse *)message;
     ESP_LOGI(TAG, "Adding %d entries to the routing table.",
-	     res_packet->entries());
+             res_packet->entries());
     for (int i = 0; i < res_packet->entries(); ++i) {
       auto &entry = res_packet->payload()[i];
       instance.getRouter().add(entry);
@@ -164,7 +165,7 @@ void on_message_received(bemesh_evt_params_t *params) {
     ESP_LOGE(TAG, "Cannot identify message");
   }
   }
-  
+
   // if i am the target of the message i'll log it.
   // otherwise i forward the message to the address that the routing table gives
   // me
