@@ -63,16 +63,19 @@ void Device::client_routine() {
   // install message receive callback.
   kernel_install_cb(ON_MSG_RECV, on_message_received);
   // send a message to every node into the routing table
+  this->setRole(Role::CLIENT);
   ErrStatus ret;
-  std::vector<routing_params_t> rtable=this->getRouter().getRoutingTable();
+  std::vector<routing_params_t> rtable = this->getRouter().getRoutingTable();
   for (int i = 0; i < rtable.size(); i++) {
-    RoutingDiscoveryRequest request =
-      RoutingDiscoveryRequest(rtable[i].target_addr,
-			      to_dev_addr(get_own_bda()));
+    RoutingDiscoveryRequest request = RoutingDiscoveryRequest(
+        rtable[i].target_addr, to_dev_addr(get_own_bda()));
     ESP_LOGI(TAG, "Sending routing discovery request to:");
     ESP_LOG_BUFFER_HEX(TAG, rtable[i].target_addr.data(), 6);
-    
+
     ret = send_message(&request);
+    if (ret != Success) {
+      ESP_LOGE(TAG, "Something went wrong on the send message!");
+    }
     vTaskDelay(timeout_sec / portTICK_PERIOD_MS);
   }
 }
@@ -113,10 +116,10 @@ SemaphoreHandle_t Device::getConnectionSemaphore() const {
   return connectionSemaphore;
 }
 
-Device::Device(): timeout_sec(5),
-		  router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
-		  role(Role::UNDEFINED),
-		  connected(false),
-		  connectionSemaphore(xSemaphoreCreateBinary()){
+Device::Device()
+    : timeout_sec(5),
+      router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
+      role(Role::UNDEFINED), connected(false),
+      connectionSemaphore(xSemaphoreCreateBinary()) {
   ESP_LOGI(TAG, "Nothing to do here...");
 }
