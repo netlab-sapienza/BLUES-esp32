@@ -51,11 +51,9 @@ std::ostream &operator<<(std::ostream &os, const routing_params_t &up) {
 }
 
 routing_params_t RoutingTable::insert(routing_params_t t_target_params) {
-  xSemaphoreTake(semaphore, portMAX_DELAY);
   dev_addr_t target_addr = t_target_params.target_addr;
   m_routing_table.insert(
       std::pair<dev_addr_t, routing_params_t>(target_addr, t_target_params));
-  xSemaphoreGive(semaphore);
   return t_target_params;
 }
 
@@ -70,21 +68,17 @@ routing_params_t RoutingTable::insert(dev_addr_t t_target_addr,
 }
 
 ErrStatus RoutingTable::remove(dev_addr_t t_target_addr) {
-  xSemaphoreTake(semaphore, portMAX_DELAY);
   std::map<dev_addr_t, routing_params_t>::iterator it;
   it = m_routing_table.find(t_target_addr);
   assert(it != m_routing_table.end());
   m_routing_table.erase(it);
-  xSemaphoreGive(semaphore);
   return Success;
 }
 
 ErrStatus RoutingTable::contains(dev_addr_t &t_target_addr) {
-  xSemaphoreTake(semaphore, portMAX_DELAY);
   std::map<dev_addr_t, routing_params_t>::iterator it;
   it = m_routing_table.find(t_target_addr);
   bool check = it == m_routing_table.end();
-  xSemaphoreGive(semaphore);
   if (check) {
     return GenericError;
   }
@@ -92,36 +86,28 @@ ErrStatus RoutingTable::contains(dev_addr_t &t_target_addr) {
 }
 
 routing_params_t &RoutingTable::get_routing_params(dev_addr_t t_target_addr) {
-  xSemaphoreTake(semaphore, portMAX_DELAY);
   std::map<dev_addr_t, routing_params_t>::iterator it;
   it = m_routing_table.find(t_target_addr);
   // Stop everything if the routing table contains no routing params for target
   assert(it != m_routing_table.end());
-  xSemaphoreGive(semaphore);
   return it->second;
 }
 
 uint16_t RoutingTable::size() {
-  xSemaphoreTake(semaphore, portMAX_DELAY);
   uint16_t ret = m_routing_table.size();
-  xSemaphoreGive(semaphore);
   return ret;
 }
 
 std::vector<routing_params_t> RoutingTable::exportTable() {
-  xSemaphoreTake(semaphore, portMAX_DELAY);
   std::vector<routing_params_t> rtable_vect;
   for (auto const &x : m_routing_table) {
     rtable_vect.push_back(x.second);
   }
-  xSemaphoreGive(semaphore);
   return rtable_vect;
 }
 
 int RoutingTable::get_number_of_clients(dev_addr_t t_target_addr) {
-  xSemaphoreTake(semaphore, portMAX_DELAY);
   // TODO
-  xSemaphoreGive(semaphore);
   return 0;
 }
 
@@ -130,12 +116,10 @@ RoutingTable &RoutingTable::getInstance() {
   static RoutingTable instance;
   return instance;
 }
-RoutingTable::RoutingTable() : m_routing_table() {
-  semaphore = xSemaphoreCreateBinary();
-}
+RoutingTable::RoutingTable() : m_routing_table() {}
 
 std::size_t RoutingTable::encodeTable(std::vector<routing_params_t> &t_src_vect,
-                        uint8_t *t_dest, std::size_t dest_len) {
+                                      uint8_t *t_dest, std::size_t dest_len) {
   std::size_t exp_byte_size = t_src_vect.size() * sizeof(routing_params_t);
   assert(dest_len >= exp_byte_size);
 

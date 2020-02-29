@@ -11,10 +11,6 @@
 
 #include "bemesh_status.hpp"
 
-extern "C" {
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-};
 
 namespace bemesh {
   #define DEV_ADDR_LEN 6
@@ -44,7 +40,6 @@ namespace bemesh {
   class RoutingTable {
     RoutingTable();
     std::map<dev_addr_t,routing_params_t > m_routing_table;
-    SemaphoreHandle_t semaphore;
 
   public:
     static RoutingTable&getInstance();
