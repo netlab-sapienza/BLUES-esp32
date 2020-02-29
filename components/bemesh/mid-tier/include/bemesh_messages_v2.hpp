@@ -82,6 +82,11 @@ namespace bemesh {
 			     std::array<routing_params_t,
 			     ROUTING_DISCOVERY_RES_ENTRIES_MAX> t_payload,
 			     std::size_t t_pentries);
+
+    RoutingDiscoveryResponse(dev_addr_t t_dest, dev_addr_t t_src,
+			     std::vector<routing_params_t> &t_payload,
+			     std::size_t t_pentries);
+    
     std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> payload(void);
 
     // Serialization
@@ -99,6 +104,11 @@ namespace bemesh {
 			 std::array<routing_update_t,
 			 ROUTING_UPDATE_ENTRIES_MAX> t_payload,
 			 std::size_t t_pentries);
+
+    RoutingUpdateMessage(dev_addr_t t_dest, dev_addr_t t_src,
+			 std::vector<routing_update_t> t_payload,
+			 std::size_t t_pentries);
+    
     std::array<routing_update_t, ROUTING_UPDATE_ENTRIES_MAX> payload(void);
 
     // Serialization

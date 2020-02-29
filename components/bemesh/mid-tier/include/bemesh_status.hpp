@@ -15,7 +15,7 @@ namespace bemesh{
   // while warning or success values shall be
   // positive.
   enum ErrStatus{
-    //TODO
+    // TODO
     WrongAddress = -8,
     WrongPayload = -7,
     WrongPayloadSize=-6,
@@ -27,6 +27,5 @@ namespace bemesh{
     // Only warnings or succesful status below-------
     Success=0,
     ParsingComplete=1,
-    //TODO
   };
 }

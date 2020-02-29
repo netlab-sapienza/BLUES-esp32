@@ -18,7 +18,7 @@ namespace bemesh {
   // The function is called when the MessageHandler::deserialize function is executed
   // and a valid message is deserialized.
   typedef void (*MsgRecvCb)(MessageHeader* t_header, void* args);
-  
+
   struct message_ops_t {
     MsgRecvCb recv_cb;
     void* args;
@@ -32,7 +32,7 @@ namespace bemesh {
       header_stub(), args() {}
     message_tx_ops_t(MessageHeader* t_h, void* t_args);
   };
-  
+
   class MessageHandler {
     std::array<message_ops_t*, MESSAGE_TYPE_MAX> m_ops;
     std::stringstream m_rx_strm;
@@ -67,8 +67,7 @@ namespace bemesh {
     // Load the pointed buffer t_scr inside
     // the handler's input stream
     std::size_t read(uint8_t* t_src);
-    // Execute I/O operations for serialization and
-    // deserializations.
+    // Execute I/O operations for serialization and deserialization.
     // First readings from input stream are executed.
     // Each deserialized message will trigger the relative
     // MsgRecvCb callback inserted in its ops

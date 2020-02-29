@@ -6,6 +6,13 @@
 
 #include "bemesh_messages_v2.hpp"
 #include <map>
+#include <algorithm>
+
+extern "C" {
+  #include "esp_log.h"
+}
+
+static const char *TAG="messages";
 
 namespace bemesh {
 
@@ -99,6 +106,16 @@ namespace bemesh {
     // Update the payload size based on t_payload used size
     m_psize+=sizeof(routing_params_t)*t_pentries;
   }
+  
+  RoutingDiscoveryResponse::RoutingDiscoveryResponse(dev_addr_t t_dest, dev_addr_t t_src,
+			   std::vector<routing_params_t> &t_payload,
+			   std::size_t t_pentries):
+    IndexedMessage(t_pentries, t_dest, t_src, ROUTING_DISCOVERY_RES_ID, 0, 0, 0) {
+    // Copy the payload from t_payload (vector) into m_payload (array)
+    std::copy_n(t_payload.begin(), t_pentries, m_payload.begin());
+    // Update the payload size based on t_payload used size
+    m_psize+=sizeof(routing_params_t)*t_pentries;
+  }
 
   std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> RoutingDiscoveryResponse::payload(void) {
     return m_payload;
@@ -114,6 +131,16 @@ namespace bemesh {
     m_payload(t_payload) {
     // Update the payload size based on t_payload used size
     m_psize+=sizeof(routing_update_t)*t_pentries;
+  }
+
+  RoutingUpdateMessage::RoutingUpdateMessage(dev_addr_t t_dest, dev_addr_t t_src,
+					     std::vector<routing_update_t> t_payload,
+					     std::size_t t_pentries):
+    IndexedMessage(t_pentries, t_dest, t_src, ROUTING_UPDATE_ID, 0, 0, 0){
+    // Copy the payload from t_payload (vector) into m_payload (array)
+    std::copy_n(t_payload.begin(), t_pentries, m_payload.begin());
+    // Update the payload size based on t_payload used size
+    m_psize+=sizeof(routing_params_t)*t_pentries;
   }
   
 
@@ -211,7 +238,7 @@ namespace bemesh {
   MessageHeader* MessageHeader::unserialize(std::istream& istr) {
     uint8_t incoming_id;
     istr.read(reinterpret_cast<char*>(&incoming_id), 1);
-    printf("[unserialize] received id no. %02x\n", incoming_id);
+    ESP_LOGI(TAG, "received id no. %02x\n", incoming_id);
     
     return _serial_ctor_map[incoming_id]->create(istr);
   }

@@ -103,3 +103,6 @@ build/
 sdkconfig
 
 *.old
+/cmake-build-debug/
+/.vscode/
+/.idea/
