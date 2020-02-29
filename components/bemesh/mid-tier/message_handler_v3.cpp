@@ -38,6 +38,10 @@ namespace bemesh {
    */
   ErrStatus MessageHandler::serialize(MessageHeader *h, uint8_t **buf_ptr, uint16_t *buf_len) {
     std::stringstream serialized_stream;
+    // clean the stream.
+    std::stringstream().swap(serialized_stream);
+    // reset the buffer length
+    m_tx_buf_len = 0;
     // Serialize the message h into serialized_stream
     h->serialize(serialized_stream);
     // Transfer the serialized payload into the internal transmission buffer.
