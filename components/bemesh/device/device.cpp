@@ -55,8 +55,10 @@ void Device::server_first_routine() {
 void Device::server_routine() {
   start_advertising();
   vTaskDelay(25000 / portTICK_PERIOD_MS);
+  ESP_LOGI(TAG, "start link server server");
   stop_advertising();
   this->setConnected(false);
+  ESP_LOGI(TAG, "starting newscan");
   this->scan_the_environment();
 }
 
