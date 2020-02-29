@@ -62,7 +62,7 @@ static void gatts_char_init(bemesh_gatts_handler *h) {
 
 bemesh_gatts_handler *bemesh_gatts_handler_init(void) {
   // SET LOGGING LEVEL TO WARNING
-  esp_log_level_set(TAG, ESP_LOG_WARN);
+  //esp_log_level_set(TAG, ESP_LOG_WARN);
   
   bemesh_gatts_handler *h=get_gatts1_ptr();
 

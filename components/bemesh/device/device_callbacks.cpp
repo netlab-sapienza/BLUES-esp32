@@ -139,6 +139,12 @@ void on_message_received(bemesh_evt_params_t *params) {
     RoutingDiscoveryResponse response =
         RoutingDiscoveryResponse(message->source(), to_dev_addr(get_own_bda()),
                                  routing_table, routing_table.size());
+    ESP_LOGI(TAG, "@@@ Printing outgoing message header @@@");
+    ESP_LOGI(TAG, "Destination:");
+    ESP_LOG_BUFFER_HEX(TAG, response.destination().data(), ESP_BD_ADDR_LEN);
+    ESP_LOGI(TAG, "Source:");
+    ESP_LOG_BUFFER_HEX(TAG, response.source().data(), ESP_BD_ADDR_LEN);
+    ESP_LOGI(TAG, "Payload size: %d", response.psize());
     ESP_LOGI(TAG, "Preparing to send response.");
     instance.send_message(&response);
     break;

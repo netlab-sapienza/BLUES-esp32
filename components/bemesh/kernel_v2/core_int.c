@@ -35,6 +35,8 @@ void kernel_uninstall_cb(bemesh_kernel_evt_t event) {
  * This function has to be called in the startup of the system.
  */
 int kernel_init(void) {
+  // SET LOGGING LEVEL TO WARNING
+  esp_log_level_set(TAG, ESP_LOG_WARN);
   ESP_LOGI(TAG, "initializing kernel.");
   // initializes the core structure.
   core = bemesh_core_init();
