@@ -40,17 +40,13 @@ void on_scan_completed(bemesh_evt_params_t *params) {
       kernel_install_cb(ON_OUT_CONN, on_connection_response);
       for (int i = 0; !instance.isConnected() && i < list_length;
            i++, *target = device_list[i + 1]) {
-        ESP_LOGI(TAG, "Attempt to connect to server.");
         instance.connect_to_server(target->bda);
-        ESP_LOGI(TAG, "Locking the connection semaphore.");
         xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
-        ESP_LOGI(TAG, "Semaphore unlocked.");
       }
     }
     if (instance.isConnected()) {
       ESP_LOGI(TAG, "onscancmpl: starting client routine.");
       // Add the new entry to the routing table
-      ESP_LOGI(TAG, "Adding to routing table the new entry:");
       auto device = to_dev_addr(conn_target.bda);
       instance.getRouter().add(device, device, 0, Reachable);
       // Launch client routine
@@ -102,7 +98,6 @@ void on_incoming_connection(bemesh_evt_params_t *params) {
   uint8_t t_num_hops = 0;
   uint8_t t_flag = Reachable;
   instance.getRouter().add(device, device, t_num_hops, t_flag);
-  ESP_LOGI(TAG, "New device added to the routing table.");
 
   if (get_num_inc_conn() < GATTS_MAX_CONNECTIONS)
     start_advertising();
@@ -113,19 +108,16 @@ void on_message_received(bemesh_evt_params_t *params) {
   auto sender = to_dev_addr((uint8_t *)params->recv.remote_bda);
   uint8_t *payload = params->recv.payload;
   uint16_t payload_len = params->recv.len;
-  ESP_LOGI(TAG, "length: %d, payload:", payload_len);
-  ESP_LOG_BUFFER_HEX(TAG, payload, payload_len);
   Device instance = Device::getInstance();
   MessageHandler handler = MessageHandler::getInstance();
-  ESP_LOGI(TAG, "Starting unserialize procedure.");
   MessageHeader *message = handler.unserialize(payload, payload_len);
   // DEBUG ONLY (Print the message header)
-  ESP_LOGI(TAG, "@@@ Printing received message header @@@");
-  ESP_LOGI(TAG, "Destination:");
-  ESP_LOG_BUFFER_HEX(TAG, message->destination().data(), ESP_BD_ADDR_LEN);
-  ESP_LOGI(TAG, "Source:");
-  ESP_LOG_BUFFER_HEX(TAG, message->source().data(), ESP_BD_ADDR_LEN);
-  ESP_LOGI(TAG, "Payload size: %d", message->psize());
+  // ESP_LOGI(TAG, "@@@ Printing received message header @@@");
+  // ESP_LOGI(TAG, "Destination:");
+  // ESP_LOG_BUFFER_HEX(TAG, message->destination().data(), ESP_BD_ADDR_LEN);
+  // ESP_LOGI(TAG, "Source:");
+  // ESP_LOG_BUFFER_HEX(TAG, message->source().data(), ESP_BD_ADDR_LEN);
+  // ESP_LOGI(TAG, "Payload size: %d", message->psize());
 
   if (message->destination() != to_dev_addr(get_own_bda())) {
     ESP_LOGI(TAG, "This message is not for me.");
@@ -133,30 +125,27 @@ void on_message_received(bemesh_evt_params_t *params) {
   switch (message->id()) {
   case ROUTING_DISCOVERY_REQ_ID: {
     if (instance.getRole() == Role::SERVER) {
-      ESP_LOGI(TAG, "Received routing discovery request from:");
-      ESP_LOG_BUFFER_HEX(TAG, message->source().data(), ESP_BD_ADDR_LEN);
+      ESP_LOGI(TAG, "Received RoutingDiscoveryRequest");
       std::vector<routing_params_t> routing_table =
           instance.getRouter().getRoutingTable();
       RoutingDiscoveryResponse response = RoutingDiscoveryResponse(
           message->source(), to_dev_addr(get_own_bda()), routing_table,
           routing_table.size());
-      ESP_LOGI(TAG, "@@@ Printing outgoing message header @@@");
-      ESP_LOGI(TAG, "Destination:");
-      ESP_LOG_BUFFER_HEX(TAG, response.destination().data(), ESP_BD_ADDR_LEN);
-      ESP_LOGI(TAG, "Source:");
-      ESP_LOG_BUFFER_HEX(TAG, response.source().data(), ESP_BD_ADDR_LEN);
-      ESP_LOGI(TAG, "Payload size: %d", response.psize());
-      ESP_LOGI(TAG, "Preparing to send response.");
+      // ESP_LOGI(TAG, "@@@ Printing outgoing message header @@@");
+      // ESP_LOGI(TAG, "Destination:");
+      // ESP_LOG_BUFFER_HEX(TAG, response.destination().data(), ESP_BD_ADDR_LEN);
+      // ESP_LOGI(TAG, "Source:");
+      // ESP_LOG_BUFFER_HEX(TAG, response.source().data(), ESP_BD_ADDR_LEN);
+      // ESP_LOGI(TAG, "Payload size: %d", response.psize());
+      // ESP_LOGI(TAG, "Preparing to send response.");
       instance.send_message(&response);
     }
     break;
   }
   case ROUTING_DISCOVERY_RES_ID: {
-    ESP_LOGI(TAG, "Received routing discovery response from:");
+    ESP_LOGI(TAG, "Received routing discovery response");
     ESP_LOG_BUFFER_HEX(TAG, message->source().data(), ESP_BD_ADDR_LEN);
     auto *res_packet = (RoutingDiscoveryResponse *)message;
-    ESP_LOGI(TAG, "Adding %d entries to the routing table.",
-             res_packet->entries());
     for (int i = 0; i < res_packet->entries(); ++i) {
       auto &entry = res_packet->payload()[i];
       instance.getRouter().add(entry);

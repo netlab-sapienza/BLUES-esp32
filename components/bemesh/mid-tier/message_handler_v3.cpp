@@ -54,7 +54,6 @@ namespace bemesh {
      */
     payload_dim += sizeof(std::size_t) + sizeof(uint8_t);
     if (payload_dim > MESSAGE_HANDLER_TX_BUF_SIZE) {
-      // TODO(Emanuele): empty the serialized stream.
       *buf_ptr = NULL;
       *buf_len = 0;
       return BufferFullError;
@@ -75,8 +74,8 @@ namespace bemesh {
     }
     // Setup the buffer pointer
     *buf_ptr = (uint8_t *)&m_tx_buf;
-    ESP_LOGI(TAG, "built payload:");
-    ESP_LOG_BUFFER_HEX(TAG, *buf_ptr, *buf_len);
+    // ESP_LOGI(TAG, "built payload:");
+    // ESP_LOG_BUFFER_HEX(TAG, *buf_ptr, *buf_len);
     return Success;
   }
 
