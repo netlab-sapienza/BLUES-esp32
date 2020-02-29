@@ -23,6 +23,15 @@ extern "C" {
 
 enum class Role { UNDEFINED = 0, SERVER = 1, CLIENT = 2 };
 
+enum DeviceState {
+  Uninitialized=0,
+  Scanning=1,
+  Advertising=2,
+  Connecting=3,
+  InRoutingDiscovery=4,
+  //TODO(Emanuele, Andrea): Add extra states
+};
+
 class Device {
   uint8_t timeout_sec;
   bemesh::Router &router;
@@ -30,6 +39,8 @@ class Device {
   bool connected;
   SemaphoreHandle_t connectionSemaphore;
 
+  // variable to represent the current device's state.
+  DeviceState m_state;
   Device();
 
 public:
@@ -95,6 +106,8 @@ public:
 
   Role getRole() const;
   void setRole(Role newRole);
+  DeviceState getState() const;
+  void setState(DeviceState t_state);
   bool isConnected() const;
   void setConnected(bool newConnected);
   uint8_t getTimeoutSec() const;

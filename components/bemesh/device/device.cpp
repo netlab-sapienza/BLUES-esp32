@@ -111,6 +111,8 @@ Device &Device::getInstance() {
 
 Role Device::getRole() const { return role; }
 void Device::setRole(Role newRole) { Device::role = newRole; }
+DeviceState Device::getState() const { return m_state; }
+void Device::setState(DeviceState t_state) { Device::m_state = t_state; }
 bool Device::isConnected() const { return connected; }
 void Device::setConnected(bool newConnected) {
   Device::connected = newConnected;
@@ -127,6 +129,7 @@ Device::Device()
     : timeout_sec(5),
       router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
       role(Role::UNDEFINED), connected(false),
-      connectionSemaphore(xSemaphoreCreateBinary()) {
+      connectionSemaphore(xSemaphoreCreateBinary()),
+      m_state(Uninitialized){
   ESP_LOGI(TAG, "Nothing to do here...");
 }

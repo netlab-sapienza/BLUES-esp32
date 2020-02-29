@@ -34,6 +34,86 @@ bemesh_dev_t *filter_devs_rtable(Device &instance, bemesh_dev_t *src,
   return dest;
 }
 
+static void fsm_scan_cmpl_no_devs_routine(Device &inst) {
+  ESP_LOGI(TAG, "no device found during scan.");
+  // Execute advertising procedure.
+  inst.setState(DeviceState::Advertising);
+  // Set the device as server
+  inst.setRole(Role::SERVER);
+  return;
+}
+
+static void fsm_routing_dis_sendreq(Device &inst,
+				    uint8_t *remote_bda) {
+  // TODO(Emanuele): Prepare the Routing discovery Request.
+}
+
+static void fsm_scan_cmpl_dev_found(Device &inst,
+				    bemesh_dev_t *conn_target) {
+  // Connection established with the conn_target.
+  // Add it to the routing table and start discovery request
+  bemesh::dev_addr_t conn_bda = bemesh::to_dev_addr(conn_target->bda);
+  inst.getRouter().add(conn_bda, conn_bda,
+		       0, bemesh::RoutingFlags::Reachable);
+  // Set In Routing Discovery State.
+  inst.setState(DeviceState::InRoutingDiscovery);
+  
+}
+
+void fsm_scan_cmpl(bemesh_evt_params_t *params) {
+  Device &inst = Device::getInstance();
+  ESP_LOGI(TAG, "fsm_scan_cmpl");
+  uint16_t res_len=params->scan.len;
+  // If no results are present, stop the callback now.
+  if(!res_len) {
+    fsm_scan_cmpl_no_devs_routine(inst);
+    return;
+  }
+  // at least one device is present.
+  // filter the results
+  bemesh_dev_t *src_devs = params->scan.result;
+  uint16_t flt_devs_len;
+  bemesh_dev_t *flt_devs = filter_devs_rtable(inst, src_devs,
+					      res_len,
+					      &flt_devs_len);
+  // If no results are present in the filtered list, stop the callback
+  if(!flt_devs_len) {
+    free(flt_devs);
+    fsm_scan_cmpl_no_devs_routine(inst);
+    return;
+  }
+  ESP_LOGI(TAG, "scan result contains %d entries.",
+	   flt_devs_len);
+
+  // Sort the flt_devs
+  bemesh_dev_t *sorted_flt_devs =
+    Device::select_device_to_connect(flt_devs, flt_devs_len);
+  // reset the connection flag.
+  inst.setConnected(false);
+  // Attempt connection on the scan result list.
+  for (int i = 0; i < flt_devs_len; ++i) {
+    ESP_LOGI(TAG, "Establishing connection with entry no.%d.", i);
+    bemesh_dev_t *conn_target = &sorted_flt_devs[i];
+    // lock the connection semaphore until the connection is established
+    inst.setState(DeviceState::Connecting);
+    xSemaphoreTake(inst.getConnectionSemaphore(), portMAX_DELAY);
+    // to reach this place, connection must either been accepted or refused.
+    if(inst.isConnected()) {
+      // Connection was established.
+      ESP_LOGI(TAG, "Connection succesful.");
+      fsm_scan_cmpl_dev_found(inst, conn_target);
+      free(flt_devs);
+      return;
+    } else {
+      ESP_LOGI(TAG, "Connection failed. trying the next entry.");
+    }    
+  }
+  
+  free(flt_devs);
+  fsm_scan_cmpl_no_devs_routine(inst);
+  return;
+}
+
 void on_scan_completed(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "Starting OnScanComplete operation: len: %d", params->scan.len);
   bemesh_dev_t *device_list = params->scan.result;
