@@ -127,7 +127,7 @@ bemesh_gap_handler* bemesh_gap_handler_init(uint8_t* rsp_buffer,
 					    uint8_t *srv_uuid_buffer,
 					    uint8_t srv_uuid_len) {
   // SET LOGGING LEVEL TO WARNING
-  //esp_log_level_set(TAG, ESP_LOG_WARN);
+  esp_log_level_set(TAG, ESP_LOG_WARN);
   
   // set callback function
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(bemesh_gap_cb));

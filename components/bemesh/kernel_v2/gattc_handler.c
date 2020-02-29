@@ -66,7 +66,7 @@ static void remote_filter_char_uuid_init(esp_bt_uuid_t *r) {
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
   // SET LOGGING LEVEL TO WARNING
-  //  esp_log_level_set(TAG, ESP_LOG_WARN);
+  //esp_log_level_set(TAG, ESP_LOG_WARN);
   
   bemesh_gattc_handler *h=get_gattc1_ptr();
   // Initialize the app profile vect.
@@ -420,6 +420,8 @@ static void reg_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *para
   }
   // Launch the ON_OUT_CONN event to core.
   if(h->core_cb!=NULL) {
+    // Set succesful connection.
+    h->core_cb_args->conn.ack=true;
     // Please refer to copen_cb for cb_args constructions.
     (*h->core_cb)(ON_OUT_CONN, h->core_cb_args);
   }
@@ -431,17 +433,20 @@ static void recv_notify_cb(esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *par
   } else {
     ESP_LOGI(TAG, "Received indicate.");
   }
-  char buf[64];
-  int wb=sprintf(buf, "len: %d, data: ", param->notify.value_len);
-  for(int i=0;i<param->notify.value_len;++i) {
-    wb+=sprintf(buf+wb, "%02X.", param->notify.value[i]);
-  }
-  ESP_LOGI(TAG, "%s", buf);
+  /* char buf[256]; */
+  /* int wb=sprintf(buf, "len: %d, data: ", param->notify.value_len); */
+  /* for(int i=0;i<param->notify.value_len;++i) { */
+  /*   wb+=sprintf(buf+wb, "%02X.", param->notify.value[i]); */
+  /* } */
+  /* ESP_LOGI(TAG, "%s", buf); */
   // Launch the ON_MSG_RECV event to core.
   if(h->core_cb!=NULL) {
     memcpy(h->core_cb_args->recv.remote_bda, param->notify.remote_bda, ESP_BD_ADDR_LEN);
-    h->core_cb_args->recv.payload=param->notify.value;
-    h->core_cb_args->recv.len=param->notify.value_len;
+    // copy the incoming payload in the notify_buf
+    memcpy(h->notify_buf, param->notify.value, param->notify.value_len);
+    h->notify_buf_len = param->notify.value_len;
+    h->core_cb_args->recv.payload=h->notify_buf;
+    h->core_cb_args->recv.len=h->notify_buf_len;
     (*h->core_cb)(ON_MSG_RECV, h->core_cb_args);
   }
   return;

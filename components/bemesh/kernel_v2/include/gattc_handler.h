@@ -39,6 +39,9 @@ typedef struct bemesh_gattc_handler {
   kernel_cb core_cb;
   // It will rely on params struct built inside the core.
   bemesh_evt_params_t *core_cb_args;
+
+  uint8_t notify_buf[GATT_CHAR_BUF_SIZE];
+  uint16_t notify_buf_len;
 } bemesh_gattc_handler;
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void);

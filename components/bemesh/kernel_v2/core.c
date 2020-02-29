@@ -53,7 +53,10 @@ static void log_own_bda(void) {
   return;
 }
 
-bemesh_core_t* bemesh_core_init(void) {  
+bemesh_core_t* bemesh_core_init(void) {
+  // SET LOGGING LEVEL TO WARNING
+  //esp_log_level_set(TAG, ESP_LOG_WARN);
+  
   core_peripheral_init();
   bemesh_core_t *core=get_core1_ptr();
 
@@ -246,11 +249,13 @@ struct task_handler_params_t {
 
 static void task_handler_cb(void *task_params) {
   struct task_handler_params_t *args=(struct task_handler_params_t *)task_params;
+  ESP_LOGI(TAG, "Launching task_handler_cb.");
   // execute the callback
   (*args->cb)(args->args);
   // Free the allocated structure.
   free(task_params);
   // Destroy the task.
+  ESP_LOGI(TAG, "Destroying task_handler_cb.");
   vTaskDelete(NULL);
 }
 // Handler for low level handlers. This callback should relaunch the higher level callbacks
@@ -262,7 +267,8 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *para
     ESP_LOGI(TAG, "ON_SCAN_END event");
     break;
   case ON_MSG_RECV:
-    ESP_LOGI(TAG, "ON_MSG_RECV event, len");
+    ESP_LOGI(TAG, "ON_MSG_RECV event, len %d",
+	     params->recv.len);
     break;
   case ON_INC_CONN:
     ESP_LOGI(TAG, "ON_INC_CONN event");
@@ -309,7 +315,7 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *para
     task_args->cb=c->handler_cb[event];
     task_args->args=&c->handler_cb_args;
     // Launch the task
-    xTaskCreate(&task_handler_cb, "core_cb_handler", 2048, task_args, tskIDLE_PRIORITY, NULL);
+    xTaskCreate(&task_handler_cb, "core_cb_handler", 4086, task_args, tskIDLE_PRIORITY, NULL);
     //(*c->handler_cb[event])(params);
   }
   return;

@@ -4,8 +4,10 @@
 
 #include "core_int.h"
 #include "core.h"
+#include "esp_log.h"
 
 static bemesh_core_t *core;
+static const char *TAG="core_interface";
 
 /*
  * Install the cb callback for the Event event.
@@ -15,6 +17,7 @@ static bemesh_core_t *core;
  */
 void kernel_install_cb(bemesh_kernel_evt_t event, kernel_int_cb cb) {
   bemesh_core_install_callback(core, event, cb);
+  ESP_LOGI(TAG, "installing callback for event %d.", event);
 }
 
 /**
@@ -24,6 +27,7 @@ void kernel_install_cb(bemesh_kernel_evt_t event, kernel_int_cb cb) {
  */
 void kernel_uninstall_cb(bemesh_kernel_evt_t event) {
   bemesh_core_uninstall_callback(core, event);
+  ESP_LOGI(TAG, "uninstalling callback for event %d.", event);
 }
 
 /*
@@ -31,6 +35,7 @@ void kernel_uninstall_cb(bemesh_kernel_evt_t event) {
  * This function has to be called in the startup of the system.
  */
 int kernel_init(void) {
+  ESP_LOGI(TAG, "initializing kernel.");
   // initializes the core structure.
   core = bemesh_core_init();
   if (!core) {
@@ -63,6 +68,8 @@ static bda_id_tuple *find_tuple(bda_id_tuple* vect,
  * @param len length of the payload
  */
 void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len) {
+  ESP_LOGI(TAG, "send_payload called: bda:");
+  ESP_LOG_BUFFER_HEX(TAG, (uint8_t *)bda, ESP_BD_ADDR_LEN);
   // search for the given bda in the core entries.
   uint8_t notify_flag = false;
   uint16_t conn_id = CORE_UNUSED_CONN_ID;
@@ -75,7 +82,7 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len) {
   }
   if(conn_id == CORE_UNUSED_CONN_ID) {
     for(int i = 0; i < GATTS_MAX_CONNECTIONS; ++i) {
-      bda_id_tuple *entry=&core->outgoing_conn[i];
+      bda_id_tuple *entry=&core->incoming_conn[i];
       if(bda_equals(bda, entry->bda)) {
 	notify_flag = true;
 	conn_id = entry->conn_id;
@@ -84,7 +91,11 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len) {
     }
   }
   if(conn_id != CORE_UNUSED_CONN_ID) {
+    ESP_LOGI(TAG, "sending write: notify:%d, len:%d, conn_id:%d",
+	     notify_flag, len, conn_id);
     bemesh_core_write(core, conn_id, src, len, notify_flag);
+  } else {
+    ESP_LOGE(TAG, "Error: could not execute send_payload: No remote dev with bda found.");
   }
   return;
 }
@@ -97,6 +108,7 @@ void send_payload(esp_bd_addr_t bda, uint8_t *src, uint16_t len) {
  * @return 0 if no error occurred
  */
 uint8_t connect_to(esp_bd_addr_t bda) {
+  ESP_LOGI(TAG, "connect_to called.");
   return bemesh_core_connect(core, bda)==ESP_GATT_OK;
 }
 
@@ -106,6 +118,7 @@ uint8_t connect_to(esp_bd_addr_t bda) {
  * @param timeout length of the scan in seconds
  */
 void scan_environment(uint8_t timeout) {
+  ESP_LOGI(TAG, "scan_environment called.");
   bemesh_core_start_scanning(core, timeout);
   return;
 }
@@ -116,6 +129,7 @@ void scan_environment(uint8_t timeout) {
  * stop autonomously.
  */
 void stop_scan(void) {
+  ESP_LOGI(TAG, "stop_scan called.");
   bemesh_core_stop_scanning(core);
   return;
 }
@@ -125,6 +139,7 @@ void stop_scan(void) {
  * @return 1 if the kernel is in scan mode, 0 otherwise.
  */
 uint8_t is_scanning(void) {
+  ESP_LOGI(TAG, "is_scanning called.");
   return bemesh_core_is_scanning(core);
 }
 
@@ -135,6 +150,7 @@ uint8_t is_scanning(void) {
  * starting the advertisment procedure.
  */
 void start_advertising(void) {
+  ESP_LOGI(TAG, "start_advertising called.");
   bemesh_core_start_advertising(core);
   return;
 }
@@ -143,6 +159,7 @@ void start_advertising(void) {
  * Stop the advertising procedure.
  */
 void stop_advertising(void) {
+  ESP_LOGI(TAG, "stop_advertising called.");
   bemesh_core_stop_advertising(core);
   return;
 }
@@ -152,6 +169,7 @@ void stop_advertising(void) {
  * @return 1 if the kernel is in advertisement mode, 0 otherwise.
  */
 uint8_t is_advertising(void) {
+  ESP_LOGI(TAG, "is_advertising called.");
   return bemesh_core_is_advertising(core);
 }
 
@@ -161,6 +179,7 @@ uint8_t is_advertising(void) {
  * @return the device bda in bytes
  */
 uint8_t *get_own_bda(void) {
+  ESP_LOGI(TAG, "get_own_bda called.");
   return bemesh_core_get_bda(core);
 }
 
@@ -169,6 +188,7 @@ uint8_t *get_own_bda(void) {
  * outgoing connections.
  */
 uint8_t get_num_out_conn(void) {
+  ESP_LOGI(TAG, "get_num_out_conn called.");
   return core->outgoing_conn_len;
 }
 
@@ -177,5 +197,6 @@ uint8_t get_num_out_conn(void) {
  * incoming connections.
  */
 uint8_t get_num_inc_conn(void) {
+  ESP_LOGI(TAG, "get_num_inc_conn called.");
   return core->incoming_conn_len;
 }
