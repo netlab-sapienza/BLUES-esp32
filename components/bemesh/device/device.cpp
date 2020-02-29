@@ -39,11 +39,11 @@ void Device::scan_the_environment() {
 }
 
 void Device::start() {
-  // ESP_LOGI(TAG, "kernel init");
-  // kernel_init();
-  // ESP_LOGI(TAG, "kernel init finished");
+
   scan_the_environment();
   ESP_LOGI(TAG, "scan_environment");
+
+//  server_first_routine();
 }
 
 void Device::server_first_routine() {
@@ -53,6 +53,7 @@ void Device::server_first_routine() {
 }
 
 void Device::server_routine() {
+  this->setConnected(true);
   start_advertising();
   vTaskDelay(25000 / portTICK_PERIOD_MS);
   ESP_LOGI(TAG, "start link server server");

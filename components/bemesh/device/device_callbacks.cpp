@@ -43,38 +43,39 @@ void on_scan_completed(bemesh_evt_params_t *params) {
       xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
       ESP_LOGI(TAG, "Semaphore unlocked.");
     }
+  }
 
-    if (instance.isConnected()) {
-      ESP_LOGI(TAG, "onscancmpl: starting client routine.");
-      // Add the new entry to the routing table
-      auto device = to_dev_addr(conn_target.bda);
-      instance.getRouter().add(device, device, 0, Reachable);
-      if (instance.getRole() == Role::UNDEFINED) {
-        // Launch client routine
-        instance.client_routine();
-      }
-      if (instance.getRole() == Role::SERVER) {
-        RoutingDiscoveryRequest request =
-            RoutingDiscoveryRequest(device, to_dev_addr(get_own_bda()));
-        ESP_LOGI(TAG, "Sending routing discovery request to:");
-        ESP_LOG_BUFFER_HEX(TAG, device.data(), 6);
+  if (instance.isConnected()) {
+    ESP_LOGI(TAG, "onscancmpl: starting client routine.");
+    // Add the new entry to the routing table
+    auto device = to_dev_addr(conn_target.bda);
+    instance.getRouter().add(device, device, 0, Reachable);
+    if (instance.getRole() == Role::UNDEFINED) {
+      // Launch client routine
+      instance.client_routine();
+    }
+    if (instance.getRole() == Role::SERVER) {
+      // Link Server <-> Server
+      RoutingDiscoveryRequest request =
+          RoutingDiscoveryRequest(device, to_dev_addr(get_own_bda()));
+      ESP_LOGI(TAG, "Sending routing discovery request to:");
+      ESP_LOG_BUFFER_HEX(TAG, device.data(), 6);
 
-        ErrStatus ret = instance.send_message(&request);
-        if (ret != Success) {
-          ESP_LOGE(TAG, "Something went wrong on the send message!");
-        }
+      ErrStatus ret = instance.send_message(&request);
+      if (ret != Success) {
+        ESP_LOGE(TAG, "Something went wrong on the send message!");
       }
+    }
+  } else {
+    ESP_LOGI(TAG, "onscancmpl: starting server routine.");
+    instance.addTimeoutSec(TIMEOUT_DELAY);
+    if (instance.getRole() == Role::UNDEFINED) {
+      instance.setRole(Role::SERVER);
+      instance.server_first_routine();
     } else {
-      ESP_LOGI(TAG, "onscancmpl: starting server routine.");
-      instance.addTimeoutSec(TIMEOUT_DELAY);
-      if (instance.getRole() == Role::UNDEFINED) {
-        instance.setRole(Role::SERVER);
-        instance.server_first_routine();
-      } else {
-        // i am already a server i do not need to instantiate the callbacks
-        // again
-        instance.server_routine();
-      }
+      // i am already a server i do not need to instantiate the callbacks
+      // again
+      instance.server_routine();
     }
   }
 }
@@ -142,11 +143,11 @@ void on_message_received(bemesh_evt_params_t *params) {
           routing_table.size());
       // ESP_LOGI(TAG, "@@@ Printing outgoing message header @@@");
       // ESP_LOGI(TAG, "Destination:");
-      // ESP_LOG_BUFFER_HEX(TAG, response.destination().data(), ESP_BD_ADDR_LEN);
-      // ESP_LOGI(TAG, "Source:");
-      // ESP_LOG_BUFFER_HEX(TAG, response.source().data(), ESP_BD_ADDR_LEN);
-      // ESP_LOGI(TAG, "Payload size: %d", response.psize());
-      // ESP_LOGI(TAG, "Preparing to send response.");
+      // ESP_LOG_BUFFER_HEX(TAG, response.destination().data(),
+      // ESP_BD_ADDR_LEN); ESP_LOGI(TAG, "Source:"); ESP_LOG_BUFFER_HEX(TAG,
+      // response.source().data(), ESP_BD_ADDR_LEN); ESP_LOGI(TAG, "Payload
+      // size: %d", response.psize()); ESP_LOGI(TAG, "Preparing to send
+      // response.");
       instance.send_message(&response);
     }
     break;
