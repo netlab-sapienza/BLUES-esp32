@@ -121,7 +121,7 @@ void on_message_received(bemesh_evt_params_t *params) {
   MessageHandler handler = MessageHandler::getInstance();
   ESP_LOGI(TAG, "Starting unserialize procedure.");
   MessageHeader *message = handler.unserialize(payload, payload_len);
-  if (message->source() != to_dev_addr(get_own_bda())) {
+  if (message->destination() != to_dev_addr(get_own_bda())) {
     ESP_LOGI(TAG, "This message is not for me.");
   }
   switch (message->id()) {
