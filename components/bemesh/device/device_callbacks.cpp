@@ -83,7 +83,9 @@ void on_connection_response(bemesh_evt_params_t *params) {
   Device &instance = Device::getInstance();
 
   if (instance.getRole() == Role::UNDEFINED) {
+    ESP_LOGI(TAG, "Starting undefined role routine.");
     if (params->conn.ack) {
+      ESP_LOGI(TAG, "Setting connected flag to true.");
       instance.setConnected(true);
     }
   } else if (instance.getRole() == Role::SERVER) {
