@@ -45,12 +45,7 @@ namespace bemesh {
       return rp2_reachable == 1;
     }
     // Optimality: ---------------------------------------------/
-    if(rp1.num_hops > rp2.num_hops) {
-      // if old path is longer, change
-      return true;
-    } else {
-      return false;
-    }
+    return rp1.num_hops > rp2.num_hops;
   }
 
   ErrStatus Router::add(dev_addr_t t_target_addr, dev_addr_t t_hop_addr,

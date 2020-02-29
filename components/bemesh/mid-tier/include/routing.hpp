@@ -79,9 +79,10 @@ public:
   /**
    * Search an entry, if it exists of a device with bda t_target_addr inside the
    * routing table.
-   * 
+   *
    * @param t_target_addr bda of the target device begin searched.
-   * @return true if the routing table contains the target device, false otherwise.
+   * @return true if the routing table contains the target device, false
+   * otherwise.
    */
   bool contains(dev_addr_t t_target_addr);
 
@@ -89,15 +90,13 @@ public:
    * Extracts the routing parameters for a device with bda t_target_addr inside
    * the routing table.
    * the contains() method should be called first in order to confirm that
-   * the target device is present in the routing table. Not doing so, will result
-   * in undefined behaviour.
+   * the target device is present in the routing table. Not doing so, will
+   * result in undefined behaviour.
    *
    * @param t_target_addr bda of the target device begin searched.
    * @return reference to the routing params of t_target_addr.
    */
   routing_params_t &get(dev_addr_t t_target_addr);
-
-  
 
   /**
    * Returns the flags of t_target_addr node. Please check rtable.h in order to
@@ -171,12 +170,12 @@ public:
   static Router &getInstance(dev_addr_t bda);
 
   /**
-   * Preprocess the incoming routing table, through a 
+   * Preprocess the incoming routing table, through a
    * RoutingDiscoveryResponse message, by updating its
    * parameters.
    */
   static void preprocessRoutingTable(dev_addr_t t_remote_bda,
-				     std::vector<routing_params_t>& t_rtable);
+                                     std::vector<routing_params_t> &t_rtable);
 };
 
 /**

@@ -115,7 +115,7 @@ void on_incoming_connection(bemesh_evt_params_t *params) {
 
 void on_message_received(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "Message received callback.");
-  auto sender = to_dev_addr((uint8_t *)params->recv.remote_bda);
+  //  auto sender = to_dev_addr((uint8_t *)params->recv.remote_bda);
   uint8_t *payload = params->recv.payload;
   uint16_t payload_len = params->recv.len;
   Device instance = Device::getInstance();
