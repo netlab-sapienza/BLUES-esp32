@@ -13,6 +13,8 @@ extern "C" {
 #include "esp_log.h"
 }
 
+static const char *TAG="routing";
+
 namespace bemesh {
   routing_update_t::routing_update_t(void):params(), update_state() {}
   routing_update_t::routing_update_t(routing_params_t t_params, UpdateState t_state) {
@@ -112,6 +114,7 @@ namespace bemesh {
    * @return true if the routing table contains the target device, false otherwise.
    */
   bool Router::contains(dev_addr_t t_target_addr) {
+    ESP_LOGI(TAG, "launching contains");
     return m_rtable.contains(t_target_addr)==Success;
   }
 

@@ -16,8 +16,28 @@ static const char *TAG = "device_callbacks";
 
 using namespace bemesh;
 
+bemesh_dev_t *filter_devs_rtable(Device &instance, bemesh_dev_t *src, uint16_t src_len,
+				 uint16_t *t_dest_len) {
+  ESP_LOGI(TAG, "starting filter proc.");
+  bemesh_dev_t *dest = (bemesh_dev_t *)malloc(sizeof(bemesh_dev_t)*src_len);
+  uint16_t dest_len=0;
+  for (int i = 0; i < src_len; ++i) {
+    ESP_LOGI(TAG, "Filtering elem %d.", i);
+    bool ret=instance.getRouter().
+      contains(bemesh::to_dev_addr(src[i].bda));
+    if(!ret) {
+      ESP_LOGI(TAG, "Keeping the following element.");
+      memcpy(&dest[dest_len], &src[i], sizeof(bemesh_dev_t));
+      dest_len++;
+    }
+  }
+  *t_dest_len = dest_len;
+  return dest;
+}
+
 void on_scan_completed(bemesh_evt_params_t *params) {
-  ESP_LOGI(TAG, "Starting OnScanComplete operation.");
+  ESP_LOGI(TAG, "Starting OnScanComplete operation: len: %d",
+	   params->scan.len);
   bemesh_dev_t *device_list = params->scan.result;
   uint16_t list_length = params->scan.len;
   Device &instance = Device::getInstance();
@@ -30,8 +50,15 @@ void on_scan_completed(bemesh_evt_params_t *params) {
 
   // TODO check if there're new devices
   // if these devices are not in the routing table then i have to merge with them
-
-
+  // Filter the scan result based on the current routing table. All the devices that
+  // are advertising, but are currently already present in the table, are removed from
+  // the scan result.
+  uint16_t f_device_list_len = 0;
+  bemesh_dev_t *f_device_list = filter_devs_rtable(instance, device_list, list_length,
+						   &f_device_list_len);
+  device_list = f_device_list;
+  list_length = f_device_list_len;
+  ESP_LOGI(TAG, "%d entries after filtering.", list_length);
 
   if (list_length > 0) {
     bemesh_dev_t *target =
@@ -49,6 +76,8 @@ void on_scan_completed(bemesh_evt_params_t *params) {
       ESP_LOGI(TAG, "Semaphore unlocked.");
     }
   }
+  // Free the filtered device list
+  free(f_device_list);
 
   if (instance.isConnected()) {
     ESP_LOGI(TAG, "onscancmpl: starting client routine.");
@@ -83,6 +112,7 @@ void on_scan_completed(bemesh_evt_params_t *params) {
       instance.server_routine();
     }
   }
+  
 }
 
 void on_connection_response(bemesh_evt_params_t *params) {
