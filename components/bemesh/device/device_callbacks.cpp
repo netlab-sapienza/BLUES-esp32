@@ -28,6 +28,11 @@ void on_scan_completed(bemesh_evt_params_t *params) {
 
   kernel_uninstall_cb(ON_SCAN_END);
 
+  // TODO check if there're new devices
+  // if these devices are not in the routing table then i have to merge with them
+
+
+
   if (list_length > 0) {
     bemesh_dev_t *target =
         Device::select_device_to_connect(device_list, list_length);

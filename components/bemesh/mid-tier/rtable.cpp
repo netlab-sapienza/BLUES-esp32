@@ -126,7 +126,7 @@ int RoutingTable::get_number_of_clients(dev_addr_t t_target_addr) {
 }
 
 RoutingTable &RoutingTable::getInstance() {
-  ESP_LOGI(TAG, "Heyo im here.");
+  ESP_LOGI(TAG, "Hey im here.");
   static RoutingTable instance;
   return instance;
 }
