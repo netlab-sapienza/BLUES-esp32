@@ -43,21 +43,22 @@ void Device::start() {
   scan_the_environment();
   ESP_LOGI(TAG, "scan_environment");
 
-//  server_first_routine();
+  //  server_first_routine();
 }
 
 void Device::server_first_routine() {
-  kernel_install_cb(ON_INC_CONN, on_incoming_connection);
   kernel_install_cb(ON_MSG_RECV, on_message_received);
   this->server_routine();
 }
 
 void Device::server_routine() {
   this->setConnected(true);
+  kernel_install_cb(ON_INC_CONN, on_incoming_connection);
   start_advertising();
   vTaskDelay(25000 / portTICK_PERIOD_MS);
   ESP_LOGI(TAG, "start link server server");
   stop_advertising();
+  kernel_uninstall_cb(ON_INC_CONN);
   this->setConnected(false);
   ESP_LOGI(TAG, "starting newscan");
   this->scan_the_environment();
