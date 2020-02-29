@@ -49,8 +49,6 @@ void on_scan_completed(bemesh_evt_params_t *params) {
     }
     if (instance.isConnected()) {
       ESP_LOGI(TAG, "onscancmpl: starting client routine.");
-      // TODO(Andrea): Set the client role where you please.
-      instance.setRole(Role::CLIENT);
       // Add the new entry to the routing table
       ESP_LOGI(TAG, "Adding to routing table the new entry:");
       auto device = to_dev_addr(conn_target.bda);
