@@ -34,16 +34,30 @@ bemesh_dev_t *Device::select_device_to_connect(bemesh_dev_t *device_list,
 }
 
 void Device::scan_the_environment() {
-  kernel_install_cb(ON_SCAN_END, on_scan_completed);
-  scan_environment(timeout_sec);
+  ESP_LOGI(TAG, "Starting scan procedure.");
+  // Set the state of the device.
+  Device::setState(DeviceState::Scanning);
+  scan_environment(scn_timeout_sec);
 }
 
+// void Device::start() {
+
+//   scan_the_environment();
+//   ESP_LOGI(TAG, "scan_environment");
+
+//   //  server_first_routine();
+// }
+
+// FSM version
 void Device::start() {
+  // install the callbacks.
+  kernel_install_cb(ON_SCAN_END, fsm_scan_cmpl);
+  kernel_install_cb(ON_OUT_CONN, fsm_outgoing_conn_cmpl);
+  kernel_install_cb(ON_INC_CONN, fsm_incoming_conn_cmpl);
+  kernel_install_cb(ON_MSG_RECV, fsm_msg_recv);
 
-  scan_the_environment();
-  ESP_LOGI(TAG, "scan_environment");
-
-  //  server_first_routine();
+  // Launch the scan function
+  Device::scan_the_environment();
 }
 
 void Device::server_first_routine() {
@@ -110,7 +124,16 @@ Device &Device::getInstance() {
 }
 
 Role Device::getRole() const { return role; }
-void Device::setRole(Role newRole) { Device::role = newRole; }
+void Device::setRole(Role newRole) {
+  if(newRole == Role::SERVER) {
+    ESP_LOGI(TAG, "Setting SERVER role.");
+  } else if(newRole == Role::CLIENT) {
+    ESP_LOGI(TAG, "Setting CLIENT role.");
+  } else {
+    ESP_LOGI(TAG, "Setting UNINITIALIZED role.");
+  }
+  Device::role = newRole;
+}
 DeviceState Device::getState() const { return m_state; }
 void Device::setState(DeviceState t_state) { Device::m_state = t_state; }
 bool Device::isConnected() const { return connected; }
@@ -120,16 +143,22 @@ void Device::setConnected(bool newConnected) {
 uint8_t Device::getTimeoutSec() const { return timeout_sec; }
 void Device::addTimeoutSec(uint8_t timeoutSec) { timeout_sec += timeoutSec; }
 void Device::setTimeoutSec(uint8_t timeoutSec) { timeout_sec = timeoutSec; }
+
+uint16_t Device::getAdvTimeout() const { return adv_timeout_sec; }
+
+uint16_t Device::getScnTimeout() const { return scn_timeout_sec; }
+
 Router Device::getRouter() const { return router; }
 SemaphoreHandle_t Device::getConnectionSemaphore() const {
   return connectionSemaphore;
 }
 
 Device::Device()
-    : timeout_sec(5),
-      router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
-      role(Role::UNDEFINED), connected(false),
-      connectionSemaphore(xSemaphoreCreateBinary()),
-      m_state(Uninitialized){
-  ESP_LOGI(TAG, "Nothing to do here...");
-}
+  : router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
+    role(Role::UNDEFINED), connected(false),
+    connectionSemaphore(xSemaphoreCreateBinary()),
+    m_state(Uninitialized){
+
+  adv_timeout_sec = (DEVICE_TIMEOUT_ADV_MS / portTICK_PERIOD_MS);
+  scn_timeout_sec = DEVICE_TIMEOUT_SCN_S;
+    }

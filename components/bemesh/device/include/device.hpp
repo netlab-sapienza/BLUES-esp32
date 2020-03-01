@@ -28,12 +28,21 @@ enum DeviceState {
   Scanning=1,
   Advertising=2,
   Connecting=3,
-  InRoutingDiscovery=4,
+  RTClientSentReq=4, // RoutingDiscovery : Client sent request
+  RTServerRecvReq=5, // RoutingDiscovery : Server recv request
+  RTFinished=6,      // RoutingDiscovery : Procedure Finished.
   //TODO(Emanuele, Andrea): Add extra states
 };
 
+// Timeout for the advertising procedure in millisecond (ms)
+#define DEVICE_TIMEOUT_ADV_MS 5000
+// Timeout for the scanning procedure in millisecond (ms)
+#define DEVICE_TIMEOUT_SCN_S 5
+
 class Device {
   uint8_t timeout_sec;
+  uint16_t adv_timeout_sec; // Advertising timeout
+  uint16_t scn_timeout_sec; // Scanning timeout
   bemesh::Router &router;
   Role role;
   bool connected;
@@ -111,6 +120,8 @@ public:
   bool isConnected() const;
   void setConnected(bool newConnected);
   uint8_t getTimeoutSec() const;
+  uint16_t getAdvTimeout() const;
+  uint16_t getScnTimeout() const;
   bemesh::Router getRouter() const;
   void addTimeoutSec(uint8_t timeoutSec);
   void setTimeoutSec(uint8_t timeoutSec);

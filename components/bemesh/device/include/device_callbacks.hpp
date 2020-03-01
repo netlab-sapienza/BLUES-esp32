@@ -17,18 +17,21 @@ extern "C" {
  *
  */
 void on_scan_completed(bemesh_evt_params_t *params);
+void fsm_scan_cmpl(bemesh_evt_params_t *params);
 
 /**
  *
  * @param params
  */
 void on_connection_response(bemesh_evt_params_t *params);
+void fsm_outgoing_conn_cmpl(bemesh_evt_params_t *params);
 
 /**
  *
  * @param params
  */
 void on_incoming_connection(bemesh_evt_params_t *params);
+void fsm_incoming_conn_cmpl(bemesh_evt_params_t *params);
 
 /**
  * Callback triggered when a message is received to this device. Parameters to
@@ -38,5 +41,8 @@ void on_incoming_connection(bemesh_evt_params_t *params);
  *
  */
 void on_message_received(bemesh_evt_params_t *params);
+void fsm_msg_recv(bemesh_evt_params_t *params);
+
+
 
 #endif // ESP32_BLE_MESH_DEVICE_CALLBACKS_HPP
