@@ -94,6 +94,8 @@ static void fsm_scan_cmpl_dev_found(Device &inst,
 
 void fsm_scan_cmpl(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "fsm_scan_cmpl");
+  ESP_LOGI(TAG, "Printing device's bda:");
+  ESP_LOG_BUFFER_HEX(TAG, (uint8_t *)get_own_bda(), ESP_BD_ADDR_LEN);
   Device &inst = Device::getInstance();
   uint16_t res_len=params->scan.len;
   // If no results are present, stop the callback now.
