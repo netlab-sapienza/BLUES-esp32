@@ -148,7 +148,7 @@ uint16_t Device::getAdvTimeout() const { return adv_timeout_sec; }
 
 uint16_t Device::getScnTimeout() const { return scn_timeout_sec; }
 
-Router Device::getRouter() const { return router; }
+Router &Device::getRouter() const { return router; }
 SemaphoreHandle_t Device::getConnectionSemaphore() const {
   return connectionSemaphore;
 }

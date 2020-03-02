@@ -21,13 +21,19 @@ namespace bemesh {
     params=t_params;
     update_state=t_state;
   }
+  
+  routing_update_t::routing_update_t(const routing_update_t &up) {
+    memcpy(&params, &up.params, sizeof(routing_params_t));
+    update_state = up.update_state;
+  }
 
   std::ostream& operator <<(std::ostream& os, const routing_update_t& up) {
     os<<up.params<<up.update_state;
     return os;
   }
 
-  Router::Router(dev_addr_t t_node_addr) : m_rtable(RoutingTable::getInstance()){
+  Router::Router(dev_addr_t t_node_addr) : m_rtable(RoutingTable::getInstance()),
+					   m_update_vect(){
     m_node_addr=t_node_addr;
   }
 
@@ -52,7 +58,7 @@ namespace bemesh {
 
   ErrStatus Router::add(dev_addr_t t_target_addr, dev_addr_t t_hop_addr,
 		       uint8_t t_num_hops, uint8_t t_flags) {
-    routing_params_t new_params{};
+    routing_params_t new_params;
     new_params.target_addr=t_target_addr;
     new_params.hop_addr=t_hop_addr;
     new_params.num_hops=t_num_hops;
@@ -70,7 +76,8 @@ namespace bemesh {
 
 	ESP_LOGI(TAG, "changed an entry.");
 	// push the new update in the history update vector
-	m_update_vect.push_back(routing_update_t(new_params, UpdateState::Changed));
+	routing_update_t new_update = routing_update_t(new_params, UpdateState::Changed);
+	m_update_vect.push_back(new_update);
 	return Success;
       } else {
 	ESP_LOGI(TAG, "discarting entry.");
@@ -83,7 +90,8 @@ namespace bemesh {
       printRoutingTable();
       // push the new update in the history update vector
       ESP_LOGI(TAG, "Added new entry.");
-      m_update_vect.push_back(routing_update_t(new_params, UpdateState::Added));
+      routing_update_t new_update = routing_update_t(new_params, UpdateState::Added);
+      m_update_vect.push_back(new_update);
       return Success;
     }
   }
@@ -212,11 +220,9 @@ namespace bemesh {
   // Returns a copy of update_vect update vector. This will clear the internal
   // update_vect in order not to store previously committed updates.
   std::vector<routing_update_t> Router::getRoutingUpdates(void) {
+    ESP_LOGI(TAG, "Size of the update_vect: %d", m_update_vect.size());
     // Clone the current update_vect in a new vector
     std::vector<routing_update_t> update_vect_copy = m_update_vect;
-    ESP_LOGI(TAG, "size of the update_vector : %d, src_len : %d",
-	     update_vect_copy.size(),
-	     m_update_vect.size());
     // clear the update_vect in order to cancel previous updates
     m_update_vect.clear();
     return update_vect_copy;
@@ -238,7 +244,6 @@ namespace bemesh {
     return dev_vect;
   }
   Router &Router::getInstance(dev_addr_t bda) {
-    ESP_LOGI("router", "Taking instance.");
     static Router instance = Router(bda);
     return instance;
   }

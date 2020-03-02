@@ -122,7 +122,7 @@ public:
   uint8_t getTimeoutSec() const;
   uint16_t getAdvTimeout() const;
   uint16_t getScnTimeout() const;
-  bemesh::Router getRouter() const;
+  bemesh::Router &getRouter() const;
   void addTimeoutSec(uint8_t timeoutSec);
   void setTimeoutSec(uint8_t timeoutSec);
   SemaphoreHandle_t getConnectionSemaphore() const;

@@ -483,7 +483,7 @@ static void fsm_send_update_routine(Device &inst,
   // Generate a single message object
   std::array<routing_update_t,
 	     ROUTING_UPDATE_ENTRIES_MAX> update_arr;
-  memcpy(update_arr.data(), update_vect.data(), update_vect.size());
+  std::copy(update_vect.begin(), update_vect.end(), update_arr.data());
 
   // initialized with filtered_bda as destination TODO(Emanuele): change it.
   RoutingUpdateMessage upd_msg =

@@ -21,6 +21,7 @@ struct routing_update_t {
   uint8_t update_state;
   routing_update_t();
   routing_update_t(routing_params_t t_params, UpdateState t_state);
+  routing_update_t(const routing_update_t &up);
 
   friend std::ostream &operator<<(std::ostream &os, const routing_update_t &up);
 };
