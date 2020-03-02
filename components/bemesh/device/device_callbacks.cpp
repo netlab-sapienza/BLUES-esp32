@@ -498,4 +498,24 @@ static void fsm_post_routing_discovery_routine(Device &inst) {
     inst.setRole(Role::CLIENT);
     // TODO(Emanuele, Andrea): Add some behaviour for the client at this point
   }
+  // DEBUG PURPOSE ONLY.
+  ESP_LOGE(TAG, "Displaying CURRENT ROUTING TABLE.");
+  std::vector<routing_params_t> rtable_vect = inst.getRouter().getRoutingTable();
+  char buf[256];
+  for(auto &entry : rtable_vect) {
+    int wb = 0;
+    wb+=sprintf(buf, "target: ");
+    for(int i=0; i<ESP_BD_ADDR_LEN; ++i) {
+      wb+=sprintf(buf+wb, "%02X.", entry.target_addr[i]);
+    }
+    wb+=sprintf(buf+wb, " hop: ");
+    for(int i=0; i<ESP_BD_ADDR_LEN; ++i) {
+      wb+=sprintf(buf+wb, "%02X.", entry.hop_addr[i]);
+    }
+    sprintf(buf+wb, " hops: %d, flags: %d",
+	    entry.num_hops,
+	    entry.flags);
+    ESP_LOGE(TAG, "%s", buf);
+  }
+  
 }
