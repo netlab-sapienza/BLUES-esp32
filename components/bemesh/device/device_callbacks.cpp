@@ -233,6 +233,10 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
     fsm_msg_recv_routing_disres(inst, (RoutingDiscoveryResponse *)_msg);
     break;
   }
+  case ROUTING_UPDATE_ID: {
+    fsm_msg_recv_routing_update(inst, (RoutingUpdateMessage *)_msg);
+    break;
+  }
   }
 }
 
@@ -457,6 +461,37 @@ static void fsm_msg_recv_routing_disreq(Device &inst,
 
 static void fsm_post_routing_discovery_routine(Device &inst);
 
+
+// Send update routine
+static void fsm_send_update_routine(Device &inst,
+			       dev_addr_t filtered_bda) {
+  std::vector<routing_update_t> update_vect = inst.getRouter().getRoutingUpdates();
+  std::vector<dev_addr_t> neighbours_vect = inst.getRouter().getNeighbours();
+
+  // Generate a single message object
+  std::array<routing_update_t,
+	     ROUTING_UPDATE_ENTRIES_MAX> update_arr;
+  memcpy(update_arr.data(), update_vect.data(), update_vect.size());
+
+  // initialized with filtered_bda as destination TODO(Emanuele): change it.
+  RoutingUpdateMessage upd_msg =
+    RoutingUpdateMessage(filtered_bda, to_dev_addr(get_own_bda()),
+			 update_arr,
+			 update_vect.size());
+      
+  for(auto &dev : neighbours_vect) {
+    if(dev != filtered_bda) {
+      // set the destination.
+      upd_msg.destination() = dev;
+      // send the update
+      ESP_LOGI(TAG, "Sending update to");
+      ESP_LOG_BUFFER_HEX(TAG, dev.data(), ESP_BD_ADDR_LEN);
+      inst.send_message(&upd_msg);            
+    }
+  }
+  
+}
+
 static void fsm_msg_recv_routing_disres(Device &inst,
 					RoutingDiscoveryResponse *res_msg) {
   ESP_LOGI(TAG, "Received RoutingDiscoveryResponse");
@@ -490,6 +525,10 @@ static void fsm_msg_recv_routing_disres(Device &inst,
     inst.getRouter().add(entry);
   }
 
+  /**
+   * Launching update routine.
+   */
+  
   // Set the state of the device.
   inst.setState(DeviceState::RTFinished);
   // Launch the post routing discovery routine.
@@ -499,7 +538,11 @@ static void fsm_msg_recv_routing_disres(Device &inst,
 
 static void fsm_msg_recv_routing_update(Device &inst,
 					RoutingUpdateMessage *up_msg) {
+  ESP_LOGI(TAG, "Received Update Message.");
   // TODO(Emanuele): Complete the function.
+  routing_update_t *payload = up_msg->payload().data();
+  std::vector<routing_update_t> update_vect(payload, payload+up_msg->entries());
+  inst.getRouter().mergeUpdates(update_vect, up_msg->source());
   return;
 }
 
