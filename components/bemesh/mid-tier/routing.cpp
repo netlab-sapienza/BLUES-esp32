@@ -65,6 +65,8 @@ namespace bemesh {
 	// replace the params in the routing table
 	routing_params_t* old_params_ptr=std::addressof(old_params);
 	memcpy(old_params_ptr, &new_params, sizeof(new_params));
+	// DEBUG ONLY
+	printRoutingTable();
 
 	// push the new update in the history update vector
 	m_update_vect.push_back(routing_update_t(new_params, UpdateState::Changed));
@@ -75,6 +77,8 @@ namespace bemesh {
     } else {
       // t_target_addr is not present, needed to be added
       m_rtable.insert(new_params);
+      // DEBUG ONLY
+      printRoutingTable();
       // push the new update in the history update vector
       m_update_vect.push_back(routing_update_t(new_params, UpdateState::Added));
       return Success;
@@ -82,6 +86,10 @@ namespace bemesh {
   }
 
   ErrStatus Router::add(routing_params_t& t_target_params) {
+    if(t_target_params.target_addr == m_node_addr) {
+      ESP_LOGI(TAG, "Discared loopback entry.");
+      return UpdateDiscarted;
+    }
     return this->add(t_target_params.target_addr,
 	      t_target_params.hop_addr,
 	      t_target_params.num_hops,
@@ -223,6 +231,51 @@ namespace bemesh {
     ESP_LOGI("router", "Taking instance.");
     static Router instance = Router(bda);
     return instance;
+  }
+
+  /**
+   * Preprocess the incoming routing table, through a
+   * RoutingDiscoveryResponse message, by updating its
+   * parameters.
+   */
+  void Router::preprocessRoutingTable(dev_addr_t t_remote_bda,
+				     routing_params_t *t_rtable,
+				     std::size_t t_rtable_len) {
+    for(int i = 0; i < t_rtable_len; ++i) {
+      routing_params_t *entry = &t_rtable[i];
+      // replace the hop with the remote_bda bda.
+      entry->hop_addr = t_remote_bda;
+      // increase the number of hops
+      entry->num_hops += 1;
+      // entry is no longer reachable.
+      if (entry->flags & RoutingFlags::Reachable) {
+	entry->flags &= ~RoutingFlags::Reachable;
+      }
+    }
+    return;
+  }
+
+  void Router::printRoutingTable(void) {
+    // DEBUG PURPOSE ONLY.
+    ESP_LOGI(TAG, "Displaying CURRENT ROUTING TABLE.");
+    std::vector<routing_params_t> rtable_vect = getRoutingTable();
+    char buf[256];
+    int wb;
+    for(auto &entry : rtable_vect) {
+      wb = 0;
+      wb+=sprintf(buf, "target: ");
+      for(int i=0; i<6; ++i) {
+	wb+=sprintf(buf+wb, "%02X.", entry.target_addr[i]);
+      }
+      wb+=sprintf(buf+wb, " hop: ");
+      for(int i=0; i<6; ++i) {
+	wb+=sprintf(buf+wb, "%02X.", entry.hop_addr[i]);
+      }
+      sprintf(buf+wb, " hops: %d, flags: %d",
+	      entry.num_hops,
+	      entry.flags);
+      ESP_LOGI(TAG, "%s", buf);
+    }
   }
 
   bool isBroadcast(dev_addr_t& t_addr) {

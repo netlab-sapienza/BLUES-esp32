@@ -175,7 +175,10 @@ public:
    * parameters.
    */
   static void preprocessRoutingTable(dev_addr_t t_remote_bda,
-                                     std::vector<routing_params_t> &t_rtable);
+                                     routing_params_t *t_rtable,
+				     std::size_t t_rtable_len);
+
+  void printRoutingTable(void);
 };
 
 /**

@@ -420,12 +420,19 @@ static void fsm_send_rd_res(Device &inst,
   // Serialize the routing table.
   std::vector<routing_params_t> rtable_vect =
     inst.getRouter().getRoutingTable();
+  
   // Generate the routing discovery response message
   RoutingDiscoveryResponse res_msg =
     RoutingDiscoveryResponse(dest,
 			     to_dev_addr(get_own_bda()),
 			     rtable_vect,
 			     rtable_vect.size());
+  ESP_LOGI(TAG, "Sending the following entries:");
+  for(int i = 0; i < res_msg.entries(); ++i) {
+    routing_params_t *entry = &res_msg.payload()[i];
+    ESP_LOG_BUFFER_HEX(TAG, entry->target_addr.data(), ESP_BD_ADDR_LEN);
+  }
+  ESP_LOGI(TAG, "End.");
   // Send the response
   ESP_LOGI(TAG, "Sending RoutingDiscoveryResponse");
   inst.send_message(&res_msg);
@@ -471,8 +478,14 @@ static void fsm_msg_recv_routing_disres(Device &inst,
     fsm_send_rd_res(inst, res_msg->source());
   }
 
+  // Preprocess the new routing table.
+  Router::preprocessRoutingTable(res_msg->source(),
+				 res_msg->payload().data(),
+				 res_msg->entries());
+
   // Include the payload of the message into the current device's routing table.
-  for(auto &entry : res_msg->payload()) {
+  for(int i = 0; i < res_msg->entries(); ++i) {
+    auto &entry = res_msg->payload()[i];
     inst.getRouter().add(entry);
   }
 
@@ -498,24 +511,5 @@ static void fsm_post_routing_discovery_routine(Device &inst) {
     inst.setRole(Role::CLIENT);
     // TODO(Emanuele, Andrea): Add some behaviour for the client at this point
   }
-  // DEBUG PURPOSE ONLY.
-  ESP_LOGE(TAG, "Displaying CURRENT ROUTING TABLE.");
-  std::vector<routing_params_t> rtable_vect = inst.getRouter().getRoutingTable();
-  char buf[256];
-  for(auto &entry : rtable_vect) {
-    int wb = 0;
-    wb+=sprintf(buf, "target: ");
-    for(int i=0; i<ESP_BD_ADDR_LEN; ++i) {
-      wb+=sprintf(buf+wb, "%02X.", entry.target_addr[i]);
-    }
-    wb+=sprintf(buf+wb, " hop: ");
-    for(int i=0; i<ESP_BD_ADDR_LEN; ++i) {
-      wb+=sprintf(buf+wb, "%02X.", entry.hop_addr[i]);
-    }
-    sprintf(buf+wb, " hops: %d, flags: %d",
-	    entry.num_hops,
-	    entry.flags);
-    ESP_LOGE(TAG, "%s", buf);
-  }
-  
+  return;
 }
