@@ -117,7 +117,7 @@ namespace bemesh {
     m_psize+=sizeof(routing_params_t)*t_pentries;
   }
 
-  std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> RoutingDiscoveryResponse::payload(void) {
+  std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> &RoutingDiscoveryResponse::payload(void) {
     return m_payload;
   }
 

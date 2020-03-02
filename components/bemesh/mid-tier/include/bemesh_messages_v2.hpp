@@ -87,7 +87,7 @@ namespace bemesh {
 			     std::vector<routing_params_t> &t_payload,
 			     std::size_t t_pentries);
     
-    std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> payload(void);
+    std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> &payload(void);
 
     // Serialization
     void serialize(std::ostream&) const;

@@ -479,6 +479,7 @@ static void fsm_msg_recv_routing_disres(Device &inst,
   }
 
   // Preprocess the new routing table.
+  ESP_LOGI(TAG, "Preprocessing the received routing table.");
   Router::preprocessRoutingTable(res_msg->source(),
 				 res_msg->payload().data(),
 				 res_msg->entries());
