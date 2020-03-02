@@ -87,10 +87,10 @@ namespace bemesh {
 
   ErrStatus Router::add(routing_params_t& t_target_params) {
     // Remove the loopback connections.
-    // if(t_target_params.target_addr == m_node_addr) {
-    //   ESP_LOGI(TAG, "Discared loopback entry.");
-    //   return UpdateDiscarted;
-    // }
+    if(t_target_params.target_addr == m_node_addr) {
+      ESP_LOGI(TAG, "Discared loopback entry.");
+      return UpdateDiscarted;
+    }
     return this->add(t_target_params.target_addr,
 	      t_target_params.hop_addr,
 	      t_target_params.num_hops,

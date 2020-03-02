@@ -122,8 +122,9 @@ int main(void) {
 
   // ESP_LOGI("startup","start");
   kernel_init();
-  ESP_LOGI("startup", "My own bda is ");
-  ESP_LOG_BUFFER_HEX("startup", get_own_bda(), ESP_BD_ADDR_LEN);
+  // ESP_LOGI("startup", "My own bda is ");
+  // ESP_LOG_BUFFER_HEX("startup", get_own_bda(), ESP_BD_ADDR_LEN);
+  
   Device device = Device::getInstance();
 
   device.start();
