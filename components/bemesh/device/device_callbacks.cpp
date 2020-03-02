@@ -186,6 +186,7 @@ void fsm_incoming_conn_cmpl(bemesh_evt_params_t *params) {
 
 static void fsm_redirect_msg(Device &inst,
 			     MessageHeader *msg) {
+  ESP_LOGI(TAG, "MUST REDIRECT.");
   //TODO(Emanuele): Complete the redirect (or hop) function.
   return;
 }
@@ -217,6 +218,7 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
   // TODO(Emanuele): Free the message when its purpose terminates.
   MessageHeader* _msg =
     MessageHandler::getInstance().unserialize(payload, payload_len);
+  ESP_LOGI(TAG, "Parsed message with id no. %d.", _msg->id());
   // If the current device is not the destinatary of the message, forward
   // it through the routing table.
   if(_msg->destination() != to_dev_addr(get_own_bda())) {
@@ -236,6 +238,9 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
   case ROUTING_UPDATE_ID: {
     fsm_msg_recv_routing_update(inst, (RoutingUpdateMessage *)_msg);
     break;
+  }
+  default: {
+    ESP_LOGW(TAG, "Unhandled message with id no. %d.", _msg->id());
   }
   }
 }
@@ -528,6 +533,7 @@ static void fsm_msg_recv_routing_disres(Device &inst,
   /**
    * Launching update routine.
    */
+  fsm_send_update_routine(inst, res_msg->source());
   
   // Set the state of the device.
   inst.setState(DeviceState::RTFinished);

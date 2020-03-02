@@ -273,7 +273,7 @@ namespace bemesh {
     }
     return this;
   }
-  
+
   RoutingUpdateMessage* RoutingUpdateMessage::create(std::istream& istr) {
     // Read header
     istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
@@ -289,6 +289,7 @@ namespace bemesh {
       istr.read(reinterpret_cast<char*>(&temp_entry), sizeof(routing_update_t));
       m_payload[i]=temp_entry;
     }
+    ESP_LOGI(TAG, "Created RoutingUpdateMessage.");
     return this;
   }
 
