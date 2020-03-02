@@ -44,6 +44,15 @@ namespace bemesh {
   dev_addr_t& MessageHeader::destination(void) {
     return m_dest_addr;
   }
+
+  void MessageHeader::set_destination(dev_addr_t &new_dest) {
+    m_dest_addr = new_dest;
+    return;
+  }
+    
+  void MessageHeader::set_source(dev_addr_t &new_src) {
+    m_src_addr = new_src;
+  }
   
   dev_addr_t& MessageHeader::source(void) {
     return m_src_addr;
@@ -277,7 +286,7 @@ namespace bemesh {
   RoutingUpdateMessage* RoutingUpdateMessage::create(std::istream& istr) {
     // Read header
     istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
-    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_src_addr), sizeof(dev_addr_t));
     istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
     istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
     istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));

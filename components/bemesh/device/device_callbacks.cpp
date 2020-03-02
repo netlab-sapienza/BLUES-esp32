@@ -186,7 +186,8 @@ void fsm_incoming_conn_cmpl(bemesh_evt_params_t *params) {
 
 static void fsm_redirect_msg(Device &inst,
 			     MessageHeader *msg) {
-  ESP_LOGI(TAG, "MUST REDIRECT.");
+  ESP_LOGI(TAG, "MUST REDIRECT to ");
+  ESP_LOG_BUFFER_HEX(TAG,msg->destination().data(), ESP_BD_ADDR_LEN);
   //TODO(Emanuele): Complete the redirect (or hop) function.
   return;
 }
@@ -470,8 +471,14 @@ static void fsm_post_routing_discovery_routine(Device &inst);
 // Send update routine
 static void fsm_send_update_routine(Device &inst,
 			       dev_addr_t filtered_bda) {
+
+  // if(!inst.getRouter().hasUpdates()) {
+  //   ESP_LOGI(TAG, "No updates to send.");
+  //   return;
+  // }
   std::vector<routing_update_t> update_vect = inst.getRouter().getRoutingUpdates();
   std::vector<dev_addr_t> neighbours_vect = inst.getRouter().getNeighbours();
+  ESP_LOGI(TAG, "Must send %d updates.", update_vect.size());  
 
   // Generate a single message object
   std::array<routing_update_t,
@@ -487,7 +494,7 @@ static void fsm_send_update_routine(Device &inst,
   for(auto &dev : neighbours_vect) {
     if(dev != filtered_bda) {
       // set the destination.
-      upd_msg.destination() = dev;
+      upd_msg.set_destination(dev);
       // send the update
       ESP_LOGI(TAG, "Sending update to");
       ESP_LOG_BUFFER_HEX(TAG, dev.data(), ESP_BD_ADDR_LEN);
@@ -545,9 +552,9 @@ static void fsm_msg_recv_routing_disres(Device &inst,
 static void fsm_msg_recv_routing_update(Device &inst,
 					RoutingUpdateMessage *up_msg) {
   ESP_LOGI(TAG, "Received Update Message.");
-  // TODO(Emanuele): Complete the function.
   routing_update_t *payload = up_msg->payload().data();
   std::vector<routing_update_t> update_vect(payload, payload+up_msg->entries());
+  ESP_LOGI(TAG, "Preparing to process update_vect with %d entries.", up_msg->entries());
   inst.getRouter().mergeUpdates(update_vect, up_msg->source());
   return;
 }

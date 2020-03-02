@@ -68,10 +68,12 @@ namespace bemesh {
 	// DEBUG ONLY
 	printRoutingTable();
 
+	ESP_LOGI(TAG, "changed an entry.");
 	// push the new update in the history update vector
 	m_update_vect.push_back(routing_update_t(new_params, UpdateState::Changed));
 	return Success;
       } else {
+	ESP_LOGI(TAG, "discarting entry.");
 	return UpdateDiscarted;
       }
     } else {
@@ -80,6 +82,7 @@ namespace bemesh {
       // DEBUG ONLY
       printRoutingTable();
       // push the new update in the history update vector
+      ESP_LOGI(TAG, "Added new entry.");
       m_update_vect.push_back(routing_update_t(new_params, UpdateState::Added));
       return Success;
     }
@@ -161,16 +164,19 @@ namespace bemesh {
 				   dev_addr_t t_sender) {
     std::size_t updated_rows=0;
     for(auto const &it : t_update_vect) {
+      ESP_LOGI(TAG, "Updating entry.");
       routing_params_t update_params=it.params;
       UpdateState update_state=(UpdateState)it.update_state;
 
       if(update_state==UpdateState::Removed) {
+	ESP_LOGI(TAG, "Remove update received.");
 	// use the remove method to decide what to do
 	if(this->remove(update_params.target_addr)!=UpdateDiscarted) {
 	  updated_rows++;
 	}
       }
       if(update_state==UpdateState::Added || update_state==UpdateState::Changed) {
+	ESP_LOGI(TAG, "Added update received.");
 	// increase the hop distance by 1
 	// and change the hop address to the sender neighbour
 	update_params.num_hops+=1;
@@ -207,7 +213,10 @@ namespace bemesh {
   // update_vect in order not to store previously committed updates.
   std::vector<routing_update_t> Router::getRoutingUpdates(void) {
     // Clone the current update_vect in a new vector
-    std::vector<routing_update_t> update_vect_copy(m_update_vect);
+    std::vector<routing_update_t> update_vect_copy = m_update_vect;
+    ESP_LOGI(TAG, "size of the update_vector : %d, src_len : %d",
+	     update_vect_copy.size(),
+	     m_update_vect.size());
     // clear the update_vect in order to cancel previous updates
     m_update_vect.clear();
     return update_vect_copy;

@@ -32,6 +32,9 @@ namespace bemesh {
     
     dev_addr_t& destination(void);
     dev_addr_t& source(void);
+
+    void set_destination(dev_addr_t &new_dest);
+    void set_source(dev_addr_t &new_src);
     uint8_t id(void);
     uint8_t hops(void);
     uint8_t seq(void);
