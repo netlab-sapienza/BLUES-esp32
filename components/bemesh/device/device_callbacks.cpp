@@ -472,10 +472,10 @@ static void fsm_post_routing_discovery_routine(Device &inst);
 static void fsm_send_update_routine(Device &inst,
 			       dev_addr_t filtered_bda) {
 
-  // if(!inst.getRouter().hasUpdates()) {
-  //   ESP_LOGI(TAG, "No updates to send.");
-  //   return;
-  // }
+  if(!inst.getRouter().hasUpdates()) {
+    ESP_LOGI(TAG, "No updates to send.");
+    return;
+  }
   std::vector<routing_update_t> update_vect = inst.getRouter().getRoutingUpdates();
   std::vector<dev_addr_t> neighbours_vect = inst.getRouter().getNeighbours();
   ESP_LOGI(TAG, "Must send %d updates.", update_vect.size());  
@@ -556,6 +556,9 @@ static void fsm_msg_recv_routing_update(Device &inst,
   std::vector<routing_update_t> update_vect(payload, payload+up_msg->entries());
   ESP_LOGI(TAG, "Preparing to process update_vect with %d entries.", up_msg->entries());
   inst.getRouter().mergeUpdates(update_vect, up_msg->source());
+
+  // Propagate back the updates to the ones whom i'm connected with.
+  fsm_send_update_routine(inst, up_msg->source());  
   return;
 }
 
