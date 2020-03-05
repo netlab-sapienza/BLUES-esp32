@@ -247,6 +247,8 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
   // benchmark::log_incoming_message(_msg,
   // 				  to_dev_addr((uint8_t *)
   // 					      params->recv.remote_bda));
+
+  dev_addr_t sender_bda = to_dev_addr((uint8_t *)params->recv.remote_bda);
   
   if(_msg->destination() != to_dev_addr(get_own_bda())) {
     fsm_redirect_msg(inst, _msg);
@@ -260,16 +262,12 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
   }
   case ROUTING_DISCOVERY_RES_ID: {
     fsm_msg_recv_routing_disres(inst, (RoutingDiscoveryResponse *)_msg);
-    benchmark::log_routing_table(_msg,
-				 to_dev_addr((uint8_t *)params->recv.remote_bda),
-				 inst);
+    benchmark::log_routing_table(_msg, sender_bda, inst);
     break;
   }
   case ROUTING_UPDATE_ID: {
     fsm_msg_recv_routing_update(inst, (RoutingUpdateMessage *)_msg);
-    benchmark::log_routing_table(_msg,
-				 to_dev_addr((uint8_t *)params->recv.remote_bda),
-				 inst);
+    benchmark::log_routing_table(_msg, sender_bda, inst);
     break;
   }
   default: {

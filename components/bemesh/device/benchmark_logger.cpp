@@ -293,6 +293,7 @@ namespace benchmark {
       wb += _print_bda(buf+wb, i.target_addr);
       wb += sprintf(buf+wb, "-");
     }
+    wb += _print_bda(buf+wb, own_bda);
     ESP_LOGI(TAG, "%s", buf);
     
     _reset_buffer(buf, BENCHMARK_BUF_LEN);
