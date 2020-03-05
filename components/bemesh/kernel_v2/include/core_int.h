@@ -21,6 +21,7 @@ typedef union {
   struct scan_result_param {
     bemesh_dev_t* result;
     uint16_t len;
+    uint8_t status;
   } scan;
   // On message receive params
   struct message_recv_param {

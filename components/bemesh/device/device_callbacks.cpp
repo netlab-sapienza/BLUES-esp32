@@ -101,8 +101,18 @@ void fsm_scan_cmpl(bemesh_evt_params_t *params) {
 
   // print benchmark log message
   benchmark::log_scan(0); // end scan
-  
   Device &inst = Device::getInstance();
+
+  // Check if scan was succesful.
+  if(!params->scan.status) {
+    // Error occurred during scan
+    ESP_LOGE(TAG, "Scan procedure failed.");
+    stop_scan();
+    stop_advertising();
+    inst.scan_the_environment();
+  }
+  
+  
   uint16_t res_len=params->scan.len;
   // If no results are present, stop the callback now.
   if(!res_len) {

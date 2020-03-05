@@ -327,7 +327,10 @@ void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h
   } else {
     ESP_LOGE(TAG, "Unable to start scan process.");
     //TODO(Emanuele): Fix the could not scan bug, for now loop back.
-    esp_ble_gap_start_scanning(SCAN_DURATION_SEC);
+    h->core_cb_args->scan.status=0; // Scan failed.
+    if(h->core_cb!=NULL) {
+      (*h->core_cb)(ON_SCAN_END, h->core_cb_args);
+    }
   }
   return;
 }
@@ -444,6 +447,7 @@ static void scan_result_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h)
     // setup the params
     h->core_cb_args->scan.result=h->found_devs_vect;
     h->core_cb_args->scan.len=h->found_devs;
+    h->core_cb_args->scan.status=1; // Scan was succesful.
     // Launch ON_SCAN_END event to core.
     if(h->core_cb!=NULL) {
       (*h->core_cb)(ON_SCAN_END, h->core_cb_args);
