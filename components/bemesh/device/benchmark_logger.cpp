@@ -296,7 +296,8 @@ namespace benchmark {
     wb += sprintf(buf+wb, " ");
     wb += _print_bda(buf+wb, hop_bda);
     wb += sprintf(buf+wb, " %d NULL ",
-		  h->id());
+		  0); // temporary.
+		  //h->id());
 
     auto rtable = inst.getRouter().getRoutingTable();
     for (auto &i : rtable) {
