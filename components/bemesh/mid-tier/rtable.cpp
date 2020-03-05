@@ -80,10 +80,10 @@ ErrStatus RoutingTable::contains(dev_addr_t &t_target_addr) {
   it = m_routing_table.find(t_target_addr);
   bool check = it == m_routing_table.end();
   if (check) {
-    ESP_LOGI(TAG, "element not found.");
+    //ESP_LOGI(TAG, "element not found.");
     return GenericError;
   }
-  ESP_LOGI(TAG, "found element.");
+  //ESP_LOGI(TAG, "found element.");
   return Success;
 }
 

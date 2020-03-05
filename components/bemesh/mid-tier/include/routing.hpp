@@ -21,6 +21,7 @@ struct routing_update_t {
   uint8_t update_state;
   routing_update_t();
   routing_update_t(routing_params_t t_params, UpdateState t_state);
+  routing_update_t(const routing_update_t &up);
 
   friend std::ostream &operator<<(std::ostream &os, const routing_update_t &up);
 };
@@ -175,7 +176,10 @@ public:
    * parameters.
    */
   static void preprocessRoutingTable(dev_addr_t t_remote_bda,
-                                     std::vector<routing_params_t> &t_rtable);
+                                     routing_params_t *t_rtable,
+				     std::size_t t_rtable_len);
+
+  void printRoutingTable(void);
 };
 
 /**

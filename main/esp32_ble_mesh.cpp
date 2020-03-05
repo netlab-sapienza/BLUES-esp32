@@ -122,11 +122,15 @@ int main(void) {
 
   // ESP_LOGI("startup","start");
   kernel_init();
+  // ESP_LOGI("startup", "My own bda is ");
+  // ESP_LOG_BUFFER_HEX("startup", get_own_bda(), ESP_BD_ADDR_LEN);
+  
   Device device = Device::getInstance();
 
   device.start();
-  //kernel_init();
-  //bemesh::Router &router=bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()));
+  // kernel_init();
+  // bemesh::Router
+  // &router=bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()));
 
   return 0;
 }

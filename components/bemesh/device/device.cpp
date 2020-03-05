@@ -11,6 +11,8 @@ extern "C" {
 // Adding new inclusions.
 #include "bemesh_status.hpp"
 
+#include "benchmark_logger.hpp" // for logging purposes.
+
 using namespace bemesh;
 
 static const char *TAG = "device";
@@ -34,16 +36,36 @@ bemesh_dev_t *Device::select_device_to_connect(bemesh_dev_t *device_list,
 }
 
 void Device::scan_the_environment() {
-  kernel_install_cb(ON_SCAN_END, on_scan_completed);
-  scan_environment(timeout_sec);
+  ESP_LOGI(TAG, "Starting scan procedure.");
+  // Set the state of the device.
+  Device::setState(DeviceState::Scanning);
+  // print benchmark log message
+  benchmark::log_scan(1); // start scan
+  scan_environment(scn_timeout_sec);
 }
 
+// void Device::start() {
+
+//   scan_the_environment();
+//   ESP_LOGI(TAG, "scan_environment");
+
+//   //  server_first_routine();
+// }
+
+// FSM version
 void Device::start() {
+  // install the callbacks.
+  kernel_install_cb(ON_SCAN_END, fsm_scan_cmpl);
+  kernel_install_cb(ON_OUT_CONN, fsm_outgoing_conn_cmpl);
+  kernel_install_cb(ON_INC_CONN, fsm_incoming_conn_cmpl);
+  kernel_install_cb(ON_MSG_RECV, fsm_msg_recv);
+  kernel_install_cb(ON_DISCONN, fsm_disconnect_routine);
 
-  scan_the_environment();
-  ESP_LOGI(TAG, "scan_environment");
-
-  //  server_first_routine();
+  // print benchmark log message
+  benchmark::log_device_up();
+  
+  // Launch the scan function
+  Device::scan_the_environment();
 }
 
 void Device::server_first_routine() {
@@ -98,9 +120,14 @@ ErrStatus Device::send_message(MessageHeader *message) {
   ErrStatus ret;
   ret = MessageHandler::getInstance().serialize(message, &tx_buffer_ptr,
                                                 &tx_buffer_len);
-  if (ret == Success)
-    send_payload(this->getRouter().nextHop(final_dest).data(), tx_buffer_ptr,
+  if (ret == Success) {
+    dev_addr_t &hop_bda = this->getRouter().nextHop(final_dest);
+    send_payload(hop_bda.data(), tx_buffer_ptr,
                  tx_buffer_len);
+    // print benchmark log message
+    benchmark::log_outgoing_message(message,
+			 hop_bda);
+  }
   return ret;
 }
 
@@ -110,7 +137,24 @@ Device &Device::getInstance() {
 }
 
 Role Device::getRole() const { return role; }
-void Device::setRole(Role newRole) { Device::role = newRole; }
+void Device::setRole(Role newRole) {
+  if(newRole == Role::SERVER) {
+    ESP_LOGI(TAG, "Setting SERVER role.");
+  } else if(newRole == Role::CLIENT) {
+    ESP_LOGI(TAG, "Setting CLIENT role.");
+  } else {
+    ESP_LOGI(TAG, "Setting UNINITIALIZED role.");
+  }
+  // print benchmark log message
+  if (Device::role != newRole) {
+    // since server role is called multiple
+    // times, check only for role changes.
+    benchmark::log_role(newRole);
+  }
+  Device::role = newRole;
+}
+DeviceState Device::getState() const { return m_state; }
+void Device::setState(DeviceState t_state) { Device::m_state = t_state; }
 bool Device::isConnected() const { return connected; }
 void Device::setConnected(bool newConnected) {
   Device::connected = newConnected;
@@ -118,15 +162,22 @@ void Device::setConnected(bool newConnected) {
 uint8_t Device::getTimeoutSec() const { return timeout_sec; }
 void Device::addTimeoutSec(uint8_t timeoutSec) { timeout_sec += timeoutSec; }
 void Device::setTimeoutSec(uint8_t timeoutSec) { timeout_sec = timeoutSec; }
-Router Device::getRouter() const { return router; }
+
+uint16_t Device::getAdvTimeout() const { return adv_timeout_sec; }
+
+uint16_t Device::getScnTimeout() const { return scn_timeout_sec; }
+
+Router &Device::getRouter() const { return router; }
 SemaphoreHandle_t Device::getConnectionSemaphore() const {
   return connectionSemaphore;
 }
 
 Device::Device()
-    : timeout_sec(5),
-      router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
-      role(Role::UNDEFINED), connected(false),
-      connectionSemaphore(xSemaphoreCreateBinary()) {
-  ESP_LOGI(TAG, "Nothing to do here...");
-}
+  : router(bemesh::Router::getInstance(bemesh::to_dev_addr(get_own_bda()))),
+    role(Role::UNDEFINED), connected(false),
+    connectionSemaphore(xSemaphoreCreateBinary()),
+    m_state(Uninitialized){
+
+  adv_timeout_sec = (DEVICE_TIMEOUT_ADV_MS / portTICK_PERIOD_MS);
+  scn_timeout_sec = DEVICE_TIMEOUT_SCN_S;
+    }

@@ -32,6 +32,9 @@ namespace bemesh {
     
     dev_addr_t& destination(void);
     dev_addr_t& source(void);
+
+    void set_destination(dev_addr_t &new_dest);
+    void set_source(dev_addr_t &new_src);
     uint8_t id(void);
     uint8_t hops(void);
     uint8_t seq(void);
@@ -46,6 +49,9 @@ namespace bemesh {
     // Unserialization
     static MessageHeader* unserialize(std::istream& istr);
     virtual MessageHeader* create(std::istream&);
+
+    // used for debug
+    virtual void *payload_ptr(void);
   };
 
   class IndexedMessage : public MessageHeader {
@@ -59,6 +65,8 @@ namespace bemesh {
 
     // Serialization
     virtual void serialize(std::ostream&) const;
+    // used for debug
+    virtual void *payload_ptr(void);
   };
   
 #define ROUTING_DISCOVERY_REQ_ID 0x00
@@ -70,6 +78,8 @@ namespace bemesh {
     // Serialization
     void serialize(std::ostream&) const;
     RoutingDiscoveryRequest* create(std::istream&);
+    // used for debug
+    void *payload_ptr(void);
   };
   
 #define ROUTING_DISCOVERY_RES_ID 0x01
@@ -87,7 +97,10 @@ namespace bemesh {
 			     std::vector<routing_params_t> &t_payload,
 			     std::size_t t_pentries);
     
-    std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> payload(void);
+    std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> &payload(void);
+    
+    // used for debug
+    void *payload_ptr(void);
 
     // Serialization
     void serialize(std::ostream&) const;
@@ -110,6 +123,8 @@ namespace bemesh {
 			 std::size_t t_pentries);
     
     std::array<routing_update_t, ROUTING_UPDATE_ENTRIES_MAX> payload(void);
+    // used for debug
+    void *payload_ptr(void);
 
     // Serialization
     void serialize(std::ostream&) const;
@@ -130,6 +145,8 @@ namespace bemesh {
 		       std::size_t t_pentries);
 
     std::array<uint8_t, ROUTING_SYNC_ENTRIES_MAX> payload(void);
+    // used for debug
+    void *payload_ptr(void);
     
     // Serialization
     void serialize(std::ostream&) const;
@@ -145,6 +162,9 @@ namespace bemesh {
     RoutingPingMessage(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_pong);
 
     uint8_t pong_flag(void) const;
+
+    // used for debug
+    void *payload_ptr(void);
     
     // Serialization
     void serialize(std::ostream&) const;

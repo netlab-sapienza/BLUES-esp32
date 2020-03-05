@@ -1,6 +1,6 @@
 
 #In this variable we keep track of source files needed by the component.
-list(APPEND SOURCES "device.cpp" "device_callbacks.cpp")
+list(APPEND SOURCES "device.cpp" "device_callbacks.cpp" "benchmark_logger.cpp")
 
 
 #All header files will be located inside the "include" directory of the component "component" reachable from "../"

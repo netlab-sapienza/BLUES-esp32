@@ -11,6 +11,8 @@ extern "C" {
 #include <gatt_def.h>
 }
 
+#include "benchmark_logger.hpp"
+
 #define TIMEOUT_DELAY 10
 static const char *TAG = "device_callbacks";
 
@@ -18,20 +20,262 @@ using namespace bemesh;
 
 bemesh_dev_t *filter_devs_rtable(Device &instance, bemesh_dev_t *src,
                                  uint16_t src_len, uint16_t *t_dest_len) {
-  ESP_LOGI(TAG, "starting filter proc.");
+  ESP_LOGV(TAG, "starting filter proc.");
   auto *dest = (bemesh_dev_t *)malloc(sizeof(bemesh_dev_t) * src_len);
   uint16_t dest_len = 0;
   for (int i = 0; i < src_len; ++i) {
-    ESP_LOGI(TAG, "Filtering elem %d.", i);
+    ESP_LOGV(TAG, "Filtering elem %d.", i);
     bool ret = instance.getRouter().contains(bemesh::to_dev_addr(src[i].bda));
     if (!ret) {
-      ESP_LOGI(TAG, "Keeping the following element.");
+      ESP_LOGV(TAG, "Keeping the following element.");
       memcpy(&dest[dest_len], &src[i], sizeof(bemesh_dev_t));
       dest_len++;
     }
   }
   *t_dest_len = dest_len;
   return dest;
+}
+
+/**
+ * If the scan shown no results, this function is called.
+ * the server should advertise for a certain period of time.
+ * After that, the scanning procedure should be restarted.
+ */
+static void fsm_post_scan_server_routine(Device &inst) {
+  ESP_LOGI(TAG, "fsm_post_scan_server_routine");
+  // Start the advertising proc.
+  if(get_num_inc_conn() < GATTS_MAX_CONNECTIONS) {
+    ESP_LOGI(TAG, "Launching advertising.");
+    // Advertise for DEVICE_TIMEOUT_ADV_MS
+    start_advertising();
+    vTaskDelay(inst.getAdvTimeout());
+    stop_advertising();
+  }
+  // if no connections happened during this period,
+  // launch the scan operation
+  inst.scan_the_environment();
+  return;
+}
+
+static void fsm_scan_cmpl_no_devs_routine(Device &inst) {
+  ESP_LOGI(TAG, "no device found during scan.");
+  // Execute advertising procedure.
+  inst.setState(DeviceState::Advertising);
+  // Set the device as server
+  inst.setRole(Role::SERVER);
+  // Launch the post scan procedure.
+  fsm_post_scan_server_routine(inst);
+  return;
+}
+
+static void fsm_routing_dis_sendreq(Device &inst,
+				    dev_addr_t remote_bda) {
+  // TODO(Emanuele): Prepare the Routing discovery Request.
+  dev_addr_t local_bda = to_dev_addr(get_own_bda());
+  RoutingDiscoveryRequest req_msg =
+    RoutingDiscoveryRequest(remote_bda, local_bda);
+  ESP_LOGI(TAG, "Sending RoutingDiscoveryRequest message.");
+  inst.send_message(&req_msg);
+  // Set the state of the device.
+  inst.setState(DeviceState::RTClientSentReq);
+  return;
+}
+
+static void fsm_scan_cmpl_dev_found(Device &inst,
+				    bemesh_dev_t *conn_target) {
+  ESP_LOGI(TAG, "fsm_scan_cmpl_dev_found");
+  // Connection established with the conn_target.
+  // Add it to the routing table and start discovery request
+  bemesh::dev_addr_t conn_bda = bemesh::to_dev_addr(conn_target->bda);
+  ESP_LOGI(TAG, "Adding new entry in routing table.");
+  inst.getRouter().add(conn_bda, conn_bda,
+		       0, bemesh::RoutingFlags::Reachable);
+  // Start the routing discovery procedure
+  fsm_routing_dis_sendreq(inst, conn_bda);
+}
+
+void fsm_scan_cmpl(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "fsm_scan_cmpl");
+
+  // print benchmark log message
+  benchmark::log_scan(0); // end scan
+  
+  Device &inst = Device::getInstance();
+  uint16_t res_len=params->scan.len;
+  // If no results are present, stop the callback now.
+  if(!res_len) {
+    fsm_scan_cmpl_no_devs_routine(inst);
+    return;
+  }
+  // at least one device is present.
+  // filter the results
+  bemesh_dev_t *src_devs = params->scan.result;
+  uint16_t flt_devs_len;
+  bemesh_dev_t *flt_devs = filter_devs_rtable(inst, src_devs,
+					      res_len,
+					      &flt_devs_len);
+  // If no results are present in the filtered list, stop the callback
+  if(!flt_devs_len) {
+    free(flt_devs);
+    fsm_scan_cmpl_no_devs_routine(inst);
+    return;
+  }
+  ESP_LOGI(TAG, "scan result contains %d entries.",
+	   flt_devs_len);
+
+  // Sort the flt_devs
+  bemesh_dev_t *sorted_flt_devs =
+    Device::select_device_to_connect(flt_devs, flt_devs_len);
+  // reset the connection flag.
+  inst.setConnected(false);
+  // Attempt connection on the scan result list.
+  for (int i = 0; i < flt_devs_len; ++i) {
+    ESP_LOGI(TAG, "Establishing connection with entry no.%d.", i);
+    bemesh_dev_t *conn_target = &sorted_flt_devs[i];
+    // lock the connection semaphore until the connection is established
+    inst.setState(DeviceState::Connecting);
+    // print benchmark log message
+    benchmark::log_outgoing_connection(to_dev_addr(conn_target->bda));
+    inst.connect_to_server(conn_target->bda);
+    xSemaphoreTake(inst.getConnectionSemaphore(), portMAX_DELAY);
+    // to reach this place, connection must either been accepted or refused.
+    if(inst.isConnected()) {
+      // Connection was established.
+      ESP_LOGI(TAG, "Connection succesful.");
+      fsm_scan_cmpl_dev_found(inst, conn_target);
+      free(flt_devs);
+      return;
+    } else {
+      ESP_LOGI(TAG, "Connection failed. trying the next entry.");
+    }    
+  }
+  
+  free(flt_devs);
+  fsm_scan_cmpl_no_devs_routine(inst);
+  return;
+}
+
+void fsm_outgoing_conn_cmpl(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "fsm_outgoing_conn_cmpl");
+  Device &inst = Device::getInstance();
+  if(params->conn.ack) {
+    ESP_LOGI(TAG, "Connection succesful.");
+    inst.setConnected(true);
+    
+  } else {
+    inst.setConnected(false);
+  }
+  // print benchmark log message
+  benchmark::log_status_connection(to_dev_addr(params->conn.remote_bda),
+				   params->conn.ack,
+				   true); // outgoing 
+  // Free the connection semaphore
+  xSemaphoreGive(inst.getConnectionSemaphore());
+  return;
+}
+
+/**
+ * Incoming connection handler.
+ * Add the connection to the routing table.
+ */
+void fsm_incoming_conn_cmpl(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "fsm_incoming_conn_cmpl");
+  Device &inst = Device::getInstance();
+  // get the remote bda address.
+  dev_addr_t remote_bda = to_dev_addr((uint8_t *)params->conn.remote_bda);
+  if(params->conn.ack) {
+    // print benchmark log message
+    benchmark::log_incoming_connection(remote_bda);
+    // add the new connection to the router.
+    inst.getRouter().add(remote_bda, remote_bda, 0, Reachable);
+  }
+
+  // print benchmark log message
+  benchmark::log_status_connection(remote_bda,
+				   params->conn.ack,
+				   false); // incoming connection
+  
+  // If we still have space in the incoming connection pool, advertise.
+  /*
+    if(get_num_inc_conn() < GATTS_MAX_CONNECTIONS) {
+      start_advertising();
+    }
+  */
+  // The section has been commented as its better to maintain advertising happening
+  // only in the 
+  return;
+}
+
+static void fsm_redirect_msg(Device &inst,
+			     MessageHeader *msg) {
+  //TODO(Emanuele): Complete the redirect (or hop) function.
+  return;
+}
+
+/**
+ * Incoming message routines.
+ * Each function will handle a different incoming message.
+ * Refer to the end of the file to see the implementation.
+ */
+static void fsm_msg_recv_routing_disreq(Device &inst,
+				 RoutingDiscoveryRequest *req_msg);
+static void fsm_msg_recv_routing_disres(Device &inst,
+				 RoutingDiscoveryResponse *res_msg);
+static void fsm_msg_recv_routing_update(Device &inst,
+				 RoutingUpdateMessage *up_msg);
+// TODO(Emanuele): Complete the remaining messages.
+/**
+ * Message receive handler.
+ * Must handle messages coming from the lower levels.
+ */
+void fsm_msg_recv(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "fsm_msg_recv");
+  Device &inst = Device::getInstance();
+  // get the payload from the params.
+  uint8_t *payload = params->recv.payload;
+  uint16_t payload_len = params->recv.len;
+
+  // Parse the message
+  // TODO(Emanuele): Free the message when its purpose terminates.
+  MessageHeader* _msg =
+    MessageHandler::getInstance().unserialize(payload, payload_len);
+  ESP_LOGI(TAG, "Parsed message with id no. %d.", _msg->id());
+  // If the current device is not the destinatary of the message, forward
+  // it through the routing table.
+
+  // print benchmark log message
+  // benchmark::log_incoming_message(_msg,
+  // 				  to_dev_addr((uint8_t *)
+  // 					      params->recv.remote_bda));
+  
+  if(_msg->destination() != to_dev_addr(get_own_bda())) {
+    fsm_redirect_msg(inst, _msg);
+    return;
+  }
+
+  switch(_msg->id()) {
+  case ROUTING_DISCOVERY_REQ_ID: {
+    fsm_msg_recv_routing_disreq(inst, (RoutingDiscoveryRequest *)_msg);
+    break;
+  }
+  case ROUTING_DISCOVERY_RES_ID: {
+    fsm_msg_recv_routing_disres(inst, (RoutingDiscoveryResponse *)_msg);
+    benchmark::log_routing_table(_msg,
+				 to_dev_addr((uint8_t *)params->recv.remote_bda),
+				 inst);
+    break;
+  }
+  case ROUTING_UPDATE_ID: {
+    fsm_msg_recv_routing_update(inst, (RoutingUpdateMessage *)_msg);
+    benchmark::log_routing_table(_msg,
+				 to_dev_addr((uint8_t *)params->recv.remote_bda),
+				 inst);
+    break;
+  }
+  default: {
+    ESP_LOGW(TAG, "Unhandled message with id no. %d.", _msg->id());
+  }
+  }
 }
 
 void on_scan_completed(bemesh_evt_params_t *params) {
@@ -66,6 +310,8 @@ void on_scan_completed(bemesh_evt_params_t *params) {
          i++, *target = device_list[i + 1]) {
       ESP_LOGI(TAG, "Attempt to connect to server.");
       instance.connect_to_server(target->bda);
+      // print benchmark log message
+      benchmark::log_outgoing_connection(to_dev_addr(target->bda));
       ESP_LOGI(TAG, "Locking the connection semaphore.");
       xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
       ESP_LOGI(TAG, "Semaphore unlocked.");
@@ -212,4 +458,165 @@ void on_message_received(bemesh_evt_params_t *params) {
   // me
 }
 
-// TODO(Andrea): Remember your gf's friend <3
+// Utility function to send a RoutingDiscoveryResponse message.
+static void fsm_send_rd_res(Device &inst,
+			    dev_addr_t dest) {
+  // Serialize the routing table.
+  std::vector<routing_params_t> rtable_vect =
+    inst.getRouter().getRoutingTable();
+  
+  // Generate the routing discovery response message
+  RoutingDiscoveryResponse res_msg =
+    RoutingDiscoveryResponse(dest,
+			     to_dev_addr(get_own_bda()),
+			     rtable_vect,
+			     rtable_vect.size());
+  ESP_LOGI(TAG, "Sending the following entries:");
+  for(int i = 0; i < res_msg.entries(); ++i) {
+    routing_params_t *entry = &res_msg.payload()[i];
+    ESP_LOG_BUFFER_HEX(TAG, entry->target_addr.data(), ESP_BD_ADDR_LEN);
+  }
+  ESP_LOGI(TAG, "End.");
+  // Send the response
+  ESP_LOGI(TAG, "Sending RoutingDiscoveryResponse");
+  inst.send_message(&res_msg);
+  return;
+}
+
+/**
+ * Incoming message routines.
+ * Each function will handle a different incoming message.
+ * Refer to the end of the file to see the implementation.
+ */
+// Routing Discovery Request.
+static void fsm_msg_recv_routing_disreq(Device &inst,
+					RoutingDiscoveryRequest *req_msg) {
+  ESP_LOGI(TAG, "Received RoutingDiscoveryRequest.");
+  // Send the RoutingDiscoveryResponse
+  fsm_send_rd_res(inst, req_msg->source());
+  // Set the state of the device.
+  inst.setState(DeviceState::RTServerRecvReq);
+  return;
+}
+
+static void fsm_post_routing_discovery_routine(Device &inst);
+
+
+// Send update routine
+static void fsm_send_update_routine(Device &inst,
+			       dev_addr_t filtered_bda) {
+
+  if(!inst.getRouter().hasUpdates()) {
+    ESP_LOGI(TAG, "No updates to send.");
+    return;
+  }
+  std::vector<routing_update_t> update_vect = inst.getRouter().getRoutingUpdates();
+  std::vector<dev_addr_t> neighbours_vect = inst.getRouter().getNeighbours();
+  ESP_LOGI(TAG, "Must send %d updates.", update_vect.size());  
+
+  // Generate a single message object
+  std::array<routing_update_t,
+	     ROUTING_UPDATE_ENTRIES_MAX> update_arr;
+  std::copy(update_vect.begin(), update_vect.end(), update_arr.data());
+
+  // initialized with filtered_bda as destination TODO(Emanuele): change it.
+  RoutingUpdateMessage upd_msg =
+    RoutingUpdateMessage(filtered_bda, to_dev_addr(get_own_bda()),
+			 update_arr,
+			 update_vect.size());
+      
+  for(auto &dev : neighbours_vect) {
+    if(dev != filtered_bda) {
+      // set the destination.
+      upd_msg.set_destination(dev);
+      // send the update
+      ESP_LOGI(TAG, "Sending update to");
+      ESP_LOG_BUFFER_HEX(TAG, dev.data(), ESP_BD_ADDR_LEN);
+      inst.send_message(&upd_msg);            
+    }
+  }
+  
+}
+
+static void fsm_msg_recv_routing_disres(Device &inst,
+					RoutingDiscoveryResponse *res_msg) {
+  ESP_LOGI(TAG, "Received RoutingDiscoveryResponse");
+  // The current device will accept the message iff it was in one of the
+  // following states:
+  // - RTClientSentReq : The client has sent a request, and its waiting for a response
+  // - RTServerRecvReq : The server has received a request, and its waiting for a response
+  DeviceState inst_state = inst.getState();
+  if(inst_state != DeviceState::RTClientSentReq &&
+     inst_state != DeviceState::RTServerRecvReq) {
+    ESP_LOGW(TAG, "Warning, could not accept the routing discovery response.");
+    return;
+  }
+
+  // If the device received a response after sending a request, it must send its
+  // routing table.
+  if(inst_state == DeviceState::RTClientSentReq) {
+    ESP_LOGI(TAG, "Preparing discovery response for the server.");
+    fsm_send_rd_res(inst, res_msg->source());
+  }
+
+  // Preprocess the new routing table.
+  ESP_LOGI(TAG, "Preprocessing the received routing table.");
+  Router::preprocessRoutingTable(res_msg->source(),
+				 res_msg->payload().data(),
+				 res_msg->entries());
+
+  // Include the payload of the message into the current device's routing table.
+  for(int i = 0; i < res_msg->entries(); ++i) {
+    auto &entry = res_msg->payload()[i];
+    inst.getRouter().add(entry);
+  }
+
+  /**
+   * Launching update routine.
+   */
+  fsm_send_update_routine(inst, res_msg->source());
+  
+  // Set the state of the device.
+  inst.setState(DeviceState::RTFinished);
+  // Launch the post routing discovery routine.
+  fsm_post_routing_discovery_routine(inst);
+  return;
+}
+
+static void fsm_msg_recv_routing_update(Device &inst,
+					RoutingUpdateMessage *up_msg) {
+  ESP_LOGI(TAG, "Received Update Message.");
+  routing_update_t *payload = up_msg->payload().data();
+  std::vector<routing_update_t> update_vect(payload, payload+up_msg->entries());
+  ESP_LOGI(TAG, "Preparing to process update_vect with %d entries.", up_msg->entries());
+  inst.getRouter().mergeUpdates(update_vect, up_msg->source());
+
+  // Propagate back the updates to the ones whom i'm connected with.
+  fsm_send_update_routine(inst, up_msg->source());  
+  return;
+}
+
+// After the routing discovery procedure terminates, the function is called.
+static void fsm_post_routing_discovery_routine(Device &inst) {
+  if(inst.getRole() == Role::SERVER) {
+    // Launch the post-scanning routine to enter in the advertise-scan loop.
+    fsm_post_scan_server_routine(inst);
+  } else {
+    inst.setRole(Role::CLIENT);
+    // TODO(Emanuele, Andrea): Add some behaviour for the client at this point
+  }
+  return;
+}
+
+
+/**
+ * Callback triggered when disconnection event occurs.
+ */
+void fsm_disconnect_routine(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "fsm_disconnect_routine");
+  // if disconnection occurs, relaunch the fsm maintaining
+  // the current role.
+  Device &inst = Device::getInstance();
+  inst.scan_the_environment();
+  return;
+}

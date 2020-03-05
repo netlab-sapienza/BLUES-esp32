@@ -44,6 +44,15 @@ namespace bemesh {
   dev_addr_t& MessageHeader::destination(void) {
     return m_dest_addr;
   }
+
+  void MessageHeader::set_destination(dev_addr_t &new_dest) {
+    m_dest_addr = new_dest;
+    return;
+  }
+    
+  void MessageHeader::set_source(dev_addr_t &new_src) {
+    m_src_addr = new_src;
+  }
   
   dev_addr_t& MessageHeader::source(void) {
     return m_src_addr;
@@ -77,6 +86,10 @@ namespace bemesh {
   void MessageHeader::setBroadcast(void) {
     m_dest_addr=(dev_addr_t)BROADCAST_ADDR;
   }
+
+  void *MessageHeader::payload_ptr(void) {
+    return nullptr;
+  }
   
   IndexedMessage::IndexedMessage():
     MessageHeader(),m_entries() {}
@@ -89,10 +102,18 @@ namespace bemesh {
     return m_entries;
   }
 
+  void *IndexedMessage::payload_ptr(void) {
+    return nullptr;
+  }
+
   RoutingDiscoveryRequest::RoutingDiscoveryRequest():
     MessageHeader() {}
   RoutingDiscoveryRequest::RoutingDiscoveryRequest(dev_addr_t t_dest, dev_addr_t t_src):
     MessageHeader(t_dest, t_src, ROUTING_DISCOVERY_REQ_ID, 0, 0, 0){}
+
+  void *RoutingDiscoveryRequest::payload_ptr(void) {
+    return NULL;
+  }
 
   RoutingDiscoveryResponse::RoutingDiscoveryResponse():
     IndexedMessage(), m_payload() {}
@@ -117,8 +138,12 @@ namespace bemesh {
     m_psize+=sizeof(routing_params_t)*t_pentries;
   }
 
-  std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> RoutingDiscoveryResponse::payload(void) {
+  std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> &RoutingDiscoveryResponse::payload(void) {
     return m_payload;
+  }
+
+  void *RoutingDiscoveryResponse::payload_ptr(void) {
+    return (void*)m_payload.data();
   }
 
   RoutingUpdateMessage::RoutingUpdateMessage():
@@ -148,6 +173,10 @@ namespace bemesh {
     return m_payload;
   }
 
+  void *RoutingUpdateMessage::payload_ptr(void) {
+    return (void*)m_payload.data();
+  }
+
   RoutingSyncMessage::RoutingSyncMessage():IndexedMessage(), m_payload() {}
   RoutingSyncMessage::RoutingSyncMessage(dev_addr_t t_dest, dev_addr_t t_src,
 					 std::array<uint8_t,
@@ -160,6 +189,10 @@ namespace bemesh {
   std::array<uint8_t, ROUTING_SYNC_ENTRIES_MAX> RoutingSyncMessage::payload(void) {
     return m_payload;
   }
+
+  void *RoutingSyncMessage::payload_ptr(void) {
+    return (void*)m_payload.data();
+  }
   
   RoutingPingMessage::RoutingPingMessage() : MessageHeader(), m_pong_flag(0) {}
   RoutingPingMessage::RoutingPingMessage(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_pong):
@@ -169,6 +202,10 @@ namespace bemesh {
 
   uint8_t RoutingPingMessage::pong_flag(void) const {
     return m_pong_flag;
+  }
+
+  void *RoutingPingMessage::payload_ptr(void) {
+    return (void*)&m_pong_flag;
   }
 
   
@@ -273,11 +310,11 @@ namespace bemesh {
     }
     return this;
   }
-  
+
   RoutingUpdateMessage* RoutingUpdateMessage::create(std::istream& istr) {
     // Read header
     istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
-    istr.read(reinterpret_cast<char*>(&m_dest_addr), sizeof(dev_addr_t));
+    istr.read(reinterpret_cast<char*>(&m_src_addr), sizeof(dev_addr_t));
     istr.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
     istr.read(reinterpret_cast<char*>(&m_hops), sizeof(m_hops));
     istr.read(reinterpret_cast<char*>(&m_seq), sizeof(m_seq));
@@ -289,6 +326,7 @@ namespace bemesh {
       istr.read(reinterpret_cast<char*>(&temp_entry), sizeof(routing_update_t));
       m_payload[i]=temp_entry;
     }
+    ESP_LOGI(TAG, "Created RoutingUpdateMessage.");
     return this;
   }
 
