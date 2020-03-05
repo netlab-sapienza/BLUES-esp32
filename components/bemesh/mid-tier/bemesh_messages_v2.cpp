@@ -86,6 +86,10 @@ namespace bemesh {
   void MessageHeader::setBroadcast(void) {
     m_dest_addr=(dev_addr_t)BROADCAST_ADDR;
   }
+
+  void *MessageHeader::payload_ptr(void) {
+    return nullptr;
+  }
   
   IndexedMessage::IndexedMessage():
     MessageHeader(),m_entries() {}
@@ -98,10 +102,18 @@ namespace bemesh {
     return m_entries;
   }
 
+  void *IndexedMessage::payload_ptr(void) {
+    return nullptr;
+  }
+
   RoutingDiscoveryRequest::RoutingDiscoveryRequest():
     MessageHeader() {}
   RoutingDiscoveryRequest::RoutingDiscoveryRequest(dev_addr_t t_dest, dev_addr_t t_src):
     MessageHeader(t_dest, t_src, ROUTING_DISCOVERY_REQ_ID, 0, 0, 0){}
+
+  void *RoutingDiscoveryRequest::payload_ptr(void) {
+    return NULL;
+  }
 
   RoutingDiscoveryResponse::RoutingDiscoveryResponse():
     IndexedMessage(), m_payload() {}
@@ -128,6 +140,10 @@ namespace bemesh {
 
   std::array<routing_params_t, ROUTING_DISCOVERY_RES_ENTRIES_MAX> &RoutingDiscoveryResponse::payload(void) {
     return m_payload;
+  }
+
+  void *RoutingDiscoveryResponse::payload_ptr(void) {
+    return (void*)m_payload.data();
   }
 
   RoutingUpdateMessage::RoutingUpdateMessage():
@@ -157,6 +173,10 @@ namespace bemesh {
     return m_payload;
   }
 
+  void *RoutingUpdateMessage::payload_ptr(void) {
+    return (void*)m_payload.data();
+  }
+
   RoutingSyncMessage::RoutingSyncMessage():IndexedMessage(), m_payload() {}
   RoutingSyncMessage::RoutingSyncMessage(dev_addr_t t_dest, dev_addr_t t_src,
 					 std::array<uint8_t,
@@ -169,6 +189,10 @@ namespace bemesh {
   std::array<uint8_t, ROUTING_SYNC_ENTRIES_MAX> RoutingSyncMessage::payload(void) {
     return m_payload;
   }
+
+  void *RoutingSyncMessage::payload_ptr(void) {
+    return (void*)m_payload.data();
+  }
   
   RoutingPingMessage::RoutingPingMessage() : MessageHeader(), m_pong_flag(0) {}
   RoutingPingMessage::RoutingPingMessage(dev_addr_t t_dest, dev_addr_t t_src, uint8_t t_pong):
@@ -178,6 +202,10 @@ namespace bemesh {
 
   uint8_t RoutingPingMessage::pong_flag(void) const {
     return m_pong_flag;
+  }
+
+  void *RoutingPingMessage::payload_ptr(void) {
+    return (void*)&m_pong_flag;
   }
 
   

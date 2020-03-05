@@ -11,6 +11,8 @@ extern "C" {
 // Adding new inclusions.
 #include "bemesh_status.hpp"
 
+#include "benchmark_logger.hpp" // for logging purposes.
+
 using namespace bemesh;
 
 static const char *TAG = "device";
@@ -37,6 +39,8 @@ void Device::scan_the_environment() {
   ESP_LOGI(TAG, "Starting scan procedure.");
   // Set the state of the device.
   Device::setState(DeviceState::Scanning);
+  // print benchmark log message
+  benchmark::log_scan(1); // start scan
   scan_environment(scn_timeout_sec);
 }
 
@@ -55,7 +59,11 @@ void Device::start() {
   kernel_install_cb(ON_OUT_CONN, fsm_outgoing_conn_cmpl);
   kernel_install_cb(ON_INC_CONN, fsm_incoming_conn_cmpl);
   kernel_install_cb(ON_MSG_RECV, fsm_msg_recv);
+  kernel_install_cb(ON_DISCONN, fsm_disconnect_routine);
 
+  // print benchmark log message
+  benchmark::log_device_up();
+  
   // Launch the scan function
   Device::scan_the_environment();
 }
@@ -112,9 +120,14 @@ ErrStatus Device::send_message(MessageHeader *message) {
   ErrStatus ret;
   ret = MessageHandler::getInstance().serialize(message, &tx_buffer_ptr,
                                                 &tx_buffer_len);
-  if (ret == Success)
-    send_payload(this->getRouter().nextHop(final_dest).data(), tx_buffer_ptr,
+  if (ret == Success) {
+    dev_addr_t &hop_bda = this->getRouter().nextHop(final_dest);
+    send_payload(hop_bda.data(), tx_buffer_ptr,
                  tx_buffer_len);
+    // print benchmark log message
+    benchmark::log_outgoing_message(message,
+			 hop_bda);
+  }
   return ret;
 }
 
@@ -131,6 +144,12 @@ void Device::setRole(Role newRole) {
     ESP_LOGI(TAG, "Setting CLIENT role.");
   } else {
     ESP_LOGI(TAG, "Setting UNINITIALIZED role.");
+  }
+  // print benchmark log message
+  if (Device::role != newRole) {
+    // since server role is called multiple
+    // times, check only for role changes.
+    benchmark::log_role(newRole);
   }
   Device::role = newRole;
 }

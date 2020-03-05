@@ -11,6 +11,8 @@ extern "C" {
 #include <gatt_def.h>
 }
 
+#include "benchmark_logger.hpp"
+
 #define TIMEOUT_DELAY 10
 static const char *TAG = "device_callbacks";
 
@@ -94,8 +96,10 @@ static void fsm_scan_cmpl_dev_found(Device &inst,
 
 void fsm_scan_cmpl(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "fsm_scan_cmpl");
-  ESP_LOGI(TAG, "Printing device's bda:");
-  ESP_LOG_BUFFER_HEX(TAG, (uint8_t *)get_own_bda(), ESP_BD_ADDR_LEN);
+
+  // print benchmark log message
+  benchmark::log_scan(0); // end scan
+  
   Device &inst = Device::getInstance();
   uint16_t res_len=params->scan.len;
   // If no results are present, stop the callback now.
@@ -130,6 +134,8 @@ void fsm_scan_cmpl(bemesh_evt_params_t *params) {
     bemesh_dev_t *conn_target = &sorted_flt_devs[i];
     // lock the connection semaphore until the connection is established
     inst.setState(DeviceState::Connecting);
+    // print benchmark log message
+    benchmark::log_outgoing_connection(to_dev_addr(conn_target->bda));
     inst.connect_to_server(conn_target->bda);
     xSemaphoreTake(inst.getConnectionSemaphore(), portMAX_DELAY);
     // to reach this place, connection must either been accepted or refused.
@@ -155,9 +161,14 @@ void fsm_outgoing_conn_cmpl(bemesh_evt_params_t *params) {
   if(params->conn.ack) {
     ESP_LOGI(TAG, "Connection succesful.");
     inst.setConnected(true);
+    
   } else {
     inst.setConnected(false);
   }
+  // print benchmark log message
+  benchmark::log_status_connection(to_dev_addr(params->conn.remote_bda),
+				   params->conn.ack,
+				   true); // outgoing 
   // Free the connection semaphore
   xSemaphoreGive(inst.getConnectionSemaphore());
   return;
@@ -172,9 +183,18 @@ void fsm_incoming_conn_cmpl(bemesh_evt_params_t *params) {
   Device &inst = Device::getInstance();
   // get the remote bda address.
   dev_addr_t remote_bda = to_dev_addr((uint8_t *)params->conn.remote_bda);
-  // add the new connection to the router.
-  inst.getRouter().add(remote_bda, remote_bda, 0, Reachable);
+  if(params->conn.ack) {
+    // print benchmark log message
+    benchmark::log_incoming_connection(remote_bda);
+    // add the new connection to the router.
+    inst.getRouter().add(remote_bda, remote_bda, 0, Reachable);
+  }
 
+  // print benchmark log message
+  benchmark::log_status_connection(remote_bda,
+				   params->conn.ack,
+				   false); // incoming connection
+  
   // If we still have space in the incoming connection pool, advertise.
   /*
     if(get_num_inc_conn() < GATTS_MAX_CONNECTIONS) {
@@ -188,8 +208,6 @@ void fsm_incoming_conn_cmpl(bemesh_evt_params_t *params) {
 
 static void fsm_redirect_msg(Device &inst,
 			     MessageHeader *msg) {
-  ESP_LOGI(TAG, "MUST REDIRECT to ");
-  ESP_LOG_BUFFER_HEX(TAG,msg->destination().data(), ESP_BD_ADDR_LEN);
   //TODO(Emanuele): Complete the redirect (or hop) function.
   return;
 }
@@ -224,6 +242,12 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "Parsed message with id no. %d.", _msg->id());
   // If the current device is not the destinatary of the message, forward
   // it through the routing table.
+
+  // print benchmark log message
+  // benchmark::log_incoming_message(_msg,
+  // 				  to_dev_addr((uint8_t *)
+  // 					      params->recv.remote_bda));
+  
   if(_msg->destination() != to_dev_addr(get_own_bda())) {
     fsm_redirect_msg(inst, _msg);
     return;
@@ -236,10 +260,16 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
   }
   case ROUTING_DISCOVERY_RES_ID: {
     fsm_msg_recv_routing_disres(inst, (RoutingDiscoveryResponse *)_msg);
+    benchmark::log_routing_table(_msg,
+				 to_dev_addr((uint8_t *)params->recv.remote_bda),
+				 inst);
     break;
   }
   case ROUTING_UPDATE_ID: {
     fsm_msg_recv_routing_update(inst, (RoutingUpdateMessage *)_msg);
+    benchmark::log_routing_table(_msg,
+				 to_dev_addr((uint8_t *)params->recv.remote_bda),
+				 inst);
     break;
   }
   default: {
@@ -280,6 +310,8 @@ void on_scan_completed(bemesh_evt_params_t *params) {
          i++, *target = device_list[i + 1]) {
       ESP_LOGI(TAG, "Attempt to connect to server.");
       instance.connect_to_server(target->bda);
+      // print benchmark log message
+      benchmark::log_outgoing_connection(to_dev_addr(target->bda));
       ESP_LOGI(TAG, "Locking the connection semaphore.");
       xSemaphoreTake(instance.getConnectionSemaphore(), portMAX_DELAY);
       ESP_LOGI(TAG, "Semaphore unlocked.");
@@ -573,5 +605,18 @@ static void fsm_post_routing_discovery_routine(Device &inst) {
     inst.setRole(Role::CLIENT);
     // TODO(Emanuele, Andrea): Add some behaviour for the client at this point
   }
+  return;
+}
+
+
+/**
+ * Callback triggered when disconnection event occurs.
+ */
+void fsm_disconnect_routine(bemesh_evt_params_t *params) {
+  ESP_LOGI(TAG, "fsm_disconnect_routine");
+  // if disconnection occurs, relaunch the fsm maintaining
+  // the current role.
+  Device &inst = Device::getInstance();
+  inst.scan_the_environment();
   return;
 }

@@ -43,6 +43,11 @@ void fsm_incoming_conn_cmpl(bemesh_evt_params_t *params);
 void on_message_received(bemesh_evt_params_t *params);
 void fsm_msg_recv(bemesh_evt_params_t *params);
 
+/**
+ * Callback triggered when disconnection event occurs.
+ */
+void fsm_disconnect_routine(bemesh_evt_params_t *params);
+
 
 
 #endif // ESP32_BLE_MESH_DEVICE_CALLBACKS_HPP

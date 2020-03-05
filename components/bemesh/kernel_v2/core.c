@@ -302,8 +302,20 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *para
     ESP_LOGI(TAG, "ON_DISCONN event");
     // In theory the same bda cannot live both in outgoing_conn and incoming_conn
     // hence try to remove the entry on both arrays.
-    remove_conn_entry(c->outgoing_conn, (uint8_t *)params->conn.remote_bda, GATTC_MAX_CONNECTIONS);
-    remove_conn_entry(c->incoming_conn, (uint8_t *)params->conn.remote_bda, GATTS_MAX_CONNECTIONS);
+    int removed=false;
+    removed=remove_conn_entry(c->outgoing_conn,
+			      (uint8_t *)params->conn.remote_bda,
+			      GATTC_MAX_CONNECTIONS);
+    if(removed) {
+      --c->outgoing_conn_len;
+    }
+    removed=false;
+    removed=remove_conn_entry(c->incoming_conn,
+			      (uint8_t *)params->conn.remote_bda,
+			      GATTS_MAX_CONNECTIONS);
+    if(removed) {
+      --c->incoming_conn_len;
+    }
     break;
   case ON_READ_REQ:
     ESP_LOGI(TAG, "ON_READ_REQ event");
