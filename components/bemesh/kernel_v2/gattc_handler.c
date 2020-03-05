@@ -66,7 +66,7 @@ static void remote_filter_char_uuid_init(esp_bt_uuid_t *r) {
 
 bemesh_gattc_handler *bemesh_gattc_handler_init(void) {
   // SET LOGGING LEVEL TO WARNING
-  esp_log_level_set(TAG, ESP_LOG_WARN);
+  //esp_log_level_set(TAG, ESP_LOG_WARN);
   
   bemesh_gattc_handler *h=get_gattc1_ptr();
   // Initialize the app profile vect.
