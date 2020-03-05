@@ -265,21 +265,31 @@ namespace benchmark {
 
   /**
    * Logger for routing table.
-   * to be launched every time
-   * a message that can alter the 
-   * routing table is modified
+   * to be launched every time a message that can alter the
+   * routing table is transmitted/received
+   *
+   * @param h pointer to the involved message
+   * @param hop_bda bda on which to transmit/receive the message
+   * @param inst instance of the device class
+   * @param sent flag to indicate if the message is sent or received.
    */
   void log_routing_table(MessageHeader *h,
 			 const dev_addr_t &hop_bda,
-			 const Device& inst) {
+			 const Device& inst,
+			 uint8_t sent) {
     // Follows the same format for the received/sent message
     char *buf = log_buf;
     dev_addr_t own_bda =
       to_dev_addr(get_own_bda());
     int wb = 0;
     wb = _print_bda(buf, own_bda);
-    wb += sprintf(buf+wb, " %d ",
-		  event_type_t::MessageSent);
+    if(sent) {
+      wb += sprintf(buf+wb, " %d ",
+		    event_type_t::MessageSent);
+    } else {
+      wb += sprintf(buf+wb, " %d ",
+		    event_type_t::MessageRecv);
+    }
     wb += _print_bda(buf+wb, h->source());
     wb += sprintf(buf+wb, " ");
     wb += _print_bda(buf+wb, h->destination());

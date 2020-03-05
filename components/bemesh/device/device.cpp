@@ -124,9 +124,17 @@ ErrStatus Device::send_message(MessageHeader *message) {
     dev_addr_t &hop_bda = this->getRouter().nextHop(final_dest);
     send_payload(hop_bda.data(), tx_buffer_ptr,
                  tx_buffer_len);
+    if(message->id() == ROUTING_DISCOVERY_RES_ID ||
+       message->id() == ROUTING_UPDATE_ID) {
+      // print benchmark log message
+      benchmark::log_routing_table(message,
+				   hop_bda,
+				   Device::getInstance(),
+				   true); // message sent
+    }
     // print benchmark log message
-    benchmark::log_outgoing_message(message,
-			 hop_bda);
+    // benchmark::log_outgoing_message(message,
+  // 			 hop_bda);
   }
   return ret;
 }

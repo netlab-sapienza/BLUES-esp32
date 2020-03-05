@@ -262,12 +262,12 @@ void fsm_msg_recv(bemesh_evt_params_t *params) {
   }
   case ROUTING_DISCOVERY_RES_ID: {
     fsm_msg_recv_routing_disres(inst, (RoutingDiscoveryResponse *)_msg);
-    benchmark::log_routing_table(_msg, sender_bda, inst);
+    benchmark::log_routing_table(_msg, sender_bda, inst, false); // message received
     break;
   }
   case ROUTING_UPDATE_ID: {
     fsm_msg_recv_routing_update(inst, (RoutingUpdateMessage *)_msg);
-    benchmark::log_routing_table(_msg, sender_bda, inst);
+    benchmark::log_routing_table(_msg, sender_bda, inst, false); // message received
     break;
   }
   default: {
@@ -612,9 +612,13 @@ static void fsm_post_routing_discovery_routine(Device &inst) {
  */
 void fsm_disconnect_routine(bemesh_evt_params_t *params) {
   ESP_LOGI(TAG, "fsm_disconnect_routine");
+
   // if disconnection occurs, relaunch the fsm maintaining
   // the current role.
   Device &inst = Device::getInstance();
+  // remove the disconnected entry from the routing table.
+  inst.getRouter().remove(to_dev_addr(params->conn.remote_bda));
+  
   inst.scan_the_environment();
   return;
 }
