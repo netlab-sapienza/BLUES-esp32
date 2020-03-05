@@ -326,6 +326,8 @@ void scan_start_complete_cb(esp_ble_gap_cb_param_t* param, bemesh_gap_handler* h
     ESP_LOGI(TAG, "Scan started.");
   } else {
     ESP_LOGE(TAG, "Unable to start scan process.");
+    //TODO(Emanuele): Fix the could not scan bug, for now loop back.
+    esp_ble_gap_start_scanning(SCAN_DURATION_SEC);
   }
   return;
 }
