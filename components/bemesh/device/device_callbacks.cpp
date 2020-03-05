@@ -43,6 +43,8 @@ bemesh_dev_t *filter_devs_rtable(Device &instance, bemesh_dev_t *src,
  */
 static void fsm_post_scan_server_routine(Device &inst) {
   ESP_LOGI(TAG, "fsm_post_scan_server_routine");
+  ESP_LOGI(TAG, "current incoming connections : %d",
+	   get_num_inc_conn());
   // Start the advertising proc.
   if(get_num_inc_conn() < GATTS_MAX_CONNECTIONS) {
     ESP_LOGI(TAG, "Launching advertising.");

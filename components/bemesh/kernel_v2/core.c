@@ -307,14 +307,17 @@ static void low_handlers_cb(bemesh_kernel_evt_t event, bemesh_evt_params_t *para
 			      (uint8_t *)params->conn.remote_bda,
 			      GATTC_MAX_CONNECTIONS);
     if(removed) {
-      --c->outgoing_conn_len;
-    }
-    removed=false;
-    removed=remove_conn_entry(c->incoming_conn,
-			      (uint8_t *)params->conn.remote_bda,
-			      GATTS_MAX_CONNECTIONS);
-    if(removed) {
-      --c->incoming_conn_len;
+      if(c->outgoing_conn_len > 0)
+	--c->outgoing_conn_len;
+    } else {
+      removed=false;
+      removed=remove_conn_entry(c->incoming_conn,
+				(uint8_t *)params->conn.remote_bda,
+				GATTS_MAX_CONNECTIONS);
+      if(removed) {
+	if(c->incoming_conn_len > 0)
+	  --c->incoming_conn_len;
+      }
     }
     break;
   case ON_READ_REQ:
