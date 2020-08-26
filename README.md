@@ -2,7 +2,7 @@ BE Mesh: A Bluetooth Low Energy Mesh Network
 ===================================
 
 <img align="left" src="https://www.uniroma1.it/sites/default/files/images/logo/sapienza-big.png"/>
-<img align="right" width="30%" src="http://www.cs.ucc.ie/wowmom2020/WoWMoM%202016_files/logo-wowmom.png"/>
+<img align="right" width="25%" src="http://www.cs.ucc.ie/wowmom2020/WoWMoM%202016_files/logo-wowmom.png"/>
 <br/><br/><br/><br/><br/>
 
 ***Emanuele Giacomini∗, Francesco D’Alterio∗, Andrea Lacava∗, Francesca Cuomo∗***
