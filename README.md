@@ -28,20 +28,17 @@ __In Linux Terminal__
 ```
 Compile the project:
 
-__In Linux Terminal__
 ```
     idf.py build
 ```
 Once the compilation process ends, you can upload the compiled code inside the ESP32 board.
 
-__In Linux Terminal__
 ```
     idf.py -p /dev/ttyUSBx flash
 ```
 Replace _ttyUSBx_ with the device on which the ESP32 is connected.
 Repeat the same process on all the required devices, then open the serial monitor of the connected ESP32 to display its routing table
 
-__In Linux Terminal__
 ```
     idf.py -p /dev/ttyUSBx monitor
 ```
