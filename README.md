@@ -19,11 +19,35 @@ We describe both the implemented functions as well as some practical results pro
 
 # Create a BLUES mesh network!
 
-1. un
-2. dos
-3. tres
-4. quatros
+1. Clone the __BLUES__ Repository first:
+
+__In Linux Terminal__
+```
+    git clone https://github.com/BE-Mesh/BLUES-esp32.git
+    cd BLUES-esp32/
+```
+2. Compile the project:
+
+__In Linux Terminal__
+```
+    idf.py build
+```
+3. Once the compilation process ends, you can upload the compiled code inside the ESP32 board.
+
+__In Linux Terminal__
+```
+    idf.py -p /dev/ttyUSBx flash
+```
+Replace _ttyUSBx_ with the device on which the ESP32 is connected.
+4. Repeat the same process on all the required devices, then open the serial monitor of the connected ESP32 to display its routing table
+
+__In Linux Terminal__
+```
+    idf.py -p /dev/ttyUSBx monitor
+```
+Replace _ttyUSBx_ with the device on which the ESP32 is connected.
 
 ## Pre-requisites
 
-- sda
+- Two or more ESP32 boards
+- Download the ESP-IDF Official Development framework [here](https://docs.espressif.com/projects/esp-idf/en/stable/get-started/index.html#step-2-get-esp-idf)
