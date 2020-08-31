@@ -1,4 +1,4 @@
-BE Mesh: A Bluetooth Low Energy Mesh Network
+BLUES: A Bluetooth Low Energy Mesh Network
 ===================================
 
 <img align="left" src="https://www.uniroma1.it/sites/default/files/images/logo/sapienza-big.png"/>
